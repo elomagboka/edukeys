@@ -1,0 +1,109 @@
+# Edukeys — Contexte projet
+
+Application de gestion scolaire éditée par **Nova Digital** (Togo).
+**Edukeys** est le nom du produit : il doit
+apparaître tel quel dans l'interface, la documentation d'API et les emails.
+Ne jamais le remplacer par une description générique du type « gestion
+scolaire » dans du texte visible par l'utilisateur.
+
+> Ce fichier est lu à CHAQUE session Claude Code. Il doit rester court (< 150 lignes).
+> Tout ce qui est long va dans `docs/` et n'est lu que sur demande explicite.
+
+## Stack
+
+- **Backend** : Java 21 + Spring Boot 3.5.x, Maven, Spring Data JPA, Spring Security (JWT), MapStruct, SpringDoc OpenAPI
+- **BDD** : PostgreSQL 18 — Docker en local, PostgreSQL managé Render en recette et production. Migrations Flyway.
+- **Hébergement** : Render, région Frankfurt. Voir `docs/adr/0007-hebergement-render.md`.
+- **Frontend** : React 19 + **TypeScript strict**, Vite, TanStack Query, Ant Design — voir `frontend/CLAUDE.md` et `docs/adr/0001-stack-frontend.md`
+- **Tests** : JUnit 5 + AssertJ + Testcontainers (intégration), MockMvc (web)
+
+## Structure
+
+Monorepo : `backend/` (Spring Boot) et `frontend/` (React). Les modules
+frontend reflètent exactement les modules backend.
+
+```
+backend/src/main/java/tg/novadigital/edukeys/
+  common/          # exceptions, config, sécurité, audit, utils partagés
+  etablissement/   # US-00
+  academique/      # US-01, 02, 03, 05  (année, niveau, cycle, filière, classe, matière, période)
+  identite/        # US-04             (users, rôles, RBAC)
+  admission/       # US-06, 07, 08     (pré-inscription, dossiers, matricule)
+  eleve/           # US-09, 10, 11, 12 (dossier, responsables, mouvements, recherche)
+  pedagogie/       # US-13 à US-20     (affectations, EDT, présences, devoirs, notes, bulletins)
+  finance/         # US-21 à US-26
+  portail/         # US-27 à US-32
+  reporting/       # US-33 à US-35
+```
+
+Chaque module suit la même arborescence interne :
+`domain/` (entités JPA) · `repository/` · `service/` · `web/` (controller + DTO) · `mapper/`
+
+## Règles d'architecture (non négociables)
+
+1. **Aucune dépendance croisée entre modules métier.** Un module n'importe que `common/` et son propre package. Les échanges inter-modules passent par une interface exposée dans le module fournisseur.
+2. **Multi-établissement** : toute entité métier porte un `etablissement_id`,
+   sans exception (y compris niveaux, filières et matières). Le filtrage est
+   automatique (filtre Hibernate + contexte de sécurité), jamais recopié dans
+   une requête. **Requêtes natives interdites sur les entités métier** : elles
+   échappent au filtre. Voir `docs/adr/0002-multi-etablissement.md`.
+3. **Pas de suppression physique.** Désactivation logique (`actif`, `date_desactivation`) — exigence explicite du backlog (US-11).
+4. **Historisation** : les entités marquées `@Audited` (Hibernate Envers) — US-07, 10, 11, 13, 18, 19 l'exigent.
+5. **Les entités JPA ne sortent jamais des controllers.** Toujours un DTO + mapper MapStruct.
+6. **Toute règle métier est dans le service, jamais dans le controller ni le repository.**
+7. **Sites et annexes** : `site_id` organise l'intérieur d'un établissement
+   (classes, salles, inscriptions, séances, caisses). Ce n'est **pas** un
+   second niveau de sécurité : il n'entre jamais dans le filtre Hibernate, et
+   la direction voit tous ses sites. Voir `docs/adr/0005-sites-et-annexes.md`.
+8. **Deux latences à distinguer.** Navigateur → serveur : ~100 ms (Togo →
+   Frankfurt) — chaque appel d'API supplémentaire se voit, donc un écran =
+   idéalement un appel, sans cascade. Application → base : < 1 ms, mais une
+   liste de 40 élèves qui déclenche 41 requêtes (relation `LAZY` parcourue en
+   boucle) s'effondre dès que trente utilisateurs sont simultanés. Les deux
+   sont **bloquants** en revue, pas des optimisations pour plus tard.
+
+## Conventions
+
+- Entités au singulier français (`Eleve`, `AnneeScolaire`), tables en `snake_case` pluriel (`eleves`)
+- Endpoints REST : `/api/v1/<ressource-au-pluriel>`
+- Un commit = une US ou une sous-tâche. Message : `feat(US-08): génération matricule`
+- Branche : `feat/us-08-matricule`, fusionnée dans `main` par pull request
+- Jamais de commit direct sur `main`
+- **Migrations Flyway rétrocompatibles** : jamais de suppression de colonne
+  dans la même version que le code qui cesse de l'utiliser. Voir
+  `docs/adr/0004-cicd-deploiement.md`.
+
+## Environnement de développement
+
+Windows en local, Linux en conteneur pour la recette et la production.
+Attention à la casse des noms de fichiers : ignorée par Windows, significative
+sous Linux. Voir `docs/SETUP-WINDOWS.md`.
+
+## Commandes
+
+```bash
+mvn -q test                    # tests unitaires
+mvn -q verify                  # + tests d'intégration
+mvn spring-boot:run            # démarrage local
+mvn flyway:migrate             # migrations
+```
+
+## Notifications
+
+Quatre canaux : in-app, email, SMS (V1) et push (phase mobile). Le code métier
+appelle `Notificateur` et ne connaît jamais le canal. Les gabarits SMS sont
+rédigés **sans accents** (au-delà de l'alphabet GSM-7, un SMS passe de 160 à
+70 caractères et la facture double). Voir `docs/adr/0006-notifications.md`.
+
+## Définition de "Terminé" (DoD)
+
+Une US n'est finie que si : entités + migration Flyway + service + endpoints + DTO/mapper
++ tests unitaires du service + un test d'intégration du endpoint principal + doc OpenAPI à jour.
+
+## Backlog
+
+Le planning des sprints est dans `docs/PLANNING.md` (il fait autorité sur
+l'ordre des US, pas le backlog).
+
+Le backlog complet est dans `docs/backlog.md`. **Ne le lis pas en entier.**
+Pour travailler sur une US, lis uniquement sa section (`grep -A 20 "US-08" docs/backlog.md`).

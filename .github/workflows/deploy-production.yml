@@ -1,0 +1,77 @@
+name: Déploiement production
+
+# Render déploie la recette automatiquement sur merge dans main.
+# La production ne part JAMAIS toute seule : autoDeploy est à false côté
+# Render, et ce workflow exige un déclenchement manuel puis une approbation.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag de version à déployer (ex: v1.2.0)"
+        required: true
+      confirmation:
+        description: "Taper PRODUCTION pour confirmer"
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirmation
+        if: inputs.confirmation != 'PRODUCTION'
+        run: |
+          echo "::error::Confirmation absente ou incorrecte."
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Le tag doit appartenir à l'historique de main
+        run: |
+          git merge-base --is-ancestor "${{ inputs.tag }}" origin/main \
+            || { echo "::error::Ce tag n'appartient pas à l'historique de main."; exit 1; }
+
+  deployer:
+    runs-on: ubuntu-latest
+    needs: verifier
+    environment:
+      name: production        # déclenche la demande d'approbation
+      url: ${{ vars.PROD_URL }}
+    steps:
+      # Filet avant migration. Il n'existe pas de retour arrière pour une
+      # migration : on avance, on ne recule pas (ADR-0007).
+      - name: Sauvegarde de la base
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Accept: application/json" \
+            "https://api.render.com/v1/postgres/${{ secrets.RENDER_DB_PROD_ID }}/recovery" \
+            || echo "::warning::Sauvegarde à la demande indisponible sur ce plan — vérifier la sauvegarde automatique."
+
+      # Render enchaîne : build de l'image → commande de pré-déploiement
+      # (migrations Flyway) → publication → vérification de santé.
+      - name: Déclencher le déploiement de l'API
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_API }}"
+
+      - name: Déclencher le déploiement du frontend
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_WEB }}"
+
+      - name: Attendre que la production réponde
+        run: |
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "${{ vars.PROD_URL }}/actuator/health" || true)
+            if [ "$code" = "200" ]; then echo "Production en ligne."; exit 0; fi
+            echo "Tentative $i — code $code"; sleep 15
+          done
+          echo "::error::La production ne répond pas après 10 minutes."
+          echo "::error::Vérifier les journaux Render : les migrations ont pu échouer."
+          exit 1

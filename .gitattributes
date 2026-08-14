@@ -1,0 +1,38 @@
+# Normalisation des fins de ligne.
+#
+# Sans ce fichier, Git convertit en CRLF à la sortie sur Windows. Les scripts
+# shell, Dockerfiles et workflows committés depuis Windows arrivent alors en
+# CRLF sur les runners Ubuntu, qui échouent avec des messages incompréhensibles
+# du type "bad interpreter: /bin/sh^M: no such file or directory".
+#
+# C'est la première cause de pipeline cassé pour un développeur Windows.
+
+* text=auto eol=lf
+
+# Fichiers qui DOIVENT rester en LF, quoi qu'il arrive
+*.sh            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+Dockerfile      text eol=lf
+*.dockerfile    text eol=lf
+docker-compose* text eol=lf
+mvnw            text eol=lf
+.env*           text eol=lf
+
+# Scripts Windows : CRLF obligatoire, sinon ils ne s'exécutent pas
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# Binaires : aucune conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.jar binary
+*.woff binary
+*.woff2 binary
+*.xlsx binary
+*.docx binary

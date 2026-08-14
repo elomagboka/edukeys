@@ -1,0 +1,166 @@
+databases:
+  - name: edukeys-db-recette
+    databaseName: edukeys
+    user: edukeys
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: "18"
+
+  - name: edukeys-db-prod
+    databaseName: edukeys
+    user: edukeys
+    region: frankfurt
+    # Plan à choisir selon la politique de sauvegarde requise (ADR-0007) :
+    # la restauration à un instant donné est non négociable en production.
+    plan: pro-4gb
+    postgresMajorVersion: "18"
+
+services:
+  # ---------------------------------------------------------------- RECETTE
+  - type: web
+    name: edukeys-api-recette
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /actuator/health
+    # Les migrations tournent ici, avant que la nouvelle version prenne le
+    # service. Si elles échouent, le déploiement s'arrête et l'ancienne
+    # version continue de tourner intacte (ADR-0007).
+    preDeployCommand: "flyway -url=$JDBC_URL -user=$DB_USER -password=$DB_PASSWORD -locations=filesystem:/app/migrations migrate"
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: recette
+      # Render expose une URL au format postgres://... que JDBC ne comprend
+      # pas. On reconstruit donc l'URL à partir des propriétés séparées
+      # plutôt que de parser la chaîne de connexion.
+      - key: DB_HOST
+        fromDatabase:
+          name: edukeys-db-recette
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: edukeys-db-recette
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: edukeys-db-recette
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: edukeys-db-recette
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: edukeys-db-recette
+          property: password
+      - key: JDBC_URL
+        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: edukeys-web-recette
+          property: host
+
+  - type: web
+    name: edukeys-web-recette
+    runtime: static
+    branch: main
+    autoDeploy: true
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: edukeys-api-recette
+          property: host
+    routes:
+      # Application monopage : toute route inconnue rend index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+
+  # ------------------------------------------------------------- PRODUCTION
+  - type: web
+    name: edukeys-api-prod
+    runtime: docker
+    region: frankfurt
+    plan: standard
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    branch: main
+    # JAMAIS de déploiement automatique en production (ADR-0007).
+    # Le déclenchement passe par le workflow GitHub, avec approbation.
+    autoDeploy: false
+    healthCheckPath: /actuator/health
+    preDeployCommand: "flyway -url=$JDBC_URL -user=$DB_USER -password=$DB_PASSWORD -locations=filesystem:/app/migrations migrate"
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: edukeys-db-prod
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: edukeys-db-prod
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: edukeys-db-prod
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: edukeys-db-prod
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: edukeys-db-prod
+          property: password
+      - key: JDBC_URL
+        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - key: JWT_SECRET
+        sync: false          # saisi à la main dans le tableau de bord
+      - key: CORS_ORIGINS
+        fromService:
+          type: web
+          name: edukeys-web-prod
+          property: host
+
+  - type: web
+    name: edukeys-web-prod
+    runtime: static
+    branch: main
+    autoDeploy: false
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: edukeys-api-prod
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff

@@ -1,0 +1,36 @@
+US-00|0|Gestion des établissements scolaire
+US-01|1|Gestion des années scolaires
+US-02|1|Gestion de la structure académique
+US-03|1|Paramétrage des matières
+US-04|1|Gestion des utilisateurs et rôles (RBAC)
+US-05|1|Paramétrage des périodes académiques
+US-06|2|Pré-inscription en ligne
+US-07|2|Traitement des dossiers d'admission
+US-08|3|Génération du matricule et création du dossier élève
+US-09|3|Enregistrement des responsables légaux
+US-10|3|Consultation et mise à jour du dossier élève
+US-11|4|Gestion des mouvements (Transfert, Radiation, Changement)
+US-12|4|Recherche multicritères des élèves
+US-13|4|Affectation des enseignants aux classes et matières
+US-14|EDT|Gestion des emplois du temps
+US-15|5|Appel numérique (Présences/Absences/Retards)
+US-16|5|Création et publication des devoirs
+US-17|5|Soumission des devoirs en ligne par les élèves
+US-18|6|Saisie des notes et paramétrage des coefficients
+US-19|6|Validation des notes avant publication
+US-20|6|Génération des bulletins de notes
+US-21|7|Paramétrage des frais scolaires
+US-22|7|Enregistrement des paiements
+US-23|7|Consultation du solde par le parent
+US-24|8|Gestion des dépenses
+US-25|8|Clôture de caisse
+US-26|8|Tableau de bord financier pour la Direction
+US-27|9|Portail Parent - Suivi de la scolarité
+US-28|10|Alertes et notifications automatiques
+US-29|11|Messagerie Parents-Enseignants
+US-30|9|Portail Élève - Suivi personnel
+US-31|9|Portail Enseignant - Tableau de bord
+US-32|11|Prise de rendez-vous en ligne
+US-33|11|Tableau de bord global pour la Direction
+US-34|11|Identification des classes à risque
+US-35|11|Génération de rapports d'activité
