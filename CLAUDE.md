@@ -47,15 +47,24 @@ Chaque module suit la même arborescence interne :
    automatique (filtre Hibernate + contexte de sécurité), jamais recopié dans
    une requête. **Requêtes natives interdites sur les entités métier** : elles
    échappent au filtre. Voir `docs/adr/0002-multi-etablissement.md`.
-3. **Pas de suppression physique.** Désactivation logique (`actif`, `date_desactivation`) — exigence explicite du backlog (US-11).
-4. **Historisation** : les entités marquées `@Audited` (Hibernate Envers) — US-07, 10, 11, 13, 18, 19 l'exigent.
-5. **Les entités JPA ne sortent jamais des controllers.** Toujours un DTO + mapper MapStruct.
-6. **Toute règle métier est dans le service, jamais dans le controller ni le repository.**
-7. **Sites et annexes** : `site_id` organise l'intérieur d'un établissement
+3. **Identifiants en UUID version 7** (ordonné dans le temps), jamais `Long`
+   auto-incrémenté ni UUID v4. La v7 conserve la localité d'insertion dans
+   l'index tout en restant imprévisible de l'extérieur. Vérifier que
+   `@UuidGenerator(style = VERSION_7)` existe dans la version d'Hibernate
+   embarquée ; sinon, générateur personnalisé.
+4. **Pas de suppression physique.** Désactivation logique via
+   `EntiteDesactivable` (`actif`, `date_desactivation`) — exigence explicite du
+   backlog (US-11). Les contraintes d'unicité sur ces entités sont des **index
+   partiels** (`WHERE actif = true`), sinon une adresse email libérée reste
+   bloquée à jamais.
+5. **Historisation** : les entités marquées `@Audited` (Hibernate Envers) — US-07, 10, 11, 13, 18, 19 l'exigent.
+6. **Les entités JPA ne sortent jamais des controllers.** Toujours un DTO + mapper MapStruct.
+7. **Toute règle métier est dans le service, jamais dans le controller ni le repository.**
+8. **Sites et annexes** : `site_id` organise l'intérieur d'un établissement
    (classes, salles, inscriptions, séances, caisses). Ce n'est **pas** un
    second niveau de sécurité : il n'entre jamais dans le filtre Hibernate, et
    la direction voit tous ses sites. Voir `docs/adr/0005-sites-et-annexes.md`.
-8. **Deux latences à distinguer.** Navigateur → serveur : ~100 ms (Togo →
+9. **Deux latences à distinguer.** Navigateur → serveur : ~100 ms (Togo →
    Frankfurt) — chaque appel d'API supplémentaire se voit, donc un écran =
    idéalement un appel, sans cascade. Application → base : < 1 ms, mais une
    liste de 40 élèves qui déclenche 41 requêtes (relation `LAZY` parcourue en

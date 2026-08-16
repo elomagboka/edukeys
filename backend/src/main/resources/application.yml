@@ -12,3 +12,7 @@ management:
   endpoint:
     health:
       show-details: never
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId}]"
