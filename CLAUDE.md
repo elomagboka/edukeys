@@ -57,6 +57,18 @@ Chaque module suit la même arborescence interne :
    backlog (US-11). Les contraintes d'unicité sur ces entités sont des **index
    partiels** (`WHERE actif = true`), sinon une adresse email libérée reste
    bloquée à jamais.
+   Les repositories métier étendent `BaseRepository<T, ID>` (`@NoRepositoryBean`,
+   dérivée de `Repository`), **jamais `JpaRepository`** : cette dernière expose
+   `delete`, `deleteAll` et `deleteById`, ce qui rendrait la règle
+   contournable. **Ni `JpaSpecificationExecutor`**, qui expose
+   `delete(Specification)` — une suppression en masse traduite directement en
+   DELETE SQL, sans synchroniser le contexte de persistance : elle
+   court-circuite donc l'audit Envers et le filtre multi-établissement. Les
+   méthodes par spécification (`findOne`, `findAll`, `count`, `exists`) sont
+   redéclarées à la main dans `BaseRepository`, en lecture seule. En Java une
+   méthode héritée ne se retire pas — la seule issue est de ne pas hériter.
+   Les tests se nettoient par rollback transactionnel
+   (`@Transactional` + MockMvc), pas par suppression.
 5. **Historisation** : les entités marquées `@Audited` (Hibernate Envers) — US-07, 10, 11, 13, 18, 19 l'exigent.
 6. **Les entités JPA ne sortent jamais des controllers.** Toujours un DTO + mapper MapStruct.
 7. **Toute règle métier est dans le service, jamais dans le controller ni le repository.**
@@ -87,6 +99,16 @@ Chaque module suit la même arborescence interne :
 Windows en local, Linux en conteneur pour la recette et la production.
 Attention à la casse des noms de fichiers : ignorée par Windows, significative
 sous Linux. Voir `docs/SETUP-WINDOWS.md`.
+
+## Migrations et données de test
+
+- `db/migration` : schéma applicatif, appliqué dans **tous** les environnements
+- `db/testdata` : données de démonstration, chargé uniquement par les profils
+  `local` et `test` via `spring.flyway.locations`
+
+Ne jamais placer de données de démonstration dans `db/migration` : une
+migration versionnée s'applique aussi en production, et l'en retirer demande
+une migration destructive.
 
 ## Commandes
 
