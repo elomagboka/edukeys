@@ -1,0 +1,11 @@
+# Le contexte de build est désormais la racine du dépôt : sans ce filtre, tout
+# frontend/node_modules et les target/ seraient envoyés au démon Docker à
+# chaque build.
+**/target/
+**/node_modules/
+frontend/dist/
+.git/
+.github/
+docs/
+scripts/
+**/*.md

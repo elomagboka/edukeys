@@ -23,7 +23,9 @@ services:
     region: frankfurt
     plan: starter
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    # Contexte à la racine : le Dockerfile a besoin du pom.xml parent, hors
+    # de backend/ (projet Maven multi-modules).
+    dockerContext: .
     branch: main
     autoDeploy: true
     healthCheckPath: /actuator/health
@@ -100,7 +102,9 @@ services:
     region: frankfurt
     plan: standard
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    # Contexte à la racine : le Dockerfile a besoin du pom.xml parent, hors
+    # de backend/ (projet Maven multi-modules).
+    dockerContext: .
     branch: main
     # JAMAIS de déploiement automatique en production (ADR-0007).
     # Le déclenchement passe par le workflow GitHub, avec approbation.

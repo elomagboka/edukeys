@@ -31,7 +31,7 @@ jobs:
       # Le déploiement se fait par image Docker : si le Dockerfile casse, on
       # doit le savoir sur la PR, pas au moment du déploiement.
       - name: Vérifier que l'image se construit
-        run: docker build -t edukeys-api:ci ./backend
+        run: docker build -f backend/Dockerfile -t edukeys-api:ci .
 
       - name: Export du contrat OpenAPI
         working-directory: backend
