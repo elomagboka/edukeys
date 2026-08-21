@@ -1,8 +1,7 @@
+# La base des tests est fournie par Testcontainers (voir
+# ConfigurationBaseDeTest) : aucune URL en dur ici, sinon elle prendrait le pas
+# sur le conteneur et la CI retomberait sur un localhost:5432 inexistant.
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/edukeys_test
-    username: edukeys
-    password: edukeys
   jpa:
     hibernate:
       ddl-auto: validate
@@ -10,3 +9,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration,classpath:db/testdata
+
+edukeys:
+  securite:
+    jwt:
+      secret: edukeys-secret-test-fixe-jamais-reutilise-ailleurs-32-octets-min

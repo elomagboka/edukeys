@@ -21,7 +21,12 @@ import jakarta.servlet.http.HttpServletResponse;
  * correspondantes.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+// +10, pas HIGHEST_PRECEDENCE nu : Boot enregistre son ForwardedHeaderFilter
+// (server.forward-headers-strategy=framework) sur Ordered.HIGHEST_PRECEDENCE
+// exactement, et il doit s'exécuter en premier pour que request.getRemoteAddr()
+// soit déjà réécrit quand ce filtre (et JwtAuthenticationFilter derrière)
+// s'exécutent — une même valeur d'ordre ne garantit aucun ordre relatif.
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class CorrelationIdFilter extends OncePerRequestFilter {
 
     public static final String EN_TETE_CORRELATION_ID = "X-Correlation-Id";

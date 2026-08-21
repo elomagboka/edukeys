@@ -124,6 +124,21 @@ suivante ne peut poser de `@PreAuthorize`.
 **Critère de fin** : deux utilisateurs de rôles différents, un endpoint
 protégé, un test qui prouve que l'un passe et l'autre reçoit un 403.
 
+> **Hors périmètre de T-04, mais bloquant avant tout déploiement en
+> production** : la limitation de débit sur les endpoints d'authentification.
+> Absente du backlog d'origine. `/auth/login` exposé sans limitation permet de
+> tester des milliers de mots de passe par minute contre un compte connu.
+>
+> Suivie dans l'issue **#NN**, porteuse de l'étiquette
+> `securite:bloque-deploiement`. Le workflow `deploy-production.yml` refuse de
+> déployer tant qu'une issue portant cette étiquette reste ouverte — ce n'est
+> donc pas une intention mais une porte fermée.
+>
+> Ce garde-fou couvre la production, pas la recette. **Tant que l'issue est
+> ouverte, la recette ne doit pas être accessible publiquement** (protection
+> par mot de passe au niveau Render). Le risque naît quand l'endpoint devient
+> joignable depuis Internet, pas quand il est déployé en production.
+
 > Attention : les rôles Parent et Élève ne sont pas de simples rôles. Un parent
 > ne voit que *ses* enfants, un élève que *ses* notes. Ce filtrage par
 > propriété des données se conçoit maintenant, pas au sprint 9 quand tu
@@ -147,6 +162,13 @@ protégé, un test qui prouve que l'un passe et l'autre reçoit un 403.
 entités métier et prouve qu'un utilisateur de l'établissement A n'atteint
 aucune donnée de l'établissement B, y compris par accès direct à
 l'identifiant. Ce test s'écrit une fois et protège les 35 US suivantes.
+
+Le même test d'isolation prouve aussi qu'un `SUPER_ADMIN` ayant basculé sur un
+établissement n'atteint aucune donnée métier de cet établissement : le filtre
+n'est désactivé pour lui que sur les entités établissement et utilisateur
+(ligne ci-dessus), jamais sur les données métier — la désactivation ciblée
+elle-même doit être couverte, pas seulement l'isolation entre deux
+établissements ordinaires.
 
 > C'est le test le plus important du sprint. Si ce filtrage est automatique,
 > aucun développeur ne peut l'oublier. S'il est manuel, quelqu'un l'oubliera.

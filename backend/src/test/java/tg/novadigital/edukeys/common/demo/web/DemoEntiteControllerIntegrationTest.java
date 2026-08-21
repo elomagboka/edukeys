@@ -22,11 +22,10 @@ import tg.novadigital.edukeys.common.demo.repository.DemoEntiteRepository;
  * prouve que la pagination, le tri et le filtrage dynamiques fonctionnent
  * réellement au travers de la pile JPA/PostgreSQL, pas seulement en mémoire.
  *
- * <p>Nécessite la base PostgreSQL locale démarrée via {@code docker-compose up}
- * (voir docs/SETUP-WINDOWS.md) avec une base {@code edukeys_test} migrée par
- * Flyway. Aucun conteneur Testcontainers n'est démarré ici : ce socle sera
- * ajouté par T-08. En son absence, ce test échoue à la connexion plutôt que
- * de tourner sans preuve réelle sur une fausse base.</p>
+ * <p>La base est un conteneur PostgreSQL éphémère fourni par
+ * {@link tg.novadigital.edukeys.testsupport.ConfigurationBaseDeTest} et migré
+ * par Flyway au démarrage du contexte : seul Docker est requis, ni
+ * {@code docker compose} ni base {@code edukeys_test} préexistante.</p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc

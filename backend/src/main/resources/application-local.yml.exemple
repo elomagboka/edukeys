@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/edukeys
+    username: edukeys
+    password: edukeys
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration,classpath:db/testdata
+
+edukeys:
+  securite:
+    jwt:
+      # Valeur factice, 32 octets minimum : copier ce fichier en
+      # application-local.yml (gitignoré) et la remplacer par un secret propre
+      # à votre poste. Ne jamais réutiliser la valeur d'un autre profil.
+      secret: remplacez-moi-par-un-secret-local-32-octets-minimum-svp

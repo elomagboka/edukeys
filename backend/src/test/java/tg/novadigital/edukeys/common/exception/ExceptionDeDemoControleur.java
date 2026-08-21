@@ -1,8 +1,15 @@
 package tg.novadigital.edukeys.common.exception;
 
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Contrôleur de test exclusivement destiné à vérifier que
@@ -19,7 +26,20 @@ public class ExceptionDeDemoControleur {
             case "regle-metier" -> throw new RegleMetierViolee("Règle métier violée.");
             case "conflit" -> throw new ConflitException("Conflit détecté.");
             case "acces-interdit" -> throw new AccesInterditException("Accès interdit.");
+            case "autorisation-refusee" -> throw new AuthorizationDeniedException("Autorisation refusée.");
             default -> throw new IllegalStateException("Erreur inattendue.");
         }
+    }
+
+    /**
+     * Corps validé par Bean Validation : sert à déclencher
+     * {@code MethodArgumentNotValidException} avec une valeur arbitraire dans
+     * le champ {@code email}, exactement comme {@code LoginRequestDto}.
+     */
+    @PostMapping("/test-exceptions/valider")
+    public void valider(@Valid @RequestBody RequeteDeDemo requete) {
+    }
+
+    public record RequeteDeDemo(@NotBlank @Email String email) {
     }
 }
