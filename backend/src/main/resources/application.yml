@@ -1,3 +1,16 @@
+server:
+  # "framework" fait réécrire request.getRemoteAddr() par ForwardedHeaderFilter
+  # (auto-configuré par Spring Boot, ordre Ordered.HIGHEST_PRECEDENCE — donc
+  # avant JwtAuthenticationFilter et CorrelationIdFilter, voir son @Order) à
+  # partir du PREMIER élément de X-Forwarded-For. Correct seulement si Render
+  # écrase l'en-tête envoyé par le client plutôt que d'y ajouter sa propre
+  # valeur en fin de liste (comportement par défaut de nginx et de nombreux
+  # edges) : dans ce dernier cas, le premier élément resterait falsifiable par
+  # le client. NON VÉRIFIÉ à ce jour contre l'edge Render réel — à confirmer
+  # en recette avec un en-tête X-Forwarded-For forgé avant de s'appuyer sur
+  # cette IP pour la limitation de débit (issue-rate-limiting.md).
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: edukeys-backend
@@ -16,3 +29,10 @@ management:
 logging:
   pattern:
     level: "%5p [%X{correlationId}]"
+
+edukeys:
+  securite:
+    jwt:
+      secret: ${EDUKEYS_JWT_SECRET}
+    cors:
+      origines-autorisees: ${EDUKEYS_CORS_ORIGINES:http://localhost:5173}

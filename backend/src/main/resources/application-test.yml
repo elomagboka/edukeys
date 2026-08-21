@@ -10,3 +10,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration,classpath:db/testdata
+
+edukeys:
+  securite:
+    jwt:
+      secret: edukeys-secret-test-fixe-jamais-reutilise-ailleurs-32-octets-min

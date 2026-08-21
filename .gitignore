@@ -13,6 +13,7 @@ dist/
 .env
 .env.local
 *.local
+backend/src/main/resources/application-local.yml
 
 # IDE
 .idea/

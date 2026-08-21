@@ -24,6 +24,17 @@ jobs:
   verifier:
     runs-on: ubuntu-latest
     steps:
+      - name: Aucune issue de securité bloquante ouverte
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bloquantes=$(gh issue list --label "securite:bloque-deploiement" \
+                        --state open --json number,title -q '.[] | "#\(.number) \(.title)"')
+          if [ -n "$bloquantes" ]; then
+            echo "::error::Déploiement refusé - issues de sécurité ouvertes :"
+            echo "$bloquantes"
+            exit 1
+          fi
       - name: Confirmation
         if: inputs.confirmation != 'PRODUCTION'
         run: |
