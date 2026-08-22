@@ -3,6 +3,13 @@
 > Rempli automatiquement par la commande `/point` en fin de session.
 > Se lit au démarrage de la session suivante : il remplace l'historique de conversation.
 
+## 2026-08-22 — Reprise (aucun code)
+
+- Fait : rien d'implémenté. Session de reprise de contexte uniquement (relecture JOURNAL + SPRINT-0). État inchangé depuis `901fed4`, working tree propre sur `main`.
+- Reste : **T-05 — Contexte multi-établissement**, non entamé (`etablissement_id` sur `BaseEntity` + remplissage auto à la persistance, résolution de l'établissement courant depuis le JWT vers le contexte de sécurité, filtre Hibernate activé sur chaque session, ouverture explicite de contexte pour les traitements async/planifiés, désactivation ciblée pour `SUPER_ADMIN` limitée aux entités établissement et utilisateur ; critère de fin = test d'isolation générique parcourant toutes les entités métier, y compris accès direct par identifiant et cas du SUPER_ADMIN basculé). Toujours ouvert par ailleurs : les deux issues GitHub à créer depuis `issue-rate-limiting.md` et `issue-stockage-jetons.md` (rate limiting bloque le déploiement, ADR-0008 stockage des jetons bloque T-11), et l'hypothèse « Render écrase `X-Forwarded-For` » non vérifiée en recette.
+- Décisions : aucune nouvelle.
+- Piège rencontré : sans objet.
+
 ## 2026-08-21 — T-04
 
 - Fait : module `identite` complet (entités `Utilisateur`/`AffectationEtablissement`/`JetonRafraichissement`, RBAC en mémoire `RoleCode`/`Permission`, JWT access 15 min + refresh 7 jours avec rotation et révocation de famille, `SecurityConfig` deny-by-default), migration `V3__identite_rbac.sql` + données de démo ; `GET /api/v1/utilisateurs` paginé (enveloppe T-03) avec liste blanche de champs triables ; `JournalSecurite` (`common/securite/`) journalise les échecs d'auth/rejets de jeton sans jamais email, mot de passe ni jeton en clair (UUID ou empreinte SHA-256 tronquée uniquement) ; 84 tests (unitaires + intégration MockMvc/PostgreSQL), tous verts.

@@ -3,19 +3,27 @@
     "deny": [
       "Bash(rm -rf *)",
       "Bash(git push --force*)",
-      "Bash(git push -f*)",
+      "Bash(git push -f *)",
       "Bash(git reset --hard*)",
+      "Bash(git clean -fd*)",
+      "Bash(gh repo delete*)",
       "Bash(docker compose down -v*)",
-      "Bash(psql*DROP*)",
+      "Bash(docker volume rm*)",
       "Bash(*flyway*clean*)",
+      "Bash(mvn*flyway:clean*)",
+      "Bash(psql*DROP*)",
       "Read(.env)",
+      "Read(**/.env)",
+      "Read(**/application-local.yml)",
       "Read(**/*.pem)",
       "Read(**/id_rsa*)"
     ],
     "ask": [
       "Bash(git push*)",
       "Bash(gh pr merge*)",
-      "Bash(gh issue close*)"
+      "Bash(gh issue close*)",
+      "Bash(gh release*)",
+      "Bash(docker system prune*)"
     ]
   }
 }
