@@ -83,6 +83,31 @@ public final class JournalSecurite {
         }
     }
 
+    /**
+     * R4.2 : {@link tg.novadigital.edukeys.common.domain.RemplisseurEtablissement}
+     * refuse de persister une entité {@code EntiteEtablissement} sans
+     * établissement renseigné et sans contexte ouvert. Aucune donnée métier :
+     * seul le nom simple de la classe d'entité.
+     */
+    public static void ecritureEtablissementRefuseeContexteAbsent(String nomEntite) {
+        LOG.warn("ecriture_etablissement_refusee motif=contexte_absent entite={} horodatage={}",
+                nomEntite, Instant.now());
+    }
+
+    /**
+     * R4.4 : {@link tg.novadigital.edukeys.common.domain.RemplisseurEtablissement}
+     * refuse de persister une entité {@code EntiteEtablissement} dont
+     * l'établissement déjà renseigné diffère de l'établissement courant.
+     * C'est la règle la plus importante des cinq : une tentative d'écriture
+     * inter-établissement, volontaire ou accidentelle. Aucune donnée métier :
+     * seuls le nom simple de la classe d'entité et les deux UUID
+     * d'établissement en jeu.
+     */
+    public static void ecritureInterEtablissementRefusee(String nomEntite, UUID etablissementAttendu, UUID etablissementRencontre) {
+        LOG.warn("ecriture_etablissement_refusee motif=inter_etablissement entite={} etablissementAttendu={} etablissementRencontre={} horodatage={}",
+                nomEntite, etablissementAttendu, etablissementRencontre, Instant.now());
+    }
+
     private static boolean ressembleAUnEmail(String valeur) {
         return valeur != null && FORME_EMAIL.matcher(valeur).matches();
     }

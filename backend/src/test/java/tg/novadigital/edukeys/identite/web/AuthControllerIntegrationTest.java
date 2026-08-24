@@ -188,6 +188,17 @@ class AuthControllerIntegrationTest {
     void listeLesComptesDeTousLesEtablissements_sansFiltrageParEtablissement() throws Exception {
         java.util.UUID etablissementA = java.util.UUID.randomUUID();
         java.util.UUID etablissementB = java.util.UUID.randomUUID();
+        // T-05 : etablissement_id est désormais une clé étrangère réelle vers
+        // "etablissements" (fk_affectation_etablissement) — il ne suffit plus
+        // d'un UUID arbitraire.
+        jdbcTemplate.update(
+                "insert into etablissements (id, code, nom, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, true, now(), now())",
+                etablissementA, "TST-A-" + etablissementA, "Établissement test A");
+        jdbcTemplate.update(
+                "insert into etablissements (id, code, nom, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, true, now(), now())",
+                etablissementB, "TST-B-" + etablissementB, "Établissement test B");
 
         Utilisateur compteEtablissementA = utilisateurRepository.save(new Utilisateur(
                 "compte.etab.a." + java.util.UUID.randomUUID() + "@edukeys.tg",
@@ -236,10 +247,15 @@ class AuthControllerIntegrationTest {
         entityManager.flush();
 
         java.util.UUID affectationId = java.util.UUID.randomUUID();
+        java.util.UUID etablissementAdmin = java.util.UUID.randomUUID();
+        jdbcTemplate.update(
+                "insert into etablissements (id, code, nom, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, true, now(), now())",
+                etablissementAdmin, "TST-ADM-" + etablissementAdmin, "Établissement test admin");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, true, now(), now())",
-                affectationId, compteAdmin.getId(), java.util.UUID.randomUUID());
+                affectationId, compteAdmin.getId(), etablissementAdmin);
         jdbcTemplate.update(
                 "insert into affectation_roles (affectation_id, role_code) values (?, 'ADMIN')",
                 affectationId);

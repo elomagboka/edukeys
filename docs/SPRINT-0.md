@@ -148,7 +148,8 @@ protégé, un test qui prouve que l'un passe et l'autre reçoit un 403.
 
 ## T-05 — Contexte multi-établissement (1 j) · **obligatoire**
 
-- `etablissement_id` sur `BaseEntity`
+- `etablissement_id` sur `EntiteEtablissement`, superclasse dédiée intercalée
+  sous `BaseEntity` — voir ADR-0002, « Précision d'implémentation (T-05) »
 - Résolution de l'établissement courant depuis le JWT, stockée dans le
   contexte de sécurité
 - Filtre Hibernate activé automatiquement sur chaque session

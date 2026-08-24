@@ -1,8 +1,13 @@
 package tg.novadigital.edukeys.common.demo.web;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,11 +16,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import tg.novadigital.edukeys.common.demo.domain.DemoEntite;
 import tg.novadigital.edukeys.common.demo.repository.DemoEntiteRepository;
+import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
+import tg.novadigital.edukeys.identite.security.UtilisateurPrincipal;
 
 /**
  * Test d'intégration bout-en-bout du contrôleur de démonstration T-03 :
@@ -26,11 +35,37 @@ import tg.novadigital.edukeys.common.demo.repository.DemoEntiteRepository;
  * {@link tg.novadigital.edukeys.testsupport.ConfigurationBaseDeTest} et migré
  * par Flyway au démarrage du contexte : seul Docker est requis, ni
  * {@code docker compose} ni base {@code edukeys_test} préexistante.</p>
+ *
+ * <p><b>T-05, sous-tâche 10</b> : {@link DemoEntite} est passée sous
+ * {@code EntiteEtablissement}, donc désormais soumise au filtre Hibernate et
+ * à {@code GardeContexteEtablissement}. Le contrôleur de démonstration est
+ * exposé sans authentification ({@code /internal/**} est {@code permitAll}),
+ * donc {@code ContexteEtablissementFilter} n'ouvre aucun contexte pour ces
+ * requêtes : ce test en ouvre un explicitement, sur le thread de test — le
+ * même thread que celui qui exécute {@code MockMvc.perform(...)} en mode
+ * {@code MOCK} (aucun dispatch asynchrone ici), donc le contexte ouvert ici
+ * est bien vu par le contrôleur et le repository lors du peuplement des
+ * données ({@code @BeforeEach}, hors HTTP).</p>
+ *
+ * <p>Pour les appels {@code MockMvc}, en revanche, un contexte ouvert par le
+ * test <em>avant</em> {@code mockMvc.perform(...)} et refermé après ne
+ * convient pas : {@code DetecteurFuiteContexteFilter} (T-05) fait échouer
+ * toute requête qui rend la main avec un contexte encore ouvert, y compris un
+ * contexte ouvert par autre chose que {@code ContexteEtablissementFilter}
+ * lui-même. La requête simule donc une authentification
+ * ({@link UtilisateurPrincipal}, sans jeton) via
+ * {@code SecurityMockMvcRequestPostProcessors.authentication(...)} :
+ * {@code ContexteEtablissementFilter} — déjà enregistré dans la chaîne de
+ * sécurité, y compris pour {@code /internal/**} — ouvre et referme alors
+ * lui-même le contexte pour la durée exacte de la requête, exactement comme
+ * en production.</p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class DemoEntiteControllerIntegrationTest {
+
+    private static final UUID ETABLISSEMENT_DE_TEST = UUID.randomUUID();
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,11 +79,13 @@ class DemoEntiteControllerIntegrationTest {
     @BeforeEach
     void peuplerJeuDeDonnees() {
         viderLaTable();
-        demoEntiteRepository.save(new DemoEntite("Alpha", "sciences", 1));
-        demoEntiteRepository.save(new DemoEntite("Beta", "lettres", 2));
-        demoEntiteRepository.save(new DemoEntite("Gamma", "sciences", 3));
-        for (int i = 0; i < 25; i++) {
-            demoEntiteRepository.save(new DemoEntite("Serie-" + i, "sciences", i));
+        try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_DE_TEST)) {
+            demoEntiteRepository.save(new DemoEntite("Alpha", "sciences", 1));
+            demoEntiteRepository.save(new DemoEntite("Beta", "lettres", 2));
+            demoEntiteRepository.save(new DemoEntite("Gamma", "sciences", 3));
+            for (int i = 0; i < 25; i++) {
+                demoEntiteRepository.save(new DemoEntite("Serie-" + i, "sciences", i));
+            }
         }
     }
 
@@ -66,9 +103,22 @@ class DemoEntiteControllerIntegrationTest {
         jdbcTemplate.execute("TRUNCATE TABLE demo_entites");
     }
 
+    /**
+     * Simule l'authentification lue par {@code ContexteEtablissementFilter} :
+     * c'est lui, et lui seul, qui doit ouvrir/refermer le contexte pour la
+     * requête, avec le même établissement que celui utilisé pour peupler les
+     * données de test.
+     */
+    private ResultActions dansUnContexte(
+            org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder requestBuilder) throws Exception {
+        var principal = new UtilisateurPrincipal(UUID.randomUUID(), ETABLISSEMENT_DE_TEST, Set.of());
+        var authentification = new UsernamePasswordAuthenticationToken(principal, null, List.of());
+        return mockMvc.perform(requestBuilder.with(authentication(authentification)));
+    }
+
     @Test
     void listeUnePremierePageDeTailleParDefaut_quandAucunParametreDePagination() throws Exception {
-        mockMvc.perform(get("/internal/demo/entites"))
+        dansUnContexte(get("/internal/demo/entites"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(0))
                 .andExpect(jsonPath("$.taille").value(20))
@@ -78,7 +128,7 @@ class DemoEntiteControllerIntegrationTest {
 
     @Test
     void listeLaDeuxiemePage_quandPageDemandee() throws Exception {
-        mockMvc.perform(get("/internal/demo/entites").param("page", "1").param("size", "20"))
+        dansUnContexte(get("/internal/demo/entites").param("page", "1").param("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.contenu.length()").value(8))
@@ -87,7 +137,7 @@ class DemoEntiteControllerIntegrationTest {
 
     @Test
     void trieParLibelleDescendant_quandSortDemande() throws Exception {
-        mockMvc.perform(get("/internal/demo/entites")
+        dansUnContexte(get("/internal/demo/entites")
                         .param("size", "3")
                         .param("sort", "libelle,desc"))
                 .andExpect(status().isOk())
@@ -97,7 +147,7 @@ class DemoEntiteControllerIntegrationTest {
 
     @Test
     void filtreParLibelleEtCategorie_quandLesDeuxCriteresSontFournis() throws Exception {
-        mockMvc.perform(get("/internal/demo/entites")
+        dansUnContexte(get("/internal/demo/entites")
                         .param("libelle", "alph")
                         .param("categorie", "sciences"))
                 .andExpect(status().isOk())
@@ -107,7 +157,7 @@ class DemoEntiteControllerIntegrationTest {
 
     @Test
     void neRenvoieAucunResultat_quandLaCategorieNeCorrespondAAucuneEntite() throws Exception {
-        mockMvc.perform(get("/internal/demo/entites").param("categorie", "inexistante"))
+        dansUnContexte(get("/internal/demo/entites").param("categorie", "inexistante"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0))
                 .andExpect(jsonPath("$.contenu.length()").value(0));
@@ -115,7 +165,7 @@ class DemoEntiteControllerIntegrationTest {
 
     @Test
     void plafonneLaTailleDePageA100_quandTailleDemandeeDepasseLeMaximum() throws Exception {
-        mockMvc.perform(get("/internal/demo/entites").param("size", "500"))
+        dansUnContexte(get("/internal/demo/entites").param("size", "500"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.taille").value(100));
     }

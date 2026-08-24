@@ -24,9 +24,14 @@ jobs:
 
       # Testcontainers a besoin de Docker : disponible nativement sur les
       # runners GitHub, rien à installer.
+      #
+      # `clean` n'est pas décoratif : Maven ne retire pas de target/ une
+      # ressource supprimée des sources. Sans lui, une migration Flyway
+      # renommée ou supprimée reste servie depuis target/classes, et le build
+      # passe au vert sur un état du schéma qui n'existe dans aucune source.
       - name: Tests et build
         working-directory: backend
-        run: mvn -B verify
+        run: mvn -B clean verify
 
       # Le déploiement se fait par image Docker : si le Dockerfile casse, on
       # doit le savoir sur la PR, pas au moment du déploiement.

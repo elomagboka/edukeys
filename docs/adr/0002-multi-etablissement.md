@@ -108,6 +108,46 @@ matricule.
 
 ---
 
+## Précision d'implémentation (T-05)
+
+La section 2 dit que `etablissement_id` est « porté par `BaseEntity` ».
+À l'implémentation, c'est une **superclasse dédiée** qui le porte :
+
+```
+BaseEntity              (@MappedSuperclass) — id, actif, dates, auteurs
+   └── EntiteEtablissement (@MappedSuperclass) — + etablissement_id + @Filter
+```
+
+**Pourquoi pas directement sur `BaseEntity`.** Quatre entités ne peuvent pas
+porter de discriminant : `Etablissement` (une entité ne se filtre pas par
+elle-même), `Utilisateur` (email unique globalement, compte multi-établissement
+— section 3), `AffectationEtablissement` et `JetonRafraichissement`. Ces deux
+dernières sont le point critique : elles sont lues **pendant** le login, avant
+qu'un contexte n'existe. Les filtrer rendrait l'authentification et la bascule
+d'établissement impossibles — un utilisateur ne verrait jamais la liste de ses
+établissements.
+
+Sur `BaseEntity`, le champ devrait donc être **nullable**. Or un champ nullable
+est un champ qu'on oublie de remplir, et l'oubli ne se voit qu'en production.
+Deux superclasses rendent l'appartenance non-nullable, vérifiable par le
+compilateur, et surtout **énumérable par le metamodel JPA** : le test
+d'isolation générique parcourt les entités et échoue dès qu'une nouvelle entité
+métier étend `BaseEntity` au lieu d'`EntiteEtablissement`. Le même contrôle
+échoue le démarrage de l'application.
+
+L'esprit de la section 2 est donc respecté — aucun développeur n'écrit le
+filtre à la main — par un mécanisme qui, en plus, détecte l'oubli.
+
+`AffectationEtablissement` porte bien une colonne `etablissement_id`, mais
+c'est une **donnée** (la relation N-N), pas un discriminant de filtre.
+
+**Absence de contexte à l'authentification.** `/auth/login` et `/auth/refresh`
+s'exécutent sans contexte d'établissement ouvert : c'est légitime, ils ne
+touchent qu'aux quatre entités hors périmètre ci-dessus. Si un besoin futur
+amenait le login à toucher une entité métier (compteur de connexions, par
+exemple), il faudrait y ouvrir un contexte explicitement — l'écriture échouerait
+sinon, bruyamment.
+
 ## Impacts sur le Sprint 0
 
 - **T-04** : ajouter `SUPER_ADMIN`, modéliser `affectation_etablissement`,

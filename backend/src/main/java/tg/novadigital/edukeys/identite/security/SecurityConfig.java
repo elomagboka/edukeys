@@ -81,7 +81,8 @@ public class SecurityConfig {
                             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                             .anyRequest().authenticated();
                 })
-                .addFilterBefore(new JwtAuthenticationFilter(jwtService, permissionResolver), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(jwtService, permissionResolver), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new ContexteEtablissementFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }
