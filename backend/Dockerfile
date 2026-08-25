@@ -6,7 +6,7 @@
 # Construire depuis backend/ seul échoue sur « Non-resolvable parent POM ».
 
 # ---------------------------------------------------------------- build
-FROM maven:3.9-eclipse-temurin-25 AS build
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /build
 
 # Les dépendances sont téléchargées dans une couche séparée : tant qu'aucun
@@ -20,7 +20,7 @@ COPY backend/src backend/src
 RUN mvn -B -pl backend -am -DskipTests package
 
 # ------------------------------------------------------------- runtime
-FROM eclipse-temurin:25-jre-jammy
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
 # Flyway CLI : utilisé par la commande de pré-déploiement de Render, qui
