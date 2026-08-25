@@ -3,6 +3,7 @@ package tg.novadigital.edukeys.common.multietablissement;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.hibernate.Session;
@@ -27,10 +28,28 @@ import static org.mockito.Mockito.when;
  */
 class FuiteContexteEtablissementTest {
 
+    /**
+     * {@code ContexteEtablissement.entityManagerFactory} est {@code static} :
+     * partagé par tout le run JVM, y compris les classes {@code @SpringBootTest}
+     * qui réutilisent un contexte Spring mis en cache (ex.
+     * {@code IsolationEtablissementTest}). Ce test le remplace par des mocks
+     * pour simuler un échec de ré-armement ; le remettre inconditionnellement à
+     * {@code null} en fin de test (au lieu de restaurer la valeur d'origine)
+     * a déjà cassé silencieusement le filtre Hibernate d'un test exécuté plus
+     * tard dans le même run (T-05, sous-tâche 11 : cause racine de 4 échecs
+     * intermittents sur {@code IsolationEtablissementTest}).
+     */
+    private EntityManagerFactory entityManagerFactoryOriginale;
+
+    @BeforeEach
+    void sauvegarderEntityManagerFactory() {
+        entityManagerFactoryOriginale = ContexteEtablissement.entityManagerFactoryEnregistree();
+    }
+
     @AfterEach
     void nettoyer() {
         ContexteEtablissement.purger();
-        ContexteEtablissement.enregistrerEntityManagerFactory(null);
+        ContexteEtablissement.enregistrerEntityManagerFactory(entityManagerFactoryOriginale);
     }
 
     @Test

@@ -3,6 +3,7 @@ package tg.novadigital.edukeys.common.domain;
 import java.util.UUID;
 
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissementAbsentException;
 import tg.novadigital.edukeys.common.multietablissement.EcritureInterEtablissementRefuseeException;
@@ -53,7 +54,13 @@ import tg.novadigital.edukeys.common.securite.JournalSecurite;
  *   <li>R4.4 — champ déjà renseigné et différent du contexte courant :
  *       refus, journalisé avant d'être levé — la règle la plus importante
  *       des cinq, celle qui empêche une écriture inter-établissement
- *       volontaire ou accidentelle (copie d'objet entre deux contextes) ;</li>
+ *       volontaire ou accidentelle (copie d'objet entre deux contextes).
+ *       Appliquée à la fois à {@code @PrePersist} ({@link #remplir}) et à
+ *       {@code @PreUpdate} ({@link #verifierAvantMiseAJour}) : {@code save()}
+ *       sur une entité déjà identifiée route vers {@code EntityManager.merge()},
+ *       jamais {@code persist()}, donc sans le hook de mise à jour R4.4 ne
+ *       s'appliquait qu'à la création, jamais à la modification (T-05,
+ *       sous-tâche 11, cas C8) ;</li>
  *   <li>R4.5 — {@link ContexteEtablissement#ETABLISSEMENT_NIL} : ce n'est
  *       jamais un établissement valide à assigner. C'est la valeur de secours
  *       posée par {@code ArmeurFiltreEtablissement} sur une session <em>sans
@@ -83,6 +90,38 @@ public class RemplisseurEtablissement {
             return;
         }
 
+        refuserSiInterEtablissement(etablissementCourant, etablissementExistant, nomEntite);
+    }
+
+    /**
+     * R4.4 sur mise à jour ({@code merge()}, jamais {@code persist()}) : une
+     * entité déjà porteuse d'un {@code etablissementId} — donc déjà
+     * persistée — ne doit jamais pouvoir être modifiée depuis un contexte
+     * d'établissement différent du sien, quel que soit le chemin par lequel
+     * l'objet a été obtenu (chargement direct par identifiant, export, cache
+     * applicatif...). Sans ce hook, {@code @PrePersist} seul ne voyait jamais
+     * passer un {@code merge()} — Spring Data {@code save()} sur une entité
+     * déjà identifiée route vers {@code EntityManager.merge()}, pas
+     * {@code persist()} — et R4.4 restait lettre morte pour toute
+     * modification (T-05, sous-tâche 11, cas C8 : lacune constatée puis
+     * comblée ici).
+     *
+     * <p>Pas de branche R4.1/R4.2 ici : une entité déjà persistée porte
+     * nécessairement un {@code etablissementId} (colonne {@code NOT NULL} en
+     * base, garantie par {@link #remplir} à la création) — seules R4.3
+     * (silencieux) et R4.4 (refus) s'appliquent.</p>
+     */
+    @PreUpdate
+    public void verifierAvantMiseAJour(EntiteEtablissement entite) {
+        UUID etablissementCourant = etablissementCourantReel();
+        UUID etablissementExistant = entite.getEtablissementId();
+        String nomEntite = entite.getClass().getSimpleName();
+
+        refuserSiInterEtablissement(etablissementCourant, etablissementExistant, nomEntite);
+    }
+
+    /** R4.3 (même établissement, ou contexte SUPER_ADMIN sur cet établissement : silencieux) / R4.4 (différent, ou contexte absent : refus journalisé). */
+    private static void refuserSiInterEtablissement(UUID etablissementCourant, UUID etablissementExistant, String nomEntite) {
         if (etablissementCourant != null && etablissementExistant.equals(etablissementCourant)) {
             return; // R4.3
         }
