@@ -540,17 +540,33 @@ class IsolationEtablissementTest {
     // ------------------------------------------------------------------
 
     @Test
-    @DisplayName("(b) aucune interface de repository metier n'expose de methode de suppression, ni statiquement ni sur le proxy reel")
+    @DisplayName("(b) aucune interface de repository ne contourne BaseRepository, et aucune n'expose de methode de suppression")
     void b_aucuneMethodeDeSuppressionNestAtteignable() {
+        List<String> violationsHorsBaseRepository = new ArrayList<>();
         List<String> violationsStatiques = new ArrayList<>();
         List<String> violationsRuntime = new ArrayList<>();
 
-        var repositoriesMetier = applicationContext.getBeansOfType(BaseRepository.class);
-        for (var entry : repositoriesMetier.entrySet()) {
+        // Repository generique de Spring Data, pas BaseRepository : un
+        // repository qui ecrit "extends JpaRepository" au lieu de
+        // "extends BaseRepository" est toujours un bean Repository, donc
+        // toujours decouvert ici - contrairement a getBeansOfType(BaseRepository.class),
+        // qui l'aurait silencieusement laisse passer.
+        var tousLesRepositories =
+                applicationContext.getBeansOfType(org.springframework.data.repository.Repository.class);
+
+        for (var entry : tousLesRepositories.entrySet()) {
             Object bean = entry.getValue();
 
             for (Class<?> candidate : bean.getClass().getInterfaces()) {
-                if (!BaseRepository.class.isAssignableFrom(candidate) || candidate == BaseRepository.class) {
+                if (!org.springframework.data.repository.Repository.class.isAssignableFrom(candidate)
+                        || candidate == org.springframework.data.repository.Repository.class) {
+                    continue;
+                }
+                if (!BaseRepository.class.isAssignableFrom(candidate)) {
+                    violationsHorsBaseRepository.add(candidate.getName());
+                    continue;
+                }
+                if (candidate == BaseRepository.class) {
                     continue;
                 }
                 // Vérification statique : toutes les méthodes atteignables sur
@@ -572,6 +588,14 @@ class IsolationEtablissementTest {
             }
         }
 
+        assertThat(violationsHorsBaseRepository)
+                .withFailMessage(() -> "Interface(s) de repository qui n'etendent pas BaseRepository : "
+                        + violationsHorsBaseRepository + ". CLAUDE.md, regle 4 : tout repository metier doit "
+                        + "etendre BaseRepository (tg.novadigital.edukeys.common.repository.BaseRepository), "
+                        + "jamais JpaRepository, JpaSpecificationExecutor ou CrudRepository directement - ces "
+                        + "interfaces exposent des methodes de suppression physique et de suppression en masse "
+                        + "par Specification qui court-circuitent Envers et le filtre multi-etablissement.")
+                .isEmpty();
         assertThat(violationsStatiques)
                 .withFailMessage(() -> "Methode(s) de suppression atteignable(s) statiquement sur une interface "
                         + "repository metier : " + violationsStatiques + ". CLAUDE.md, regle 4 : la suppression "
