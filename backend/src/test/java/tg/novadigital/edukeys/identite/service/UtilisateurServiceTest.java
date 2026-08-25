@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import tg.novadigital.edukeys.identite.domain.Utilisateur;
 import tg.novadigital.edukeys.identite.repository.AffectationEtablissementRepository;
 import tg.novadigital.edukeys.identite.repository.JetonRafraichissementRepository;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
+import tg.novadigital.edukeys.identite.security.UtilisateurPrincipal;
 
 class UtilisateurServiceTest {
 
@@ -71,6 +73,32 @@ class UtilisateurServiceTest {
         verify(jetonRafraichissementRepository).save(jeton1);
         verify(jetonRafraichissementRepository).save(jeton2);
         verify(utilisateurRepository).save(utilisateur);
+    }
+
+    // ------------------------------------------------------------------
+    // obtenirSoiMeme — revue post-T-05 : la signature ne prend plus un UUID
+    // arbitraire mais le principal lui-même, rendant impossible de demander
+    // un autre compte que le sien.
+    // ------------------------------------------------------------------
+
+    @Test
+    void obtenirSoiMeme_renvoieLeCompteDuPrincipal() {
+        UUID utilisateurId = UUID.randomUUID();
+        Utilisateur utilisateur = new Utilisateur("marie@edukeys.tg", "hash", "Marie Dupont", false);
+        UtilisateurPrincipal principal = new UtilisateurPrincipal(utilisateurId, UUID.randomUUID(), Set.of("ADMIN"));
+        when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
+
+        assertThat(utilisateurService.obtenirSoiMeme(principal)).isSameAs(utilisateur);
+    }
+
+    @Test
+    void obtenirSoiMeme_leveUneExceptionRessourceIntrouvable_quandLeCompteDuPrincipalNexistePlus() {
+        UtilisateurPrincipal principal =
+                new UtilisateurPrincipal(UUID.randomUUID(), UUID.randomUUID(), Set.of("ADMIN"));
+        when(utilisateurRepository.findById(principal.utilisateurId())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> utilisateurService.obtenirSoiMeme(principal))
+                .isInstanceOf(RessourceIntrouvableException.class);
     }
 
     // ------------------------------------------------------------------

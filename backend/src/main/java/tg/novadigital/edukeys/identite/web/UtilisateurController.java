@@ -58,7 +58,7 @@ public class UtilisateurController {
     @GetMapping("/moi")
     @PreAuthorize("isAuthenticated()")
     public UtilisateurResumeDto moi(@AuthenticationPrincipal UtilisateurPrincipal principal) {
-        return UtilisateurResumeDto.depuis(utilisateurService.obtenir(principal.utilisateurId()));
+        return UtilisateurResumeDto.depuis(utilisateurService.obtenirSoiMeme(principal));
     }
 
     /**
