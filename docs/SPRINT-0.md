@@ -13,7 +13,7 @@ sprint 6, la même chose oblige à réécrire six modules.
 
 À écrire dans `CLAUDE.md` avant toute ligne de code.
 
-**Versions.** Spring Boot **4.0.x** (dernier patch de la branche), Java 21.
+**Versions.** Spring Boot **4.0.x** (dernier patch de la branche), Java 25.
 Pas 4.1.x : sortie en juin 2026, l'écosystème n'a pas fini de suivre. Spring
 Boot 4 a basculé sur Jackson 3 et Jakarta EE 11, ce qui a cassé une partie
 des bibliothèques tierces pendant plusieurs mois — SpringDoc en particulier.
