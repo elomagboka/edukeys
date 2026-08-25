@@ -171,6 +171,14 @@ n'est désactivé pour lui que sur les entités établissement et utilisateur
 elle-même doit être couverte, pas seulement l'isolation entre deux
 établissements ordinaires.
 
+Prouver l'isolation ne suffit pas : il faut aussi prouver qu'on ne peut pas
+la contourner. Les trois angles morts du filtre Hibernate (ADR-0002) doivent
+être verrouillés par des tests, pas par la vigilance en relecture —
+`AucuneDesactivationDuFiltreTest`, `AucuneRequeteNativeSurEntiteMetierTest`,
+`IsolationUtilisateursTest` (`Utilisateur` n'est pas filtrée : son
+cloisonnement repose entièrement sur `AffectationEtablissement`) et
+`UtilisateurService` cadré par affectation. Suivi dans l'issue **#61**.
+
 > C'est le test le plus important du sprint. Si ce filtrage est automatique,
 > aucun développeur ne peut l'oublier. S'il est manuel, quelqu'un l'oubliera.
 
