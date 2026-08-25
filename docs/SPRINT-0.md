@@ -129,7 +129,7 @@ protégé, un test qui prouve que l'un passe et l'autre reçoit un 403.
 > Absente du backlog d'origine. `/auth/login` exposé sans limitation permet de
 > tester des milliers de mots de passe par minute contre un compte connu.
 >
-> Suivie dans l'issue **#NN**, porteuse de l'étiquette
+> Suivie dans l'issue **#58**, porteuse de l'étiquette
 > `securite:bloque-deploiement`. Le workflow `deploy-production.yml` refuse de
 > déployer tant qu'une issue portant cette étiquette reste ouverte — ce n'est
 > donc pas une intention mais une porte fermée.
