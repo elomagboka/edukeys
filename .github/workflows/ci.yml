@@ -51,6 +51,7 @@ jobs:
   frontend:
     runs-on: ubuntu-latest
     needs: backend
+    if: hashFiles('frontend/package-lock.json') != ''
     steps:
       - uses: actions/checkout@v4
 
