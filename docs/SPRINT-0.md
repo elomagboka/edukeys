@@ -13,7 +13,7 @@ sprint 6, la même chose oblige à réécrire six modules.
 
 À écrire dans `CLAUDE.md` avant toute ligne de code.
 
-**Versions.** Spring Boot **4.0.x** (dernier patch de la branche), Java 21.
+**Versions.** Spring Boot **3.5.16** (dernier patch de la branche), Java 25.
 Pas 4.1.x : sortie en juin 2026, l'écosystème n'a pas fini de suivre. Spring
 Boot 4 a basculé sur Jackson 3 et Jakarta EE 11, ce qui a cassé une partie
 des bibliothèques tierces pendant plusieurs mois — SpringDoc en particulier.
@@ -129,7 +129,7 @@ protégé, un test qui prouve que l'un passe et l'autre reçoit un 403.
 > Absente du backlog d'origine. `/auth/login` exposé sans limitation permet de
 > tester des milliers de mots de passe par minute contre un compte connu.
 >
-> Suivie dans l'issue **#NN**, porteuse de l'étiquette
+> Suivie dans l'issue **#58**, porteuse de l'étiquette
 > `securite:bloque-deploiement`. Le workflow `deploy-production.yml` refuse de
 > déployer tant qu'une issue portant cette étiquette reste ouverte — ce n'est
 > donc pas une intention mais une porte fermée.
@@ -170,6 +170,14 @@ n'est désactivé pour lui que sur les entités établissement et utilisateur
 (ligne ci-dessus), jamais sur les données métier — la désactivation ciblée
 elle-même doit être couverte, pas seulement l'isolation entre deux
 établissements ordinaires.
+
+Prouver l'isolation ne suffit pas : il faut aussi prouver qu'on ne peut pas
+la contourner. Les trois angles morts du filtre Hibernate (ADR-0002) doivent
+être verrouillés par des tests, pas par la vigilance en relecture —
+`AucuneDesactivationDuFiltreTest`, `AucuneRequeteNativeSurEntiteMetierTest`,
+`IsolationUtilisateursTest` (`Utilisateur` n'est pas filtrée : son
+cloisonnement repose entièrement sur `AffectationEtablissement`) et
+`UtilisateurService` cadré par affectation. Suivi dans l'issue **#61**.
 
 > C'est le test le plus important du sprint. Si ce filtrage est automatique,
 > aucun développeur ne peut l'oublier. S'il est manuel, quelqu'un l'oubliera.

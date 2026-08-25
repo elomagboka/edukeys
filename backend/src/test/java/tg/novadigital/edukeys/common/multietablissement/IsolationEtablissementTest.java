@@ -434,28 +434,28 @@ class IsolationEtablissementTest {
     // ------------------------------------------------------------------
 
     /**
-     * <b>Résultat majeur (non anticipé) :</b> {@link RemplisseurEtablissement}
-     * n'est câblé que sur {@code @PrePersist} (R4.1 à R4.5). Une entité déjà
-     * persistée (identifiant non nul) que Spring Data {@code save()} route
-     * vers {@code EntityManager.merge()} — jamais {@code persist()} — ne
-     * déclenche donc <strong>aucune</strong> de ces règles : ni refus, ni
-     * contrôle. Ce test le prouve à l'exécution plutôt que de le supposer,
-     * en modifiant réellement un champ de l'entité de B et en vérifiant, en
-     * base, si la modification est passée. Voir le compte rendu de la
-     * sous-tâche 11 : c'est une lacune réelle du dispositif R4.4, pas un
-     * défaut de ce test — remontée telle quelle, sans contournement ni
-     * modification du code de production.
+     * <b>R4.4 s'applique désormais aussi à la mise à jour</b>
+     * ({@code RemplisseurEtablissement.verifierAvantMiseAJour}, hook
+     * {@code @PreUpdate}). Une entité déjà persistée (identifiant non nul)
+     * que Spring Data {@code save()} route vers {@code EntityManager.merge()}
+     * — jamais {@code persist()} — passait auparavant sans aucun contrôle
+     * (T-05, sous-tâche 11, constat initial). Ce test exige désormais le
+     * refus, exactement comme C5 pour {@code persist()} : modifier un champ
+     * d'une entité de B depuis le contexte A doit lever
+     * {@link EcritureInterEtablissementRefuseeException}, et la ligne en base
+     * ne doit porter aucune trace de la modification tentée.
      */
     @Test
-    @DisplayName("C8 - modifier un champ d'une entite de B via save() depuis le contexte A (merge, hors R4.4)")
-    void c8_modificationDUneEntiteDeBDepuisLeContexteA() throws Exception {
+    @DisplayName("C8 - modifier un champ d'une entite de B via save() (merge) depuis le contexte A est refuse (R4.4)")
+    void c8_modificationDUneEntiteDeBDepuisLeContexteAEstRefusee() throws Exception {
         pourChaqueFabrique(fabrique -> {
             EntiteEtablissement entiteB = persisterDans(ETABLISSEMENT_B, fabrique);
             UUID id = entiteB.getId();
             entityManager.clear();
 
             String tableName = nomTable(fabrique.typeEntite());
-            String colonneMutee = null;
+            Field champMutable = premierChampStringDeclare(fabrique.typeEntite());
+            String colonneMutee = champMutable.getName();
 
             try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
                 // Chargement direct par identifiant (angle mort A1, cf. C3) : seul
@@ -467,30 +467,31 @@ class IsolationEtablissementTest {
                 assertThat(copie).isNotNull();
                 entityManager.detach(copie);
 
-                Field champMutable = premierChampStringDeclare(fabrique.typeEntite());
-                colonneMutee = champMutable.getName();
                 champMutable.setAccessible(true);
                 champMutable.set(copie, "MUTEE-DEPUIS-CONTEXTE-A");
 
                 BaseRepository<Object> repository = castGeneriqueObjet(repositoryPour(fabrique.typeEntite()));
-                repository.save(copie);
-                entityManager.flush();
+                // save() sur une entité déjà identifiée route vers merge(), qui ne
+                // déclenche le hook @PreUpdate qu'au flush (Hibernate diffère la
+                // synchronisation) : contrairement à C5, ce flush() est appelé
+                // directement sur l'EntityManager injecté, hors de la frontière
+                // @Transactional de SimpleJpaRepository.save() — l'exception levée
+                // par RemplisseurEtablissement remonte donc telle quelle, sans
+                // être enveloppée par la traduction d'exceptions de Spring Data.
+                assertThatThrownBy(() -> {
+                    repository.save(copie);
+                    entityManager.flush();
+                }).isInstanceOf(EcritureInterEtablissementRefuseeException.class);
             }
 
             entityManager.clear();
             Integer nombreDeLignesMutees = jdbcTemplate.queryForObject(
                     "select count(*) from " + tableName + " where id = ? and " + colonneMutee + " = ?",
                     Integer.class, id, "MUTEE-DEPUIS-CONTEXTE-A");
-
-            // Comportement réellement observé : aucune exception n'est levée
-            // (RemplisseurEtablissement ne voit jamais passer un merge), et la
-            // colonne métier modifiée est bien écrite en base malgré un contexte
-            // d'établissement différent de celui du propriétaire de la ligne.
             assertThat(nombreDeLignesMutees)
-                    .withFailMessage("Sous-tache 11 : le merge() depuis un autre contexte n'a plus modifie la ligne de B "
-                            + "- si RemplisseurEtablissement a gagne un hook @PreUpdate depuis, ce commentaire et le "
-                            + "compte rendu de la sous-tache 11 sont perimes et peuvent etre corriges.")
-                    .isEqualTo(1);
+                    .withFailMessage("La modification tentee depuis le contexte A ne doit laisser aucune trace "
+                            + "en base sur la ligne de B (R4.4).")
+                    .isZero();
         });
     }
 
@@ -506,7 +507,7 @@ class IsolationEtablissementTest {
             }
         }
         throw new IllegalStateException("Aucun champ String declare directement sur " + typeEntite
-                + " : adapter c8_modificationDUneEntiteDeBDepuisLeContexteA pour cette entite.");
+                + " : adapter c8_modificationDUneEntiteDeBDepuisLeContexteAEstRefusee pour cette entite.");
     }
 
     @SuppressWarnings("unchecked")

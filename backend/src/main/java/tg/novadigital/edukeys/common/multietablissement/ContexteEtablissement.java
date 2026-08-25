@@ -37,6 +37,20 @@ public final class ContexteEtablissement {
         entityManagerFactory = emf;
     }
 
+    /**
+     * Réservé aux tests du package (ex. {@code FuiteContexteEtablissementTest})
+     * qui substituent temporairement un {@code EntityManagerFactory} mock : ce
+     * champ est {@code static}, donc partagé par tout le run JVM, y compris
+     * entre classes de test qui réutilisent un contexte Spring mis en cache.
+     * Un test qui l'écrase doit pouvoir lire la valeur d'origine pour la
+     * restaurer dans son {@code @AfterEach} — la remettre inconditionnellement
+     * à {@code null} laisse un {@code IsolationEtablissementTest} exécuté
+     * ensuite dans le même run sans filtre Hibernate ré-armable, en silence.
+     */
+    static EntityManagerFactory entityManagerFactoryEnregistree() {
+        return entityManagerFactory;
+    }
+
     public static Optional<PerimetreEtablissement> courant() {
         return Optional.ofNullable(COURANT.get());
     }
