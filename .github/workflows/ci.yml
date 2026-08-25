@@ -52,6 +52,36 @@ jobs:
       - name: Vérifier que l'image se construit
         run: docker build -f backend/Dockerfile -t edukeys-api:ci .
 
+      # `docker build` seul ne prouve rien sur l'exécutabilité du jar : un
+      # jar non repackagé ("no main manifest attribute") ou compilé pour un
+      # bytecode que le JRE de l'image ne sait pas lire (UnsupportedClassVersionError)
+      # laisse le build vert et casse au premier déploiement réel. C'est
+      # exactement ce qui s'est produit ici, passé inaperçu pendant cinq
+      # tâches faute de ce garde-fou. Aucune base de données n'est démarrée
+      # dans ce job : le conteneur doit donc échouer, mais sur la connexion
+      # Postgres refusée, jamais avant.
+      - name: Vérifier que le conteneur démarre jusqu'à l'échec attendu de connexion base
+        run: |
+          set +e
+          docker run --rm --name edukeys-ci-check edukeys-api:ci > container.log 2>&1
+          set -e
+          echo "----- Journal du conteneur -----"
+          cat container.log
+
+          if grep -q "UnsupportedClassVersionError" container.log; then
+            echo "::error::Le jar a été compilé pour une version de Java incompatible avec le JRE de l'image d'exécution (backend/Dockerfile)."
+            exit 1
+          fi
+          if grep -q "no main manifest attribute" container.log; then
+            echo "::error::Le jar Docker n'est pas exécutable : spring-boot-maven-plugin n'est plus lié à la phase package (backend/pom.xml)."
+            exit 1
+          fi
+          if ! grep -q "Connection to.*refused" container.log; then
+            echo "::error::Le conteneur ne s'est pas arrêté sur l'échec attendu de connexion base (aucune base n'est disponible dans ce job) - le démarrage a échoué autrement, voir le journal ci-dessus."
+            exit 1
+          fi
+          echo "Conteneur démarré jusqu'à l'échec attendu de connexion base : jar exécutable, runtime Java correct."
+
       - name: Export du contrat OpenAPI
         working-directory: backend
         run: mvn -B -Pgenerate-openapi verify
