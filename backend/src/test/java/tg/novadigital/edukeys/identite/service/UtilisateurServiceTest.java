@@ -13,10 +13,17 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
+import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
+import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissementAbsentException;
 import tg.novadigital.edukeys.identite.domain.JetonRafraichissement;
 import tg.novadigital.edukeys.identite.domain.Utilisateur;
+import tg.novadigital.edukeys.identite.repository.AffectationEtablissementRepository;
 import tg.novadigital.edukeys.identite.repository.JetonRafraichissementRepository;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
 
@@ -24,14 +31,18 @@ class UtilisateurServiceTest {
 
     private UtilisateurRepository utilisateurRepository;
     private JetonRafraichissementRepository jetonRafraichissementRepository;
+    private AffectationEtablissementRepository affectationEtablissementRepository;
     private UtilisateurService utilisateurService;
 
     @BeforeEach
     void configurer() {
         utilisateurRepository = mock(UtilisateurRepository.class);
         jetonRafraichissementRepository = mock(JetonRafraichissementRepository.class);
-        utilisateurService = new UtilisateurService(utilisateurRepository, jetonRafraichissementRepository);
+        affectationEtablissementRepository = mock(AffectationEtablissementRepository.class);
+        utilisateurService = new UtilisateurService(
+                utilisateurRepository, jetonRafraichissementRepository, affectationEtablissementRepository);
     }
+
 
     @Test
     void leveUneExceptionRessourceIntrouvable_quandUtilisateurInexistant() {
@@ -60,5 +71,71 @@ class UtilisateurServiceTest {
         verify(jetonRafraichissementRepository).save(jeton1);
         verify(jetonRafraichissementRepository).save(jeton2);
         verify(utilisateurRepository).save(utilisateur);
+    }
+
+    // ------------------------------------------------------------------
+    // obtenirDansEtablissementCourant — T-05, sous-tâche 13
+    // ------------------------------------------------------------------
+
+    @Test
+    void obtenirDansEtablissementCourant_renvoieLeCompte_quandAffecteAEtablissementCourant() {
+        UUID etablissementId = UUID.randomUUID();
+        UUID utilisateurId = UUID.randomUUID();
+        Utilisateur utilisateur = new Utilisateur("marie@edukeys.tg", "hash", "Marie Dupont", false);
+        when(affectationEtablissementRepository
+                .existsByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId))
+                .thenReturn(true);
+        when(utilisateurRepository.findById(utilisateurId)).thenReturn(Optional.of(utilisateur));
+
+        try (var portee = ContexteEtablissement.ouvrir(etablissementId)) {
+            assertThat(utilisateurService.obtenirDansEtablissementCourant(utilisateurId)).isSameAs(utilisateur);
+        }
+    }
+
+    @Test
+    void obtenirDansEtablissementCourant_refuse_quandLeCompteAppartientAUnAutreEtablissement() {
+        UUID etablissementCourant = UUID.randomUUID();
+        UUID utilisateurId = UUID.randomUUID();
+        when(affectationEtablissementRepository
+                .existsByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementCourant))
+                .thenReturn(false);
+
+        try (var portee = ContexteEtablissement.ouvrir(etablissementCourant)) {
+            assertThatThrownBy(() -> utilisateurService.obtenirDansEtablissementCourant(utilisateurId))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
+    }
+
+    @Test
+    void obtenirDansEtablissementCourant_refuse_quandAucunContexteOuvert() {
+        UUID utilisateurId = UUID.randomUUID();
+
+        assertThatThrownBy(() -> utilisateurService.obtenirDansEtablissementCourant(utilisateurId))
+                .isInstanceOf(ContexteEtablissementAbsentException.class);
+    }
+
+    // ------------------------------------------------------------------
+    // listerParEtablissementCourant — T-05, sous-tâche 13
+    // ------------------------------------------------------------------
+
+    @Test
+    void listerParEtablissementCourant_delegueAuRepositoryAvecLEtablissementDuContexte() {
+        UUID etablissementId = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 20);
+        Utilisateur utilisateur = new Utilisateur("paul@edukeys.tg", "hash", "Paul Martin", false);
+        Page<Utilisateur> page = new PageImpl<>(List.of(utilisateur));
+        when(utilisateurRepository.findParEtablissementCourantActif(etablissementId, pageable)).thenReturn(page);
+
+        try (var portee = ContexteEtablissement.ouvrir(etablissementId)) {
+            assertThat(utilisateurService.listerParEtablissementCourant(pageable)).containsExactly(utilisateur);
+        }
+    }
+
+    @Test
+    void listerParEtablissementCourant_refuse_quandAucunContexteOuvert() {
+        Pageable pageable = PageRequest.of(0, 20);
+
+        assertThatThrownBy(() -> utilisateurService.listerParEtablissementCourant(pageable))
+                .isInstanceOf(ContexteEtablissementAbsentException.class);
     }
 }
