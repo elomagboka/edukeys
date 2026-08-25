@@ -495,6 +495,87 @@ class IsolationEtablissementTest {
         });
     }
 
+    // ------------------------------------------------------------------
+    // C9 — remplissage automatique (R4.1)
+    // ------------------------------------------------------------------
+
+    /**
+     * R4.1 n'était prouvée jusqu'ici qu'au niveau unitaire
+     * ({@code RemplisseurEtablissementTest}, appel direct de
+     * {@code remplir(...)} sur une entité de test) — jamais via un vrai cycle
+     * de persistance Hibernate contre PostgreSQL, contrairement à R4.4 (C5,
+     * C8). Chaque fabrique produit une entité transitoire dont
+     * {@code etablissementId} est {@code null}
+     * ({@link tg.novadigital.edukeys.testsupport.FabriqueDemoEntite}, par
+     * construction) : ce test la persiste réellement sous un contexte ouvert
+     * et vérifie, par lecture JDBC directe (donc hors du cache de premier
+     * niveau, comme C8), que la colonne {@code etablissement_id} porte bien
+     * la valeur du contexte — pas seulement que le champ Java en mémoire a
+     * été renseigné.
+     */
+    @Test
+    @DisplayName("C9 - persister une entite au champ etablissement nul remplit la colonne avec l'etablissement du contexte (R4.1)")
+    void c9_persisterAvecChampNulRemplitDepuisLeContexte() throws Exception {
+        pourChaqueFabrique(fabrique -> {
+            BaseRepository<EntiteEtablissement> repository = castGenerique(repositoryPour(fabrique.typeEntite()));
+            EntiteEtablissement transitoire = fabrique.creer(ETABLISSEMENT_A);
+            assertThat(transitoire.getEtablissementId())
+                    .withFailMessage("La fabrique de " + fabrique.typeEntite().getSimpleName()
+                            + " renseigne etablissementId elle-meme : ce test a besoin d'une entite transitoire "
+                            + "au champ nul pour exercer R4.1 (remplissage automatique), pas R4.3 (deja renseigne).")
+                    .isNull();
+
+            UUID id;
+            try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
+                EntiteEtablissement sauvee = repository.save(transitoire);
+                entityManager.flush();
+                assertThat(sauvee.getEtablissementId()).isEqualTo(ETABLISSEMENT_A);
+                id = sauvee.getId();
+            }
+
+            entityManager.clear();
+            String etablissementIdEnBase = jdbcTemplate.queryForObject(
+                    "select etablissement_id from " + nomTable(fabrique.typeEntite()) + " where id = ?",
+                    String.class, id);
+            assertThat(etablissementIdEnBase)
+                    .withFailMessage("La colonne etablissement_id doit porter l'etablissement du contexte ouvert "
+                            + "a la persistance (R4.1), pas une valeur nulle ou de secours.")
+                    .isEqualTo(ETABLISSEMENT_A.toString());
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // C10 — refus bruyant sans contexte (R4.2)
+    // ------------------------------------------------------------------
+
+    /**
+     * R4.2 refuse la persistance d'une entité au champ nul quand aucun
+     * contexte n'est ouvert — mais {@link GardeContexteEtablissement}
+     * (sous-tâche 8) intercepte déjà tout appel à une méthode
+     * {@code BaseRepository} sans contexte ouvert, {@code save()} compris :
+     * passer par le repository ne prouverait donc que la garde AOP (déjà
+     * couverte par C6), jamais R4.2 elle-même. Comme C3 pour l'angle mort A1,
+     * ce test appelle {@code EntityManager.persist(...)} directement,
+     * court-circuitant le repository et sa garde, pour prouver que
+     * {@code RemplisseurEtablissement} refuse lui aussi, en profondeur —
+     * indépendamment de la couche AOP.
+     */
+    @Test
+    @DisplayName("C10 - persister directement via EntityManager, sans contexte ouvert, est refuse (R4.2)")
+    void c10_persisterSansContexteOuvertEstRefuse() throws Exception {
+        pourChaqueFabrique(fabrique -> {
+            EntiteEtablissement transitoire = fabrique.creer(ETABLISSEMENT_A);
+            assertThat(ContexteEtablissement.courant()).isEmpty();
+
+            assertThatThrownBy(() -> {
+                entityManager.persist(transitoire);
+                entityManager.flush();
+            }).isInstanceOf(ContexteEtablissementAbsentException.class);
+
+            entityManager.clear();
+        });
+    }
+
     private String nomTable(Class<?> typeEntite) {
         jakarta.persistence.Table annotation = typeEntite.getAnnotation(jakarta.persistence.Table.class);
         return annotation != null ? annotation.name() : typeEntite.getSimpleName().toLowerCase();
