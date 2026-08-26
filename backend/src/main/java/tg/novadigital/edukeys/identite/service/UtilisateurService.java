@@ -15,6 +15,7 @@ import tg.novadigital.edukeys.identite.domain.Utilisateur;
 import tg.novadigital.edukeys.identite.repository.AffectationEtablissementRepository;
 import tg.novadigital.edukeys.identite.repository.JetonRafraichissementRepository;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
+import tg.novadigital.edukeys.identite.security.UtilisateurPrincipal;
 
 /**
  * Gestion du cycle de vie du compte utilisateur. La désactivation d'un compte
@@ -39,18 +40,21 @@ public class UtilisateurService {
     }
 
     /**
-     * <b>Non cadré par établissement — usage restreint à l'auto-lecture.</b>
-     * {@link Utilisateur} n'étend pas {@code EntiteEtablissement} (ADR-0002) :
-     * aucun filtre Hibernate ne borne cette lecture, et cette méthode ne
-     * vérifie elle-même aucune appartenance. Elle n'est légitime que quand
-     * l'identifiant recherché est celui de l'appelant authentifié lui-même
-     * (voir {@code UtilisateurController#moi}, seul appelant à ce jour) —
-     * jamais avec un identifiant fourni par un tiers ou lu dans un chemin
-     * d'URL. Pour un accès administratif à un compte précis, borné à
-     * l'établissement courant, voir {@link #obtenirDansEtablissementCourant(UUID)}.
+     * <b>Le seul compte que cette méthode peut jamais retourner est celui de
+     * l'appelant authentifié lui-même.</b> {@link Utilisateur} n'étend pas
+     * {@code EntiteEtablissement} (ADR-0002) : aucun filtre Hibernate ne borne
+     * la lecture d'un compte par identifiant. Plutôt que de documenter une
+     * restriction d'usage sur une méthode qui accepterait n'importe quel
+     * {@code UUID} (piège : un futur {@code GET /utilisateurs/{id}} appellerait
+     * naturellement une méthode nommée {@code obtenir(id)} et exposerait tous
+     * les comptes de la plateforme), la signature elle-même ne permet plus de
+     * demander un autre compte que le sien — l'identifiant recherché est lu
+     * directement sur le principal, jamais reçu en paramètre. Pour un accès
+     * administratif à un compte précis, borné à l'établissement courant, voir
+     * {@link #obtenirDansEtablissementCourant(UUID)}.
      */
-    public Utilisateur obtenir(UUID utilisateurId) {
-        return utilisateurRepository.findById(utilisateurId)
+    public Utilisateur obtenirSoiMeme(UtilisateurPrincipal principal) {
+        return utilisateurRepository.findById(principal.utilisateurId())
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
     }
 
