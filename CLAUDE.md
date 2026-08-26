@@ -125,7 +125,7 @@ une migration destructive.
 ```bash
 mvn -q test                    # tests unitaires
 mvn -q verify                  # + tests d'intégration
-mvn spring-boot:run            # démarrage local
+mvn spring-boot:run -Dspring-boot.run.profiles=local   # démarrage local (aucun profil par défaut, cf. VerificateurProfilActif)
 mvn flyway:migrate             # migrations
 ```
 
