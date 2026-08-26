@@ -57,10 +57,17 @@ jobs:
       # bytecode que le JRE de l'image ne sait pas lire (UnsupportedClassVersionError)
       # laisse le build vert et casse au premier déploiement réel. C'est
       # exactement ce qui s'est produit ici, passé inaperçu pendant cinq
-      # tâches faute de ce garde-fou. Aucune base de données n'est démarrée
-      # dans ce job : le conteneur doit donc échouer, mais sur la connexion
-      # Postgres refusée, jamais avant.
-      - name: Vérifier que le conteneur démarre jusqu'à l'échec attendu de connexion base
+      # tâches faute de ce garde-fou.
+      #
+      # On vérifie seulement que Spring Boot a réellement commencé à démarrer
+      # (bannière + "Starting EdukeysApplication") et l'absence des deux
+      # erreurs ci-dessus - pas un mode d'échec précis. Aucune base de données
+      # ni SPRING_PROFILES_ACTIVE ne sont fournis à ce conteneur : il est
+      # normal, et même souhaité (VerificateurProfilActif), qu'il échoue peu
+      # après avoir démarré. Un couplage plus fin (exiger l'échec de connexion
+      # base) serait fragile au premier changement de configuration qui fait
+      # échouer le démarrage plus tôt pour une tout autre raison légitime.
+      - name: Vérifier que le conteneur démarre jusqu'à un échec normal (pas un jar cassé)
         run: |
           set +e
           docker run --rm --name edukeys-ci-check edukeys-api:ci > container.log 2>&1
@@ -76,11 +83,11 @@ jobs:
             echo "::error::Le jar Docker n'est pas exécutable : spring-boot-maven-plugin n'est plus lié à la phase package (backend/pom.xml)."
             exit 1
           fi
-          if ! grep -q "Connection to.*refused" container.log; then
-            echo "::error::Le conteneur ne s'est pas arrêté sur l'échec attendu de connexion base (aucune base n'est disponible dans ce job) - le démarrage a échoué autrement, voir le journal ci-dessus."
+          if ! grep -q "Starting EdukeysApplication" container.log; then
+            echo "::error::Spring Boot n'a jamais commencé à démarrer (pas de \"Starting EdukeysApplication\" dans le journal) - le jar ou le runtime Java sont probablement cassés, voir le journal ci-dessus."
             exit 1
           fi
-          echo "Conteneur démarré jusqu'à l'échec attendu de connexion base : jar exécutable, runtime Java correct."
+          echo "Conteneur démarré jusqu'à un échec normal (pas de profil ni de base fournis à ce job) : jar exécutable, runtime Java correct."
 
       - name: Export du contrat OpenAPI
         working-directory: backend
