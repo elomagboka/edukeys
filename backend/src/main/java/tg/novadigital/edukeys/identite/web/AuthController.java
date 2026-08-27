@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -39,6 +40,7 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Identifiants invalides")
             })
     @PostMapping("/login")
+    @SecurityRequirements
     public JetonsReponseDto login(@Valid @RequestBody LoginRequestDto requete, HttpServletRequest request) {
         return authService.connecter(requete.email(), requete.motDePasse(), request.getRemoteAddr());
     }
@@ -49,6 +51,7 @@ public class AuthController {
                     @ApiResponse(responseCode = "401", description = "Jeton de rafraîchissement invalide, expiré ou révoqué")
             })
     @PostMapping("/refresh")
+    @SecurityRequirements
     public JetonsReponseDto refresh(@Valid @RequestBody RefreshRequestDto requete) {
         return authService.rafraichir(requete.refreshToken());
     }

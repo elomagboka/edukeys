@@ -4,6 +4,8 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -34,6 +36,7 @@ import tg.novadigital.edukeys.common.domain.BaseEntity;
  */
 @Entity
 @Table(name = "affectations_etablissement")
+@Audited
 public class AffectationEtablissement extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)

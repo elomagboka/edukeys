@@ -34,6 +34,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.metamodel.EntityType;
+import tg.novadigital.edukeys.common.audit.RevisionAuteur;
 import tg.novadigital.edukeys.common.domain.EntiteEtablissement;
 import tg.novadigital.edukeys.common.repository.BaseRepository;
 import tg.novadigital.edukeys.etablissement.domain.Etablissement;
@@ -79,9 +80,18 @@ class IsolationEtablissementTest {
      * T-05 ») : lues pendant le login, avant tout contexte. Toute autre
      * entité du metamodel qui n'étend pas {@code EntiteEtablissement} fait
      * échouer D1.
+     *
+     * <p>{@link RevisionAuteur} (T-06) s'y ajoute pour une raison différente :
+     * ce n'est pas une entité métier mais la table technique des révisions
+     * Envers (auteur, horodatage), commune à tous les établissements par
+     * construction — une révision n'appartient à aucun établissement, elle
+     * décrit qui a écrit quoi et quand. {@link tg.novadigital.edukeys.common.audit.HistoriqueService}
+     * porte son propre garde-fou multi-établissement, vérifié par
+     * {@code DemoEntiteControllerIntegrationTest.refuseLHistorique_...}.</p>
      */
     private static final Set<Class<?>> HORS_PERIMETRE = Set.of(
-            Etablissement.class, Utilisateur.class, AffectationEtablissement.class, JetonRafraichissement.class);
+            Etablissement.class, Utilisateur.class, AffectationEtablissement.class, JetonRafraichissement.class,
+            RevisionAuteur.class);
 
     @Autowired
     private ApplicationContext applicationContext;

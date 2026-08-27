@@ -1,5 +1,7 @@
 package tg.novadigital.edukeys.common.demo.domain;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -18,6 +20,7 @@ import tg.novadigital.edukeys.common.domain.EntiteEtablissement;
  */
 @Entity
 @Table(name = "demo_entites")
+@Audited
 public class DemoEntite extends EntiteEtablissement {
 
     @Column(nullable = false)
