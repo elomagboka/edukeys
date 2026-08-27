@@ -52,6 +52,43 @@ jobs:
       - name: Vérifier que l'image se construit
         run: docker build -f backend/Dockerfile -t edukeys-api:ci .
 
+      # `docker build` seul ne prouve rien sur l'exécutabilité du jar : un
+      # jar non repackagé ("no main manifest attribute") ou compilé pour un
+      # bytecode que le JRE de l'image ne sait pas lire (UnsupportedClassVersionError)
+      # laisse le build vert et casse au premier déploiement réel. C'est
+      # exactement ce qui s'est produit ici, passé inaperçu pendant cinq
+      # tâches faute de ce garde-fou.
+      #
+      # On vérifie seulement que Spring Boot a réellement commencé à démarrer
+      # (bannière + "Starting EdukeysApplication") et l'absence des deux
+      # erreurs ci-dessus - pas un mode d'échec précis. Aucune base de données
+      # ni SPRING_PROFILES_ACTIVE ne sont fournis à ce conteneur : il est
+      # normal, et même souhaité (VerificateurProfilActif), qu'il échoue peu
+      # après avoir démarré. Un couplage plus fin (exiger l'échec de connexion
+      # base) serait fragile au premier changement de configuration qui fait
+      # échouer le démarrage plus tôt pour une tout autre raison légitime.
+      - name: Vérifier que le conteneur démarre jusqu'à un échec normal (pas un jar cassé)
+        run: |
+          set +e
+          docker run --rm --name edukeys-ci-check edukeys-api:ci > container.log 2>&1
+          set -e
+          echo "----- Journal du conteneur -----"
+          cat container.log
+
+          if grep -q "UnsupportedClassVersionError" container.log; then
+            echo "::error::Le jar a été compilé pour une version de Java incompatible avec le JRE de l'image d'exécution (backend/Dockerfile)."
+            exit 1
+          fi
+          if grep -q "no main manifest attribute" container.log; then
+            echo "::error::Le jar Docker n'est pas exécutable : spring-boot-maven-plugin n'est plus lié à la phase package (backend/pom.xml)."
+            exit 1
+          fi
+          if ! grep -q "Starting EdukeysApplication" container.log; then
+            echo "::error::Spring Boot n'a jamais commencé à démarrer (pas de \"Starting EdukeysApplication\" dans le journal) - le jar ou le runtime Java sont probablement cassés, voir le journal ci-dessus."
+            exit 1
+          fi
+          echo "Conteneur démarré jusqu'à un échec normal (pas de profil ni de base fournis à ce job) : jar exécutable, runtime Java correct."
+
       - name: Export du contrat OpenAPI
         working-directory: backend
         run: mvn -B -Pgenerate-openapi verify

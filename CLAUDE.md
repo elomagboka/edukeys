@@ -11,7 +11,7 @@ scolaire » dans du texte visible par l'utilisateur.
 
 ## Stack
 
-- **Backend** : Java 21 + Spring Boot 3.5.x, Maven, Spring Data JPA, Spring Security (JWT), MapStruct, SpringDoc OpenAPI
+- **Backend** : Java 21 + Spring Boot 3.5.x, Maven, Spring Data JPA, Spring Security (JWT), MapStruct, SpringDoc OpenAPI. Java 21. Ne pas modifier sans décision explicite — le passage non tracé à Java 25 a rendu ArchUnit silencieusement inopérant.
 - **BDD** : PostgreSQL 18 — Docker en local, PostgreSQL managé Render en recette et production. Migrations Flyway.
 - **Hébergement** : Render, région Frankfurt. Voir `docs/adr/0007-hebergement-render.md`.
 - **Frontend** : React 19 + **TypeScript strict**, Vite, TanStack Query, Ant Design — voir `frontend/CLAUDE.md` et `docs/adr/0001-stack-frontend.md`

@@ -9,3 +9,11 @@ frontend/dist/
 docs/
 scripts/
 **/*.md
+
+# Config de développement gitignorée (identifiants locaux) : Docker ne lit
+# pas .gitignore, donc sans cette ligne un fichier présent sur le poste du
+# développeur qui construit l'image (mais jamais committé) serait copié tel
+# quel dans le contexte de build puis dans le jar — précédent : ce fichier
+# contenait déjà l'URL localhost:5432 par défaut lors d'une vérification
+# manuelle, avant même de parler d'un vrai identifiant de base de données.
+**/application-local.yml
