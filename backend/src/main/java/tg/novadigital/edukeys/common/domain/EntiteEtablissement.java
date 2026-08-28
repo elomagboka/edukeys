@@ -3,6 +3,7 @@ package tg.novadigital.edukeys.common.domain;
 import java.util.UUID;
 
 import org.hibernate.annotations.Filter;
+import org.hibernate.envers.Audited;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -34,6 +35,7 @@ import jakarta.persistence.MappedSuperclass;
 @MappedSuperclass
 @Filter(name = "filtreEtablissement", condition = "etablissement_id = :etablissementId")
 @EntityListeners(RemplisseurEtablissement.class)
+@Audited
 public abstract class EntiteEtablissement extends BaseEntity {
 
     @Column(name = "etablissement_id", nullable = false, updatable = false)

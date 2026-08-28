@@ -42,6 +42,27 @@ ALTER TABLE demo_entites ADD COLUMN IF NOT EXISTS etablissement_id UUID;
 -- db/migration pour une table de démonstration (CLAUDE.md).
 ALTER TABLE demo_entites ALTER COLUMN etablissement_id SET NOT NULL;
 
+-- Historique Envers (T-06) : demo_entites n'existant qu'en local/test, sa
+-- table _aud vit ici, jamais dans db/migration (CLAUDE.md). Référence la
+-- table revisions posée par V5__audit_envers.sql, appliquée dans tous les
+-- environnements.
+CREATE TABLE IF NOT EXISTS demo_entites_aud (
+    id                  UUID    NOT NULL,
+    rev                 BIGINT  NOT NULL REFERENCES revisions (rev),
+    revtype             SMALLINT NOT NULL,
+    libelle             VARCHAR(255),
+    categorie           VARCHAR(100),
+    quantite            INTEGER,
+    etablissement_id    UUID,
+    actif               BOOLEAN,
+    date_desactivation  TIMESTAMPTZ,
+    date_creation       TIMESTAMPTZ,
+    date_modification   TIMESTAMPTZ,
+    cree_par            VARCHAR(255),
+    modifie_par         VARCHAR(255),
+    PRIMARY KEY (id, rev)
+);
+
 -- Données de démonstration, réparties sur les deux établissements
 -- (docs/adr/0002-multi-etablissement.md / T-08) : ids fixes, upsert par
 -- ON CONFLICT ... DO UPDATE — ce fichier reste la source de vérité, une

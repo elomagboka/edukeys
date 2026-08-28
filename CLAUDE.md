@@ -58,16 +58,13 @@ Chaque module suit la même arborescence interne :
    partiels** (`WHERE actif = true`), sinon une adresse email libérée reste
    bloquée à jamais.
    Les repositories métier étendent `BaseRepository<T, ID>` (`@NoRepositoryBean`,
-   dérivée de `Repository`), **jamais `JpaRepository`** : cette dernière expose
-   `delete`, `deleteAll` et `deleteById`, ce qui rendrait la règle
-   contournable. **Ni `JpaSpecificationExecutor`**, qui expose
-   `delete(Specification)` — une suppression en masse traduite directement en
-   DELETE SQL, sans synchroniser le contexte de persistance : elle
-   court-circuite donc l'audit Envers et le filtre multi-établissement. Les
-   méthodes par spécification (`findOne`, `findAll`, `count`, `exists`) sont
-   redéclarées à la main dans `BaseRepository`, en lecture seule. En Java une
-   méthode héritée ne se retire pas — la seule issue est de ne pas hériter.
-   Les tests se nettoient par rollback transactionnel
+   dérivée de `Repository`), **jamais `JpaRepository`** (expose `delete*`) **ni
+   `JpaSpecificationExecutor`** (expose `delete(Specification)`, une
+   suppression en masse qui court-circuite l'audit Envers et le filtre
+   multi-établissement). Les méthodes par spécification (`findOne`, `findAll`,
+   `count`, `exists`) sont redéclarées à la main dans `BaseRepository`, en
+   lecture seule — une méthode héritée ne se retire pas en Java, la seule issue
+   est de ne pas hériter. Tests nettoyés par rollback transactionnel
    (`@Transactional` + MockMvc), pas par suppression.
 5. **Tout endpoint accessible sans authentification est limité en débit** —
    `/auth/login`, `/auth/refresh`, réinitialisation de mot de passe,
@@ -75,19 +72,16 @@ Chaque module suit la même arborescence interne :
    de mots de passe par minute. Limitation par compte **et** par IP, avec
    attente croissante plutôt que verrouillage définitif (un verrouillage dur
    permet de bloquer volontairement le compte d'un directeur).
-6. **Historisation** : les entités marquées `@Audited` (Hibernate Envers) — US-07, 10, 11, 13, 18, 19 l'exigent.
+6. **Historisation** : `@Audited` (Hibernate Envers) sur chaque entité concrète — ne se propage pas depuis `BaseEntity`, `VerificateurAuditEnvers` fait échouer le démarrage sinon.
 7. **Les entités JPA ne sortent jamais des controllers.** Toujours un DTO + mapper MapStruct.
 8. **Toute règle métier est dans le service, jamais dans le controller ni le repository.**
 9. **Sites et annexes** : `site_id` organise l'intérieur d'un établissement
    (classes, salles, inscriptions, séances, caisses). Ce n'est **pas** un
    second niveau de sécurité : il n'entre jamais dans le filtre Hibernate, et
    la direction voit tous ses sites. Voir `docs/adr/0005-sites-et-annexes.md`.
-10. **Deux latences à distinguer.** Navigateur → serveur : ~100 ms (Togo →
-   Frankfurt) — chaque appel d'API supplémentaire se voit, donc un écran =
-   idéalement un appel, sans cascade. Application → base : < 1 ms, mais une
-   liste de 40 élèves qui déclenche 41 requêtes (relation `LAZY` parcourue en
-   boucle) s'effondre dès que trente utilisateurs sont simultanés. Les deux
-   sont **bloquants** en revue, pas des optimisations pour plus tard.
+10. **Deux latences à distinguer**, toutes deux **bloquantes en revue** : navigateur → serveur ~100 ms (Togo →
+   Frankfurt, un écran = idéalement un appel, sans cascade) ; application → base < 1 ms mais un N+1
+   (relation `LAZY` en boucle) s'effondre dès trente utilisateurs simultanés.
 11. **Tout endpoint de données métier est gardé par une permission explicite** `(hasAuthority)`, 
    jamais par `isAuthenticated()` ni par le défaut `anyRequest().authenticated()`.
    `SUPER_ADMIN` ne porte aucune permission métier (ADR-0002): c'est cette absence qui l'exclut et
@@ -103,6 +97,11 @@ Chaque module suit la même arborescence interne :
 - **Migrations Flyway rétrocompatibles** : jamais de suppression de colonne
   dans la même version que le code qui cesse de l'utiliser. Voir
   `docs/adr/0004-cicd-deploiement.md`.
+- **OpenAPI (T-07)** : `@Tag` par contrôleur, `@Operation` + `responses` par
+  endpoint ; un endpoint public annule le JWT par défaut avec
+  `@SecurityRequirements` vide (voir `AuthController`). Swagger UI : profil
+  `local` seulement ; `/v3/api-docs` reste ouvert en `test` pour
+  `OpenApiExportTest`, qui écrit `target/openapi.json` au build.
 
 ## Environnement de développement
 

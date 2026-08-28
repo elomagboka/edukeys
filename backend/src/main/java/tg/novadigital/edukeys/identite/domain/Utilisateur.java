@@ -3,6 +3,8 @@ package tg.novadigital.edukeys.identite.domain;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -17,6 +19,7 @@ import tg.novadigital.edukeys.common.domain.BaseEntity;
  */
 @Entity
 @Table(name = "utilisateurs")
+@Audited
 public class Utilisateur extends BaseEntity {
 
     @Column(nullable = false, unique = false)

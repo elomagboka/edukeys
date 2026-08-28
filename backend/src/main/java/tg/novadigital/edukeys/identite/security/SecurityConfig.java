@@ -77,9 +77,17 @@ public class SecurityConfig {
                     if (environment.acceptsProfiles(Profiles.of("local", "test"))) {
                         authorize.requestMatchers("/internal/**").permitAll();
                     }
-                    authorize
-                            .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                            .anyRequest().authenticated();
+                    // Swagger UI (T-07) : accessible en local seulement, jamais en
+                    // recette ni en production (docs/SPRINT-0.md, T-07). Le JSON
+                    // /v3/api-docs reste ouvert en profil test : c'est lui
+                    // qu'OpenApiExportTest lit pour générer openapi.json au build,
+                    // fichier qui alimente npm run api:generate côté frontend (T-11).
+                    if (environment.acceptsProfiles(Profiles.of("local"))) {
+                        authorize.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll();
+                    } else if (environment.acceptsProfiles(Profiles.of("test"))) {
+                        authorize.requestMatchers("/v3/api-docs/**").permitAll();
+                    }
+                    authorize.anyRequest().authenticated();
                 })
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService, permissionResolver), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(new ContexteEtablissementFilter(), JwtAuthenticationFilter.class);

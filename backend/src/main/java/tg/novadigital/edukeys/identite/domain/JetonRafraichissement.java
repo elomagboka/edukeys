@@ -3,6 +3,8 @@ package tg.novadigital.edukeys.identite.domain;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.hibernate.envers.Audited;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,6 +31,7 @@ import tg.novadigital.edukeys.common.domain.BaseEntity;
  */
 @Entity
 @Table(name = "jetons_rafraichissement")
+@Audited
 public class JetonRafraichissement extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
