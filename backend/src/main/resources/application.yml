@@ -14,6 +14,13 @@ server:
 spring:
   application:
     name: edukeys-backend
+  servlet:
+    multipart:
+      # US-00 : logo d'établissement plafonné à 1 Mo (LogoEtablissementService).
+      # Sans cette borne côté Tomcat, un dépassement renvoie une 500 brute
+      # avant même d'atteindre le contrôleur.
+      max-file-size: 1MB
+      max-request-size: 2MB
   # Aucun profil par défaut : SPRING_PROFILES_ACTIVE doit être défini
   # explicitement dans chaque environnement (VerificateurProfilActif fait
   # échouer le démarrage sinon). Un défaut implicite sur "local" a fait

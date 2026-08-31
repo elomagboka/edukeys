@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -110,6 +111,27 @@ class IsolationEtablissementTest {
 
     @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    /**
+     * Depuis {@code Site} (US-00, T-10), une entité {@code EntiteEtablissement}
+     * porte une vraie FK vers {@code etablissements} (contrairement à
+     * {@code DemoEntite}) : les deux établissements de test fabriqués par
+     * {@link FabriquesEntitesTest} doivent donc exister réellement en base,
+     * sans quoi toute fabrique adossée à une FK violerait la contrainte dès
+     * {@code persisterDans(...)}. Idempotent ({@code ON CONFLICT DO NOTHING})
+     * pour s'exécuter avant chaque test sans dépendre de l'ordre.
+     */
+    @BeforeEach
+    void creerLesEtablissementsDeTestSiAbsents() {
+        jdbcTemplate.update(
+                "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now()) on conflict (id) do nothing",
+                ETABLISSEMENT_A, "ISO-A-" + ETABLISSEMENT_A, "Établissement isolation A", "iso.a." + ETABLISSEMENT_A + "@edukeys.tg");
+        jdbcTemplate.update(
+                "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now()) on conflict (id) do nothing",
+                ETABLISSEMENT_B, "ISO-B-" + ETABLISSEMENT_B, "Établissement isolation B", "iso.b." + ETABLISSEMENT_B + "@edukeys.tg");
+    }
 
     @AfterEach
     void refermerContexteResiduel() {
@@ -420,7 +442,7 @@ class IsolationEtablissementTest {
                 .andExpect(status().isOk());
 
         // SUPER_ADMIN, même après bascule sur A (le même etablissementId), ne
-        // porte aucune permission métier (RoleCode.SUPER_ADMIN : ETABLISSEMENT_GERER
+        // porte aucune permission métier (RoleCode.SUPER_ADMIN : ETABLISSEMENT_CREER
         // et UTILISATEUR_GERER_PLATEFORME uniquement, deux permissions de
         // plateforme) : @PreAuthorize refuse avant même d'atteindre le repository.
         appellerEndpointGardeParPermission(ETABLISSEMENT_A, RoleCode.SUPER_ADMIN)
@@ -465,7 +487,7 @@ class IsolationEtablissementTest {
 
             String tableName = nomTable(fabrique.typeEntite());
             Field champMutable = premierChampStringDeclare(fabrique.typeEntite());
-            String colonneMutee = champMutable.getName();
+            String colonneMutee = nomColonne(champMutable);
 
             try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
                 // Chargement direct par identifiant (angle mort A1, cf. C3) : seul
@@ -589,6 +611,21 @@ class IsolationEtablissementTest {
     private String nomTable(Class<?> typeEntite) {
         jakarta.persistence.Table annotation = typeEntite.getAnnotation(jakarta.persistence.Table.class);
         return annotation != null ? annotation.name() : typeEntite.getSimpleName().toLowerCase();
+    }
+
+    /**
+     * Nom de colonne réel d'un champ (US-00, T-10) : {@code @Column(name = ...)}
+     * quand présent — {@code LogoEtablissement.nomFichier} est mappé sur
+     * {@code nom_fichier}, pas sur le nom du champ Java — sinon le nom du
+     * champ lui-même (cas jusqu'ici constant, {@code DemoEntite.libelle},
+     * {@code Site.code}).
+     */
+    private static String nomColonne(Field champ) {
+        jakarta.persistence.Column annotation = champ.getAnnotation(jakarta.persistence.Column.class);
+        if (annotation != null && !annotation.name().isBlank()) {
+            return annotation.name();
+        }
+        return champ.getName();
     }
 
     private static Field premierChampStringDeclare(Class<?> typeEntite) {

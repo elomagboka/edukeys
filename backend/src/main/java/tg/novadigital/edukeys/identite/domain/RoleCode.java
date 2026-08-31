@@ -6,6 +6,7 @@ import java.util.Set;
 import static tg.novadigital.edukeys.identite.domain.Permission.BULLETIN_CONSULTER;
 import static tg.novadigital.edukeys.identite.domain.Permission.DEVOIR_CREER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ENFANT_CONSULTER;
+import static tg.novadigital.edukeys.identite.domain.Permission.ETABLISSEMENT_CREER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ETABLISSEMENT_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.NOTE_SAISIR;
 import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_GERER;
@@ -25,7 +26,14 @@ public enum RoleCode {
     // celle d'ADMIN sur SON établissement, alors que SUPER_ADMIN n'accède
     // jamais aux données d'un établissement (ADR-0002 §5). La confusion des
     // deux a causé une fuite inter-établissement (relecture T-04, repasse 2).
-    SUPER_ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER_PLATEFORME),
+    // SUPER_ADMIN ne porte plus ETABLISSEMENT_GERER non plus (durcissement
+    // T-10, 2e revue) : cette permission garde aussi SiteController et
+    // LogoController, l'organisation métier interne d'un établissement
+    // (ADR-0005) — SUPER_ADMIN n'agit que sur l'existence des établissements
+    // (ETABLISSEMENT_CREER) et les comptes de plateforme
+    // (UTILISATEUR_GERER_PLATEFORME), jamais sur les sites ou le logo d'un
+    // établissement client.
+    SUPER_ADMIN(ETABLISSEMENT_CREER, UTILISATEUR_GERER_PLATEFORME),
     ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER),
     DIRECTION(),
     GESTIONNAIRE(),

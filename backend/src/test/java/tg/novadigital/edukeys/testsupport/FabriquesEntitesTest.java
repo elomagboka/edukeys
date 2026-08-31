@@ -31,6 +31,8 @@ public final class FabriquesEntitesTest {
 
     static {
         FABRIQUES.add(new FabriqueDemoEntite());
+        FABRIQUES.add(new FabriqueSite());
+        FABRIQUES.add(new FabriqueLogoEtablissement());
     }
 
     private FabriquesEntitesTest() {

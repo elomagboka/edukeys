@@ -18,7 +18,7 @@ import tg.novadigital.edukeys.common.demo.repository.DemoEntiteRepository;
  * permission explicite ») : ce contrôleur en simule un, gardé par
  * {@code @PreAuthorize(hasAuthority(...))} sur une permission métier
  * ordinaire ({@code NOTE_SAISIR}), qu'aucun {@code SUPER_ADMIN} ne porte
- * (ADR-0002 §5 ; RoleCode.SUPER_ADMIN ne porte que ETABLISSEMENT_GERER et
+ * (ADR-0002 §5 ; RoleCode.SUPER_ADMIN ne porte que ETABLISSEMENT_CREER et
  * UTILISATEUR_GERER_PLATEFORME, deux permissions de plateforme, jamais une
  * permission métier).</p>
  */
