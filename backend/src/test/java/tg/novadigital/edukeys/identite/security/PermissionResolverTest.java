@@ -38,13 +38,17 @@ class PermissionResolverTest {
     void neDedoublonnePasAPerte_quandUnePermissionEstPartageeParDeuxRoles() {
         Set<String> permissions = resolver.resoudrePermissions(Set.of("ADMIN", "SUPER_ADMIN"));
 
-        // ETABLISSEMENT_GERER est partagée par les deux rôles (dédoublonnage à
-        // vérifier) ; UTILISATEUR_GERER (ADMIN, borné à son établissement) et
-        // UTILISATEUR_GERER_PLATEFORME (SUPER_ADMIN, tous établissements) sont
-        // délibérément distinctes depuis la relecture T-04 qui a montré qu'une
-        // permission partagée entre les deux rôles fuitait entre établissements.
+        // ETABLISSEMENT_GERER (ADMIN seul depuis le durcissement T-10, 2e
+        // revue — SUPER_ADMIN ne la porte plus) et ETABLISSEMENT_CREER
+        // (SUPER_ADMIN seul) doivent toutes deux apparaître dans l'union :
+        // une union mal calculée (ex. seul le premier rôle résolu) en
+        // perdrait une. UTILISATEUR_GERER (ADMIN, borné à son établissement)
+        // et UTILISATEUR_GERER_PLATEFORME (SUPER_ADMIN, tous établissements)
+        // restent délibérément distinctes depuis la relecture T-04 qui a
+        // montré qu'une permission partagée entre les deux rôles fuitait
+        // entre établissements.
         assertThat(permissions).containsExactlyInAnyOrder(
-                "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME");
+                "ETABLISSEMENT_CREER", "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME");
     }
 
     @Test
@@ -75,20 +79,24 @@ class PermissionResolverTest {
      */
     @Test
     void neDonneJamaisDePermissionMetierASuperAdmin_ceQuiEstLaSeuleGarantieDeLADR0002TantQueLeFiltreHibernateNexistePas() {
-        // ETABLISSEMENT_GERER et UTILISATEUR_GERER_PLATEFORME ne sont pas des
+        // ETABLISSEMENT_CREER et UTILISATEUR_GERER_PLATEFORME ne sont pas des
         // permissions métier : elles portent l'administration de la
         // plateforme elle-même (créer un établissement, gérer les comptes de
         // tous les établissements), qui est précisément la mission de
         // SUPER_ADMIN selon ADR-0002. La règle CLAUDE.md 11 (« aucune
         // permission métier ») vise les permissions sur les données d'un
-        // établissement — notes, élèves, finances — pas ces deux-là. D'où leur
+        // établissement — notes, élèves, finances — pas celles-là. D'où leur
         // exclusion explicite ci-dessous plutôt qu'un ensemble vide.
-        // UTILISATEUR_GERER (sans le suffixe) n'est PAS ici : c'est la
-        // permission d'ADMIN, bornée à son propre établissement — SUPER_ADMIN
-        // ne la porte plus depuis que les deux ont été distinguées (relecture
-        // T-04, repasse n°2 : les confondre laissait ADMIN lire les comptes de
-        // tous les établissements).
-        Set<String> permissionsDePlateforme = Set.of("ETABLISSEMENT_GERER", "UTILISATEUR_GERER_PLATEFORME");
+        // ETABLISSEMENT_GERER n'est PLUS ici (durcissement T-10, 2e revue) :
+        // elle garde aussi SiteController et LogoController, l'organisation
+        // métier interne d'un établissement (ADR-0005), que SUPER_ADMIN ne
+        // doit jamais pouvoir modifier pour un établissement client.
+        // UTILISATEUR_GERER (sans le suffixe) n'est PAS ici non plus : c'est
+        // la permission d'ADMIN, bornée à son propre établissement —
+        // SUPER_ADMIN ne la porte plus depuis que les deux ont été
+        // distinguées (relecture T-04, repasse n°2 : les confondre laissait
+        // ADMIN lire les comptes de tous les établissements).
+        Set<String> permissionsDePlateforme = Set.of("ETABLISSEMENT_CREER", "UTILISATEUR_GERER_PLATEFORME");
         Set<String> toutesLesPermissionsConnues = Arrays.stream(Permission.values())
                 .map(Enum::name)
                 .collect(Collectors.toSet());

@@ -11,6 +11,8 @@ package tg.novadigital.edukeys.identite.domain;
  * spec T-04 voulait éviter.
  */
 public enum Permission {
+    /** Création, désactivation et réactivation d'un établissement (US-00) : réservée à SUPER_ADMIN, jamais ADMIN — ADMIN gère SON établissement déjà créé, pas la plateforme. */
+    ETABLISSEMENT_CREER("Créer un établissement"),
     ETABLISSEMENT_GERER("Gérer un établissement"),
     UTILISATEUR_GERER("Gérer les utilisateurs de son établissement"),
     /**

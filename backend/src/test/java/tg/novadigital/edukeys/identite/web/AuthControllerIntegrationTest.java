@@ -192,13 +192,13 @@ class AuthControllerIntegrationTest {
         // "etablissements" (fk_affectation_etablissement) — il ne suffit plus
         // d'un UUID arbitraire.
         jdbcTemplate.update(
-                "insert into etablissements (id, code, nom, actif, date_creation, date_modification) "
-                        + "values (?, ?, ?, true, now(), now())",
-                etablissementA, "TST-A-" + etablissementA, "Établissement test A");
+                "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
+                etablissementA, "TST-A-" + etablissementA, "Établissement test A", "tst.a." + etablissementA + "@edukeys.tg");
         jdbcTemplate.update(
-                "insert into etablissements (id, code, nom, actif, date_creation, date_modification) "
-                        + "values (?, ?, ?, true, now(), now())",
-                etablissementB, "TST-B-" + etablissementB, "Établissement test B");
+                "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
+                etablissementB, "TST-B-" + etablissementB, "Établissement test B", "tst.b." + etablissementB + "@edukeys.tg");
 
         Utilisateur compteEtablissementA = utilisateurRepository.save(new Utilisateur(
                 "compte.etab.a." + java.util.UUID.randomUUID() + "@edukeys.tg",
@@ -249,9 +249,10 @@ class AuthControllerIntegrationTest {
         java.util.UUID affectationId = java.util.UUID.randomUUID();
         java.util.UUID etablissementAdmin = java.util.UUID.randomUUID();
         jdbcTemplate.update(
-                "insert into etablissements (id, code, nom, actif, date_creation, date_modification) "
-                        + "values (?, ?, ?, true, now(), now())",
-                etablissementAdmin, "TST-ADM-" + etablissementAdmin, "Établissement test admin");
+                "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
+                etablissementAdmin, "TST-ADM-" + etablissementAdmin, "Établissement test admin",
+                "tst.adm." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, true, now(), now())",

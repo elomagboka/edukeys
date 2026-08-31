@@ -80,6 +80,21 @@ public abstract class BaseEntity implements EntiteDesactivable {
         this.dateDesactivation = Instant.now();
     }
 
+    /**
+     * Réactivation logique, pendant de {@link #desactiver()}. Volontairement
+     * absente de {@link EntiteDesactivable} — toute entité n'a pas vocation à
+     * être réactivable (contrat plus restrictif que la désactivation) — donc
+     * exposée directement ici, protégée : c'est à chaque entité concrète
+     * d'exposer une méthode métier publique si la réactivation a un sens pour
+     * elle (voir {@code Etablissement#reactiver}). Les vérifications de
+     * conflit (ex. code/email repris entre-temps, US-00 R10) restent du
+     * ressort du service, jamais de l'entité.
+     */
+    protected void reactiverLogiquement() {
+        this.actif = true;
+        this.dateDesactivation = null;
+    }
+
     public Instant getDateCreation() {
         return dateCreation;
     }

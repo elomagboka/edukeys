@@ -1,0 +1,47 @@
+{
+  "cycles": [
+    { "code": "PRESCOLAIRE", "libelle": "Préscolaire", "ordre": 1 },
+    { "code": "PRIMAIRE", "libelle": "Primaire", "ordre": 2 },
+    { "code": "COLLEGE", "libelle": "Collège", "ordre": 3 },
+    { "code": "LYCEE", "libelle": "Lycée", "ordre": 4 }
+  ],
+  "niveaux": [
+    { "code": "CP1", "libelle": "Cours Préparatoire 1", "codeCycle": "PRIMAIRE", "ordre": 1 },
+    { "code": "CP2", "libelle": "Cours Préparatoire 2", "codeCycle": "PRIMAIRE", "ordre": 2 },
+    { "code": "CE1", "libelle": "Cours Élémentaire 1", "codeCycle": "PRIMAIRE", "ordre": 3 },
+    { "code": "CE2", "libelle": "Cours Élémentaire 2", "codeCycle": "PRIMAIRE", "ordre": 4 },
+    { "code": "CM1", "libelle": "Cours Moyen 1", "codeCycle": "PRIMAIRE", "ordre": 5 },
+    { "code": "CM2", "libelle": "Cours Moyen 2", "codeCycle": "PRIMAIRE", "ordre": 6 },
+    { "code": "6EME", "libelle": "Sixième", "codeCycle": "COLLEGE", "ordre": 7 },
+    { "code": "5EME", "libelle": "Cinquième", "codeCycle": "COLLEGE", "ordre": 8 },
+    { "code": "4EME", "libelle": "Quatrième", "codeCycle": "COLLEGE", "ordre": 9 },
+    { "code": "3EME", "libelle": "Troisième", "codeCycle": "COLLEGE", "ordre": 10 },
+    { "code": "2NDE", "libelle": "Seconde", "codeCycle": "LYCEE", "ordre": 11 },
+    { "code": "1ERE", "libelle": "Première", "codeCycle": "LYCEE", "ordre": 12 },
+    { "code": "TLE", "libelle": "Terminale", "codeCycle": "LYCEE", "ordre": 13 }
+  ],
+  "filieres": [
+    { "code": "GENERAL", "libelle": "Général", "codeNiveau": "2NDE" },
+    { "code": "A4", "libelle": "Série A4 (Lettres)", "codeNiveau": "1ERE" },
+    { "code": "C", "libelle": "Série C (Mathématiques et Sciences physiques)", "codeNiveau": "1ERE" },
+    { "code": "D", "libelle": "Série D (Mathématiques et Sciences de la vie et de la Terre)", "codeNiveau": "TLE" },
+    { "code": "G", "libelle": "Série G (Techniques administratives et de gestion)", "codeNiveau": "TLE" }
+  ],
+  "matieres": [
+    { "code": "FRANCAIS", "libelle": "Français" },
+    { "code": "MATHS", "libelle": "Mathématiques" },
+    { "code": "ANGLAIS", "libelle": "Anglais" },
+    { "code": "HIST_GEO", "libelle": "Histoire-Géographie" },
+    { "code": "SVT", "libelle": "Sciences de la Vie et de la Terre" },
+    { "code": "PHYSIQUE_CHIMIE", "libelle": "Physique-Chimie" },
+    { "code": "PHILO", "libelle": "Philosophie" },
+    { "code": "EPS", "libelle": "Éducation Physique et Sportive" },
+    { "code": "ECM", "libelle": "Éducation Civique et Morale" },
+    { "code": "ALLEMAND", "libelle": "Allemand" },
+    { "code": "ESPAGNOL", "libelle": "Espagnol" },
+    { "code": "INFORMATIQUE", "libelle": "Informatique" },
+    { "code": "ECONOMIE", "libelle": "Économie" },
+    { "code": "COMPTABILITE", "libelle": "Comptabilité" },
+    { "code": "DESSIN", "libelle": "Dessin" }
+  ]
+}

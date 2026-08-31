@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import tg.novadigital.edukeys.common.web.CorrelationIdFilter;
 
@@ -41,6 +42,16 @@ public class GestionnaireExceptionsGlobal {
         return construire(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(FormatFichierNonSupporteException.class)
+    public ProblemDetail gererFormatFichierNonSupporte(FormatFichierNonSupporteException ex, HttpServletRequest request) {
+        return construire(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(FichierTropVolumineuxException.class)
+    public ProblemDetail gererFichierTropVolumineuxMetier(FichierTropVolumineuxException ex, HttpServletRequest request) {
+        return construire(HttpStatus.PAYLOAD_TOO_LARGE, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(ConflitException.class)
     public ProblemDetail gererConflit(ConflitException ex, HttpServletRequest request) {
         return construire(HttpStatus.CONFLICT, ex.getMessage(), request);
@@ -49,6 +60,21 @@ public class GestionnaireExceptionsGlobal {
     @ExceptionHandler(AccesInterditException.class)
     public ProblemDetail gererAccesInterdit(AccesInterditException ex, HttpServletRequest request) {
         return construire(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    /**
+     * Filet de sécurité (durcissement post-revue T-10, IMPORTANT 4) : un
+     * appelant qui atteint {@code ContexteEtablissement.exigerEtablissementId()}
+     * sans contexte multi-établissement ouvert (ex. un rôle disposant d'une
+     * permission métier mais authentifié sans bascule sur un établissement)
+     * retombait sur le catch-all générique en 500. 403, cohérent avec
+     * {@link #gererAccesRefuse} : ce n'est pas une ressource introuvable, mais
+     * un appelant qui n'a pas le contexte requis pour accéder à la ressource.
+     */
+    @ExceptionHandler(tg.novadigital.edukeys.common.multietablissement.ContexteEtablissementAbsentException.class)
+    public ProblemDetail gererContexteEtablissementAbsent(
+            tg.novadigital.edukeys.common.multietablissement.ContexteEtablissementAbsentException ex, HttpServletRequest request) {
+        return construire(HttpStatus.FORBIDDEN, "Accès refusé.", request);
     }
 
     /**
@@ -93,6 +119,17 @@ public class GestionnaireExceptionsGlobal {
                 problemDetail.getProperties().get("correlationId"),
                 ex.getBindingResult().getFieldErrors().stream().map(FieldError::getField).toList());
         return problemDetail;
+    }
+
+    /**
+     * Fichier multipart dépassant {@code spring.servlet.multipart.max-file-size}
+     * (US-00, logo d'établissement plafonné à 1 Mo) : sans ce handler, Tomcat
+     * ferme la connexion avant même que la requête n'atteigne le contrôleur,
+     * et l'exception remonterait au catch-all générique en 500 brute.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ProblemDetail gererFichierTropVolumineux(MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return construire(HttpStatus.PAYLOAD_TOO_LARGE, "Fichier trop volumineux.", request);
     }
 
     /**
