@@ -47,10 +47,39 @@ jobs:
         working-directory: backend
         run: mvn -B clean verify
 
+      # Sur une PR qui ne touche ni le Dockerfile ni les pom.xml, l'image
+      # construirait à l'identique : ce garde-fou n'apporte rien et double
+      # inutilement le temps du job (téléchargement Maven en doublon, l'image
+      # de build ayant son propre dépôt local, distinct du cache setup-java).
+      - name: Configurer Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Détecter les changements concernant l'image Docker
+        id: filtre_docker
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docker:
+              - 'backend/Dockerfile'
+              - 'pom.xml'
+              - 'backend/pom.xml'
+
       # Le déploiement se fait par image Docker : si le Dockerfile casse, on
-      # doit le savoir sur la PR, pas au moment du déploiement.
+      # doit le savoir sur la PR, pas au moment du déploiement. `cache-from`/
+      # `cache-to` en type=gha réutilisent la couche `dependency:go-offline`
+      # entre exécutions - l'image de build a son propre dépôt Maven local,
+      # distinct de celui mis en cache par setup-java, donc sans ce cache les
+      # dépendances étaient retéléchargées une seconde fois à chaque run.
       - name: Vérifier que l'image se construit
-        run: docker build -f backend/Dockerfile -t edukeys-api:ci .
+        if: steps.filtre_docker.outputs.docker == 'true' || github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          tags: edukeys-api:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # `docker build` seul ne prouve rien sur l'exécutabilité du jar : un
       # jar non repackagé ("no main manifest attribute") ou compilé pour un
@@ -68,6 +97,7 @@ jobs:
       # base) serait fragile au premier changement de configuration qui fait
       # échouer le démarrage plus tôt pour une tout autre raison légitime.
       - name: Vérifier que le conteneur démarre jusqu'à un échec normal (pas un jar cassé)
+        if: steps.filtre_docker.outputs.docker == 'true' || github.event_name == 'push'
         run: |
           set +e
           docker run --rm --name edukeys-ci-check edukeys-api:ci > container.log 2>&1
