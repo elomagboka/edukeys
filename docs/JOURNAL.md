@@ -3,6 +3,13 @@
 > Rempli automatiquement par la commande `/point` en fin de session.
 > Se lit au démarrage de la session suivante : il remplace l'historique de conversation.
 
+## 2026-08-31 — US-00 / T-10 — PR #71 ouverte
+
+- Fait : module `etablissement` complet livré comme référence pour les 35 US suivantes — `Etablissement` enrichi (identité, coordonnées, `paysCode`/`deviseCode`/`fuseauHoraire` stockés mais non exploités, ADR-0008), `Site` (site principal auto-créé, ADR-0005) et `LogoEtablissement` (upload validé par magic bytes, contenu exclu de l'audit) ; SPI `common/initialisation/InitialisateurReferentiel` + jeu de données togolais, sans dépendance croisée vers `academique`. **177 tests, `mvn clean verify` vert.**
+- Reste : T-08 (Testcontainers, déjà en usage de fait via ce module) et T-09 (services Render) non formellement clos ; `academique` doit encore fournir sa propre implémentation d'`InitialisateurReferentiel` (US-02/03/05). Toujours ouvert : issue #58 (rate limiting), ADR-0008 stockage jetons, hypothèse « Render écrase X-Forwarded-For ».
+- Décisions : `nombreSites` en compteur dénormalisé (`nombre_sites_actifs`) plutôt que calculé sous filtre Hibernate — une agrégation filtrée renvoyait 0 pour SUPER_ADMIN, une valeur fausse jugée pire qu'une absence. `SUPER_ADMIN` retiré de `ETABLISSEMENT_GERER` (ne porte plus que `ETABLISSEMENT_CREER` + `UTILISATEUR_GERER_PLATEFORME`) : cette permission gardait aussi `SiteController`/`LogoController`, hors du périmètre plateforme (ADR-0002 §5, ADR-0005). Garde d'accès (`GardeAccesEtablissement`) désormais imposée par un test statique énumérant le répertoire, pas une liste en dur — un appel manuel oublié est silencieux.
+- Piège rencontré : **le piège annoncé par la spec s'est confirmé, deux fois.** (1) `EtablissementService.creer` doit ouvrir explicitement le contexte multi-établissement avant de persister le site principal, sinon `RemplisseurEtablissement` refuse l'écriture — traité dès l'implémentation, mais (2) le flush avant fermeture de ce contexte manquait dans plusieurs services (`SiteService`, `LogoEtablissementService`) : l'écriture différée d'Hibernate se produisait hors contexte au commit et aurait échoué en production. Trouvé par le `testeur`, prouvé par un test rouge→vert, généralisé en règle 12 de `CLAUDE.md`. Par ailleurs, `EtablissementService.reactiver()` ne restaurait pas la cascade de désactivation des sites/logo — un établissement réactivé se retrouvait sans site principal actif, violant son propre invariant après un aller-retour.
+
 ## 2026-08-28 - T-09 : Partie GitHub faite. Services Render reportés, blueprint détaché - les identifiants de plan du render.yaml sont périmé, à réécrire au premier déploiement réel.
 
 

@@ -101,7 +101,7 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
-    needs: backend
+    needs: [backend, detecter]
     if: needs.detecter.outputs.frontend_present == 'true'
     steps:
       - uses: actions/checkout@v4
