@@ -62,6 +62,18 @@ npm test
 npm run build
 ```
 
+## Jetons d'authentification
+
+`stores/session.ts` garde `accessToken`/`refreshToken` **en mémoire
+uniquement** — pas de `zustand/middleware persist`, pas de `localStorage`.
+Un rechargement de page déconnecte : c'est voulu, pas un oubli. Le refresh
+token vaut 7 jours d'accès ; le laisser en `localStorage`, même « le temps
+de trancher », l'expose à tout XSS. L'option cible — refresh token en
+cookie `HttpOnly` (option B de l'issue #57) — dépend d'une décision de
+domaine (sous-domaines Render partageant un domaine parent) non prise à ce
+jour. Ne pas réintroduire de persistance sans avoir d'abord tranché et
+documenté cette décision dans une ADR. Suivi : issue #57.
+
 ## Avant de coder une feature
 
 Vérifie que `api/generated/` est à jour. Si l'US backend correspondante vient

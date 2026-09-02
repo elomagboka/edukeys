@@ -87,7 +87,7 @@ Chaque module suit la même arborescence interne :
    ADR-0005). Une permission élargit son périmètre à chaque contrôleur où elle est
    posée sans revalider sa portée : `ETABLISSEMENT_GERER` posée sur
    `SiteController`/`LogoController` en plus d'`EtablissementController` a ainsi
-   laissé `SUPER_ADMIN` gérer les sites et le logo de n'importe quel établissement
+   laissé `SUPER_ADMIN` gérer les sites et le logo de n'importe quel établissemen t
    client, avant correction.
 12. **Tout service qui ouvre une PorteeEtablissement doit forcer le flush avant de la fermer**,
    sinon l'écriture différée par Hibernate se produira hors contexte et échouera.
