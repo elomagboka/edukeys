@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# (commentaire ajouté pour déclencher la vérification du cache GHA sur cette PR)
 
 # Le contexte de build est la RACINE du dépôt, pas backend/ : le module
 # backend hérite de edukeys-parent (pom.xml racine), que Maven doit pouvoir
