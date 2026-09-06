@@ -132,6 +132,17 @@
             <artifactId>mapstruct</artifactId>
             <version>1.6.3</version>
         </dependency>
+        <!-- Limitation de débit (issue #58) : cache borné en taille et en durée
+             de vie pour les compteurs par compte/IP, préférée à une
+             ConcurrentHashMap nue (voir FiltreLimitationDebitAuthentification) —
+             sans borne, un attaquant qui varie l'identifiant soumis à chaque
+             requête ferait grossir la table indéfiniment, et la limitation de
+             débit deviendrait elle-même un vecteur d'épuisement mémoire.
+             Version gérée par le BOM spring-boot-dependencies. -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

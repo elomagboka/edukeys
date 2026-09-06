@@ -59,10 +59,20 @@ public final class JournalSecurite {
                 empreinte(valeurTentee), adresseIp, Instant.now());
     }
 
-    /** Échec dû à la limitation de débit (seuil par compte ou par IP dépassé). */
-    public static void echecLimitationDebit(UUID utilisateurId, String adresseIp) {
-        LOG.warn("echec_authentification motif=limitation_debit utilisateurId={} ip={} horodatage={}",
-                utilisateurId, adresseIp, Instant.now());
+    /**
+     * Requête bloquée par la limitation de débit (seuil par compte ou par IP
+     * dépassé, {@code common/securite/limitation}). Signature volontairement
+     * sans UUID utilisateur : le filtre agit avant toute résolution en base,
+     * sur la seule valeur d'identifiant soumise dans la requête (jamais un
+     * utilisateur résolu — c'est ce qui empêche le compteur de servir
+     * d'oracle d'énumération de comptes). {@code empreinteIdentifiant} est
+     * calculée par l'appelant de la même façon que
+     * {@link #echecAuthentificationCompteInconnu} : jamais l'email ni le
+     * jeton en clair.
+     */
+    public static void echecLimitationDebit(String empreinteIdentifiant, String adresseIp) {
+        LOG.warn("echec_authentification motif=limitation_debit empreinteIdentifiant={} ip={} horodatage={}",
+                empreinteIdentifiant, adresseIp, Instant.now());
     }
 
     /**
@@ -112,7 +122,16 @@ public final class JournalSecurite {
         return valeur != null && FORME_EMAIL.matcher(valeur).matches();
     }
 
-    private static String empreinte(String valeur) {
+    /**
+     * Empreinte SHA-256 tronquée d'une valeur sensible (email, jeton), à des
+     * fins de corrélation dans les journaux et dans les clés du limiteur de
+     * débit ({@code common/securite/limitation}) — jamais pour retrouver la
+     * valeur d'origine. Exposée en {@code public} pour être réutilisée en
+     * dehors de cette classe (ex. {@code FiltreLimitationDebit}), qui a
+     * besoin de la même empreinte pour journaliser sans dupliquer le calcul
+     * ni journaliser la valeur en clair.
+     */
+    public static String empreinte(String valeur) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hache = digest.digest(valeur.getBytes(StandardCharsets.UTF_8));

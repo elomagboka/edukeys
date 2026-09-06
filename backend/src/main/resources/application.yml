@@ -47,3 +47,32 @@ edukeys:
       secret: ${EDUKEYS_JWT_SECRET}
     cors:
       origines-autorisees: ${EDUKEYS_CORS_ORIGINES:http://localhost:5173}
+    # Limitation de débit sur les endpoints d'authentification (issue #58,
+    # CLAUDE.md règle 5). Deux compteurs indépendants par chemin protégé :
+    # - par-compte : seuil serré (3 échecs tolérés), protège une cible
+    #   désignée contre la force brute sur mot de passe.
+    # - par-ip : seuil volontairement large (50 échecs tolérés). Contexte
+    #   togolais : les opérateurs mobiles mutualisent leurs adresses
+    #   publiques, une école ou un cybercafé entier peut sortir sur une seule
+    #   IP — un seuil serré bloquerait tous les parents d'un même opérateur à
+    #   cause d'un seul maladroit.
+    # Attente croissante (delai-initial doublé à chaque échec au-delà du
+    # seuil de tolérance, plafonné à delai-plafond), jamais de verrouillage
+    # définitif : un verrouillage dur permettrait de bloquer volontairement
+    # le compte d'un directeur la veille des bulletins.
+    limitation-debit:
+      chemins-proteges:
+        - /api/v1/auth/login
+        - /api/v1/auth/refresh
+      par-compte:
+        seuil-tolerance: 3
+        delai-initial: 1s
+        delai-plafond: 5m
+        duree-expiration: 15m
+      par-ip:
+        seuil-tolerance: 50
+        delai-initial: 1s
+        delai-plafond: 5m
+        duree-expiration: 15m
+      taille-max-corps-octets: 4096
+      taille-max-cache: 100000

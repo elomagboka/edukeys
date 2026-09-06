@@ -19,9 +19,11 @@ import tg.novadigital.edukeys.identite.service.AuthService;
 /**
  * Authentification par mot de passe, rotation de jeton et bascule
  * d'établissement actif. Seuls {@code /login} et {@code /refresh} sont
- * ouverts (voir {@code SecurityConfig}) : la limitation de débit fait l'objet
- * d'une issue séparée, hors périmètre de T-04. {@code /etablissement-actif}
- * exige une authentification valide.
+ * ouverts (voir {@code SecurityConfig}), et tous deux protégés par
+ * {@code common.securite.limitation.FiltreLimitationDebit} (issue #58) :
+ * double compteur par compte et par IP, attente croissante, 429 avec
+ * {@code Retry-After}. {@code /etablissement-actif} exige une
+ * authentification valide.
  */
 @Tag(name = "Authentification")
 @RestController
@@ -37,7 +39,8 @@ public class AuthController {
     @Operation(summary = "Connexion par email et mot de passe",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Jetons émis"),
-                    @ApiResponse(responseCode = "401", description = "Identifiants invalides")
+                    @ApiResponse(responseCode = "401", description = "Identifiants invalides"),
+                    @ApiResponse(responseCode = "429", description = "Trop de tentatives (limitation de débit par compte ou par IP) ; en-tête Retry-After")
             })
     @PostMapping("/login")
     @SecurityRequirements
@@ -48,7 +51,8 @@ public class AuthController {
     @Operation(summary = "Rafraîchissement de l'access token à partir d'un refresh token valide",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Nouveaux jetons émis"),
-                    @ApiResponse(responseCode = "401", description = "Jeton de rafraîchissement invalide, expiré ou révoqué")
+                    @ApiResponse(responseCode = "401", description = "Jeton de rafraîchissement invalide, expiré ou révoqué"),
+                    @ApiResponse(responseCode = "429", description = "Trop de tentatives (limitation de débit par jeton ou par IP) ; en-tête Retry-After")
             })
     @PostMapping("/refresh")
     @SecurityRequirements
