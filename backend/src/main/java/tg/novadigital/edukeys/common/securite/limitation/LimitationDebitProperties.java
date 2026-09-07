@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
  * publiques, une école ou un cybercafé entier peut sortir sur une seule IP.
  * Un seuil par IP serré bloquerait tous les parents d'un même opérateur à
  * cause d'un seul maladroit — d'où un seuil par IP volontairement large
- * (50 échecs de tolérance) contre un seuil par compte serré (3 échecs de
+ * (150 échecs de tolérance) contre un seuil par compte serré (3 échecs de
  * tolérance), qui protège une cible désignée sans gêner le voisinage
  * réseau.</p>
  *
@@ -37,7 +37,7 @@ public class LimitationDebitProperties {
     private final Compteur parCompte = new Compteur(3, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
 
     // Seuil large : voir la javadoc de la classe pour la justification du contexte togolais.
-    private final Compteur parIp = new Compteur(50, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
+    private final Compteur parIp = new Compteur(150, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
 
     /** Taille maximale du corps de requête mis en cache pour en extraire l'identifiant (voir {@code RequeteAvecCorpsMisEnCache}). */
     private int tailleMaxCorpsOctets = 4096;

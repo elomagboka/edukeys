@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import tg.novadigital.edukeys.common.securite.reseau.FiltreAdresseIpCliente;
 import tg.novadigital.edukeys.identite.security.UtilisateurPrincipal;
 import tg.novadigital.edukeys.identite.service.AuthService;
 
@@ -45,7 +46,7 @@ public class AuthController {
     @PostMapping("/login")
     @SecurityRequirements
     public JetonsReponseDto login(@Valid @RequestBody LoginRequestDto requete, HttpServletRequest request) {
-        return authService.connecter(requete.email(), requete.motDePasse(), request.getRemoteAddr());
+        return authService.connecter(requete.email(), requete.motDePasse(), FiltreAdresseIpCliente.adresseIpDe(request));
     }
 
     @Operation(summary = "Rafraîchissement de l'access token à partir d'un refresh token valide",

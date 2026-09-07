@@ -85,6 +85,12 @@ public class CompteurAttenteCroissante {
         });
     }
 
+    /** Réservé aux tests : nombre d'échecs actuellement retenus contre cette clé. */
+    public int nombreDechecs(String cle) {
+        Etat etat = cache.getIfPresent(cle);
+        return etat == null ? 0 : etat.nombreEchecs;
+    }
+
     /** Remise à zéro après une authentification réussie — jamais de verrouillage définitif (issue #58). */
     public void reinitialiser(String cle) {
         cache.invalidate(cle);

@@ -26,7 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
         "edukeys.securite.limitation-debit.par-compte.delai-initial=50ms",
         "edukeys.securite.limitation-debit.par-compte.delai-plafond=50ms",
         "edukeys.securite.limitation-debit.par-ip.delai-initial=50ms",
-        "edukeys.securite.limitation-debit.par-ip.delai-plafond=50ms"
+        "edukeys.securite.limitation-debit.par-ip.delai-plafond=50ms",
+        // Seuil par IP abaissé de 150 à 5 : le seuil réel est volontairement
+        // large (IP mutualisées togolaises) et l'atteindre en HTTP coûterait
+        // 150 BCrypt. C'est le mécanisme qu'on teste ici, pas la valeur.
+        "edukeys.securite.limitation-debit.par-ip.seuil-tolerance=5"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -77,5 +81,25 @@ class FiltreLimitationDebitDelaisCourtsIntegrationTest {
                 .content("""
                         {"email":"%s","motDePasse":"%s"}
                         """.formatted(email, motDePasse)));
+    }
+
+    /**
+     * Le compteur par IP déclenche seul, sur des emails tous différents : le
+     * compteur par compte reste à un échec chacun, seul le balayage explique
+     * le 429. C'est le scénario que l'issue #58 invoque pour justifier ce
+     * second compteur — un mot de passe très courant essayé sur des centaines
+     * de comptes.
+     */
+    @Test
+    void declencheLeCompteurParIp_sansDeclencherLeCompteurParCompte_quandLesEmailsVarient() throws Exception {
+        for (int i = 0; i < 6; i++) {
+            String email = "balayage." + i + "." + java.util.UUID.randomUUID() + "@edukeys.tg";
+            tenterLogin(email, "peu-importe").andExpect(status().isUnauthorized());
+        }
+
+        // Email encore jamais vu : son compteur par compte est à zéro, seul le
+        // compteur par IP peut expliquer le 429.
+        String dernierEmail = "balayage.dernier." + java.util.UUID.randomUUID() + "@edukeys.tg";
+        tenterLogin(dernierEmail, "peu-importe").andExpect(status().isTooManyRequests());
     }
 }

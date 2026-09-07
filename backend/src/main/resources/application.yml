@@ -1,14 +1,16 @@
 server:
   # "framework" fait réécrire request.getRemoteAddr() par ForwardedHeaderFilter
-  # (auto-configuré par Spring Boot, ordre Ordered.HIGHEST_PRECEDENCE — donc
-  # avant JwtAuthenticationFilter et CorrelationIdFilter, voir son @Order) à
-  # partir du PREMIER élément de X-Forwarded-For. Correct seulement si Render
-  # écrase l'en-tête envoyé par le client plutôt que d'y ajouter sa propre
-  # valeur en fin de liste (comportement par défaut de nginx et de nombreux
-  # edges) : dans ce dernier cas, le premier élément resterait falsifiable par
-  # le client. NON VÉRIFIÉ à ce jour contre l'edge Render réel — à confirmer
-  # en recette avec un en-tête X-Forwarded-For forgé avant de s'appuyer sur
-  # cette IP pour la limitation de débit (issue-rate-limiting.md).
+  # à partir du PREMIER élément de X-Forwarded-For — donc à partir d'une valeur
+  # que le client peut écrire lui-même. Vérifié localement : une requête portant
+  # « X-Forwarded-For: 1.2.3.4, 5.6.7.8 » ressort avec getRemoteAddr() = 1.2.3.4.
+  # getRemoteAddr() ne doit donc JAMAIS servir à identifier un client à des fins
+  # de sécurité (limitation de débit, journalisation d'attaque) : utiliser
+  # FiltreAdresseIpCliente.adresseIpDe(request), qui prend le N-ième élément en
+  # partant de la droite (edukeys.securite.reseau.nb-proxys-de-confiance).
+  # Le réglage reste utile pour la génération d'URL absolues (Location, OpenAPI),
+  # seul usage qui lui est laissé ; ConfigurationEnTetesTransferes réordonne le
+  # filtre de Boot pour que l'IP cliente soit calculée avant qu'il n'efface les
+  # en-têtes X-Forwarded-*.
   forward-headers-strategy: framework
 
 spring:
@@ -47,15 +49,32 @@ edukeys:
       secret: ${EDUKEYS_JWT_SECRET}
     cors:
       origines-autorisees: ${EDUKEYS_CORS_ORIGINES:http://localhost:5173}
+    reseau:
+      # Nombre d'intermédiaires que la requête traverse chez nous (Render :
+      # l'edge, donc 1). L'IP cliente retenue est le N-ième élément de
+      # X-Forwarded-For EN PARTANT DE LA DROITE : les éléments de gauche
+      # sont écrits par le client lui-même et ne sont jamais dignes de
+      # confiance. Voir ExtracteurAdresseIpCliente — ce calcul ne dépend
+      # d'aucune hypothèse sur le comportement de l'edge, contrairement au
+      # premier élément que retenait ForwardedHeaderFilter.
+      nb-proxys-de-confiance: ${EDUKEYS_NB_PROXYS_DE_CONFIANCE:1}
+
     # Limitation de débit sur les endpoints d'authentification (issue #58,
     # CLAUDE.md règle 5). Deux compteurs indépendants par chemin protégé :
     # - par-compte : seuil serré (3 échecs tolérés), protège une cible
     #   désignée contre la force brute sur mot de passe.
-    # - par-ip : seuil volontairement large (50 échecs tolérés). Contexte
+    # - par-ip : seuil volontairement large (150 échecs tolérés). Contexte
     #   togolais : les opérateurs mobiles mutualisent leurs adresses
     #   publiques, une école ou un cybercafé entier peut sortir sur une seule
     #   IP — un seuil serré bloquerait tous les parents d'un même opérateur à
-    #   cause d'un seul maladroit.
+    #   cause d'un seul maladroit. Seuil relevé de 50 à 150 en même temps
+    #   que la suppression de la remise à zéro du compteur par IP sur
+    #   succès : cette remise à zéro le rendait annulable à volonté (un
+    #   attaquant disposant d'un seul compte valide repartait d'un budget
+    #   neuf après chaque connexion réussie), mais sans elle un seuil bas
+    #   gênerait les IP mutualisées. Un seuil est un réglage, une remise à
+    #   zéro était un trou. La remise à zéro après succès ne concerne donc
+    #   plus QUE le compteur par compte.
     # Attente croissante (delai-initial doublé à chaque échec au-delà du
     # seuil de tolérance, plafonné à delai-plafond), jamais de verrouillage
     # définitif : un verrouillage dur permettrait de bloquer volontairement
@@ -70,7 +89,7 @@ edukeys:
         delai-plafond: 5m
         duree-expiration: 15m
       par-ip:
-        seuil-tolerance: 50
+        seuil-tolerance: 150
         delai-initial: 1s
         delai-plafond: 5m
         duree-expiration: 15m

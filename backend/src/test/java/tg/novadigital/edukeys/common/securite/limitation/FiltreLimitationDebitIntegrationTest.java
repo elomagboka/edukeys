@@ -118,10 +118,75 @@ class FiltreLimitationDebitIntegrationTest {
         }
 
         assertThat(statutsInconnu).isEqualTo(statutsExistant);
-        // La dernière réponse est le 429 (seuil par compte 3, 5 tentatives) :
-        // au correlationId près, la forme complète du corps doit être identique.
         assertThat(statutsInconnu.get(statutsInconnu.size() - 1)).isEqualTo(HttpStatus.TOO_MANY_REQUESTS.value());
-        assertThat(corpsInconnu.get(corpsInconnu.size() - 1)).isEqualTo(corpsExistant.get(corpsExistant.size() - 1));
+        // TOUTES les réponses sont comparées, pas seulement le 429 final : les
+        // 401 qui le précèdent sont justement l'endroit où un message
+        // différencié (« compte inconnu » vs « mot de passe incorrect »)
+        // rétablirait l'oracle d'énumération que ce test prétend écarter. Ne
+        // comparer que la dernière laissait passer exactement ce cas (relecture
+        // PR #74, important n°4).
+        assertThat(corpsInconnu).isEqualTo(corpsExistant);
+    }
+
+    /**
+     * Un client qui forge {@code X-Forwarded-For} ne doit pas pouvoir changer
+     * d'identité réseau à chaque requête pour diluer le compteur par IP.
+     *
+     * <p>La requête simule la chaîne réelle : le client écrit un premier
+     * élément de son choix, l'edge de confiance ajoute derrière l'adresse
+     * qu'il a réellement observée. Avec {@code nb-proxys-de-confiance = 1},
+     * seul ce dernier élément compte. Les cinq tentatives doivent donc être
+     * imputées à la MÊME adresse, malgré cinq préfixes forgés différents.</p>
+     *
+     * <p>Ce test échoue si l'on revient à {@code request.getRemoteAddr()} :
+     * {@code ForwardedHeaderFilter} retient le PREMIER élément, donc la valeur
+     * forgée, et les cinq requêtes se répartissent sur cinq compteurs distincts
+     * (issue #58, bloquant n°2 de la relecture PR #74).</p>
+     */
+    @Test
+    void imputeALaMemeIpDeConfiance_desRequetesPortantDesXForwardedForForgesDifferents() throws Exception {
+        String ipReelleVueParLEdge = "41.207.0.9";
+
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/v1/auth/login")
+                    .header("X-Forwarded-For", "10.9.9." + i + ", " + ipReelleVueParLEdge)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"email\":\"forge.%s@edukeys.tg\",\"motDePasse\":\"peu-importe\"}"
+                            .formatted(java.util.UUID.randomUUID())))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Les cinq échecs sont imputés à l'IP déposée par l'edge...
+        assertThat(filtreLimitationDebit.nombreDechecsParIpPourLesTests(ipReelleVueParLEdge)).isEqualTo(5);
+        // ... et aucun aux adresses que le client s'était attribuées.
+        assertThat(filtreLimitationDebit.nombreDechecsParIpPourLesTests("10.9.9.0")).isZero();
+        assertThat(filtreLimitationDebit.nombreDechecsParIpPourLesTests("10.9.9.4")).isZero();
+    }
+
+    /**
+     * Le compteur par IP ne doit PAS être remis à zéro par une connexion
+     * réussie : sinon un attaquant disposant d'un seul compte valide balaie
+     * des comptes, se connecte une fois avec le sien, et repart avec un budget
+     * neuf — indéfiniment (bloquant n°1 de la relecture PR #74). Le compteur
+     * par compte, lui, doit bien être remis à zéro.
+     */
+    @Test
+    void neRemetPasAZeroLeCompteurParIp_apresUneConnexionReussie() throws Exception {
+        // Des échecs sur des comptes variés : le compteur par compte reste bas,
+        // seul le compteur par IP accumule.
+        for (int i = 0; i < 5; i++) {
+            tenterLogin("balayage." + i + "." + java.util.UUID.randomUUID() + "@edukeys.tg", "peu-importe")
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Connexion réussie : elle remet à zéro le compteur du COMPTE utilisé...
+        tenterLogin(EMAIL_DIRECTEUR, MOT_DE_PASSE).andExpect(status().isOk());
+
+        // ... mais le compteur par IP doit avoir conservé ses 5 échecs. On le
+        // prouve en lisant l'état du compteur : le seuil par IP (150) est trop
+        // haut pour être atteint dans un test, et le baisser masquerait
+        // justement la régression que ce test surveille.
+        assertThat(filtreLimitationDebit.nombreDechecsParIpPourLesTests("127.0.0.1")).isEqualTo(5);
     }
 
     /** Retire le champ {@code correlationId}, unique par requête, avant comparaison des corps. */
@@ -148,32 +213,8 @@ class FiltreLimitationDebitIntegrationTest {
     }
 
     /**
-     * Indépendance des deux compteurs (issue #58, "deux compteurs, pas un") :
-     * en variant l'email à chaque tentative depuis la même IP (MockMvc, IP de
-     * test fixe), on approche le seuil par IP (50) sans jamais déclencher le
-     * seuil par compte (3, un seul échec par email distinct) — le compteur par
-     * compte du dernier email essayé reste donc à zéro.
-     */
-    @Test
-    void declencheLeCompteurParIp_sansDeclencherLeCompteurParCompte_quandLesEmailsVarient() throws Exception {
-        // Seuil de tolérance par IP : 50 échecs tolérés. Le 51e échec impose
-        // un délai, mais seulement visible à la tentative suivante (la
-        // vérification se fait avant l'enregistrement de l'échec courant).
-        for (int i = 0; i < 51; i++) {
-            String email = "balayage." + i + "." + java.util.UUID.randomUUID() + "@edukeys.tg";
-            tenterLogin(email, "peu-importe").andExpect(status().isUnauthorized());
-        }
-
-        // Requête suivante, avec un email encore jamais vu : son propre
-        // compteur par compte est à zéro, seul le compteur par IP peut
-        // expliquer le 429.
-        String dernierEmail = "balayage.dernier." + java.util.UUID.randomUUID() + "@edukeys.tg";
-        tenterLogin(dernierEmail, "peu-importe").andExpect(status().isTooManyRequests());
-    }
-
-    /**
      * Réciproque : le compteur par compte déclenche sur un seul email répété,
-     * sans jamais approcher le seuil par IP (50) — quatre requêtes seulement.
+     * sans jamais approcher le seuil par IP (150) — quatre requêtes seulement.
      */
     @Test
     void declencheLeCompteurParCompte_bienEnDessousDuSeuilParIp() throws Exception {

@@ -20,6 +20,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import tg.novadigital.edukeys.common.securite.JournalSecurite;
+import tg.novadigital.edukeys.common.securite.reseau.FiltreAdresseIpCliente;
 import tg.novadigital.edukeys.common.web.CorrelationIdFilter;
 
 /**
@@ -74,7 +75,7 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        String adresseIp = request.getRemoteAddr();
+        String adresseIp = FiltreAdresseIpCliente.adresseIpDe(request);
         RequeteAvecCorpsMisEnCache requeteMiseEnCache =
                 new RequeteAvecCorpsMisEnCache(request, proprietes.getTailleMaxCorpsOctets());
         String cleCompte = extraireCleCompte(requeteMiseEnCache);
@@ -92,10 +93,17 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         filterChain.doFilter(requeteMiseEnCache, response);
 
         if (response.getStatus() >= 200 && response.getStatus() < 300) {
+            // Remise a zero du SEUL compteur par compte. Reinitialiser aussi le
+            // compteur par IP le rendrait annulable a volonte : un attaquant
+            // disposant d'un seul compte valide - un compte parent suffit -
+            // balaierait 50 comptes, se connecterait une fois avec le sien, et
+            // repartirait avec un budget neuf, indefiniment. Le compteur par IP
+            // ne se declencherait alors jamais, alors que le balayage est
+            // precisement ce qu'il doit couvrir (issue #58). Le seuil par IP est
+            // un reglage, la remise a zero etait un trou.
             if (cleCompte != null) {
                 compteurParCompte.reinitialiser(cleCompte);
             }
-            compteurParIp.reinitialiser(adresseIp);
         } else if (response.getStatus() != HttpStatus.TOO_MANY_REQUESTS.value()) {
             if (cleCompte != null) {
                 compteurParCompte.enregistrerEchec(cleCompte);
@@ -113,6 +121,16 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     public void reinitialiserPourLesTests() {
         compteurParCompte.reinitialiserTout();
         compteurParIp.reinitialiserTout();
+    }
+
+    /**
+     * Réservé aux tests : nombre d'échecs actuellement retenus contre une
+     * adresse IP. Permet de prouver que ce compteur n'est PAS remis à zéro par
+     * une connexion réussie, sans avoir à atteindre le seuil réel (150) ni à
+     * l'abaisser — l'abaisser masquerait la régression surveillée.
+     */
+    public int nombreDechecsParIpPourLesTests(String adresseIp) {
+        return compteurParIp.nombreDechecs(adresseIp);
     }
 
     /**
@@ -175,6 +193,15 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setHeader("Retry-After", String.valueOf(secondesAttente));
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-        response.getWriter().write(objectMapper.writeValueAsString(corpsProblemDetail));
+        // Octets ecrits directement, jamais getWriter() : JSON impose l'UTF-8 et
+        // le message contient des accents (« reessayer »), or le writer du
+        // conteneur retombe sur ISO-8859-1 faute de charset explicite et emet
+        // des octets qui ne sont pas de l'UTF-8 valide — ce que MockMvc ne voit
+        // pas, relisant avec le charset d'ecriture (relecture PR #74).
+        // writeValueAsBytes serialise en UTF-8 par defaut. On s'abstient de
+        // setCharacterEncoding : cela ajouterait « ;charset=UTF-8 » au
+        // Content-Type, que GestionnaireExceptionsGlobal n'emet pas — la
+        // reponse cesserait d'etre indiscernable des autres erreurs.
+        response.getOutputStream().write(objectMapper.writeValueAsBytes(corpsProblemDetail));
     }
 }
