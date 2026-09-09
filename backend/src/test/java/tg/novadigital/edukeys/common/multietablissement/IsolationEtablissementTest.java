@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.hibernate.Session;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +72,9 @@ import tg.novadigital.edukeys.testsupport.FabriquesEntitesTest;
 @ActiveProfiles("test")
 @Transactional
 class IsolationEtablissementTest {
+
+    /** Doit rester aligné sur {@code ArmeurFiltreEtablissement}, qui le porte en privé. */
+    private static final String NOM_FILTRE = "filtreEtablissement";
 
     private static final UUID ETABLISSEMENT_A = FabriquesEntitesTest.ETABLISSEMENT_A;
     private static final UUID ETABLISSEMENT_B = FabriquesEntitesTest.ETABLISSEMENT_B;
@@ -257,6 +261,49 @@ class IsolationEtablissementTest {
         assertThat(FabriquesEntitesTest.toutes()).isNotEmpty();
         for (FabriqueEntiteEtablissement<?> fabrique : FabriquesEntitesTest.toutes()) {
             verification.verifier((FabriqueEntiteEtablissement<EntiteEtablissement>) fabrique);
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // C0 — garde-fou : le filtre est-il seulement armé ?
+    // ------------------------------------------------------------------
+
+    /**
+     * <strong>Vérifie que le filtre Hibernate est réellement actif avant que
+     * quoi que ce soit d'autre ne soit testé.</strong> Sans ce garde-fou, un
+     * désarmement complet du filtre ne fait pas échouer C1 à C8 de façon
+     * lisible : plusieurs de ces cas restent verts, et ceux qui échouent
+     * ressemblent à un problème de données résiduelles — ce qui envoie le
+     * diagnostic dans la mauvaise direction.
+     *
+     * <p>C'est exactement ce qui s'est produit : l'emplacement statique de
+     * l'{@code EntityManagerFactory} dans {@code ContexteEtablissement} était
+     * écrasé par tout contexte Spring supplémentaire, le ré-armement sortait
+     * en silence, et {@code findById} traversait la frontière entre
+     * établissements sans que la nature du défaut n'apparaisse. Le défaut a
+     * survécu trois mois à un commentaire qui le décrivait, et n'est apparu
+     * qu'en changeant l'ordre d'exécution des tests (NTFS en local, ext4 en
+     * CI).</p>
+     *
+     * <p>Exécuté en {@code @BeforeEach} et non comme un simple {@code @Test} :
+     * la garantie doit valoir pour chaque cas, pas pour un seul.</p>
+     */
+    @BeforeEach
+    void c0_leFiltreEtablissementDoitEtreArmeSurLaSessionCourante() {
+        try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
+            Session session = entityManager.unwrap(Session.class);
+
+            assertThat(session.getEnabledFilter(NOM_FILTRE))
+                    .as("""
+                        Le filtre Hibernate « %s » n'est pas arme sur la session de ce test :                         tout ce qui suit ne prouverait rien. Cause deja rencontree : un etat global                         partage entre contextes Spring empeche ContexteEtablissement de re-armer la                         session liee au thread, en silence.""".formatted(NOM_FILTRE))
+                    .isNotNull();
+
+            // Volontairement rien de plus : aucune ligne témoin n'est créée
+            // ici, sous peine de fausser les décomptes absolus de C1 et C4.
+            // Que le filtre soit armé sur le BON établissement, c'est
+            // précisément ce que C1 à C8 vérifient ensuite — mais ils ne le
+            // peuvent que s'il est armé tout court, ce que seul ce garde-fou
+            // établit.
         }
     }
 

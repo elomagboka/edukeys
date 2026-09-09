@@ -29,27 +29,23 @@ import static org.mockito.Mockito.when;
 class FuiteContexteEtablissementTest {
 
     /**
-     * {@code ContexteEtablissement.entityManagerFactory} est {@code static} :
-     * partagé par tout le run JVM, y compris les classes {@code @SpringBootTest}
-     * qui réutilisent un contexte Spring mis en cache (ex.
-     * {@code IsolationEtablissementTest}). Ce test le remplace par des mocks
-     * pour simuler un échec de ré-armement ; le remettre inconditionnellement à
-     * {@code null} en fin de test (au lieu de restaurer la valeur d'origine)
-     * a déjà cassé silencieusement le filtre Hibernate d'un test exécuté plus
-     * tard dans le même run (T-05, sous-tâche 11 : cause racine de 4 échecs
-     * intermittents sur {@code IsolationEtablissementTest}).
+     * Plus rien à sauvegarder ni à restaurer ici. Ces tests remplaçaient
+     * autrefois l'{@code EntityManagerFactory} mémorisé statiquement par
+     * {@code ContexteEtablissement}, et devaient replacer la valeur d'origine
+     * dans un {@code @AfterEach} — faute de quoi le filtre Hibernate d'une
+     * classe exécutée plus tard dans le même run devenait silencieusement
+     * inopérant.
+     *
+     * <p>Cette discipline ne protégeait que des écrasements volontaires. Le
+     * cas réel était involontaire : tout contexte Spring supplémentaire
+     * écrasait l'emplacement. L'emplacement statique a donc été supprimé — le
+     * ré-armement parcourt désormais les ressources liées au thread — et il
+     * suffit à ces tests de lier puis délier leur propre ressource, ce qu'ils
+     * faisaient déjà.</p>
      */
-    private EntityManagerFactory entityManagerFactoryOriginale;
-
-    @BeforeEach
-    void sauvegarderEntityManagerFactory() {
-        entityManagerFactoryOriginale = ContexteEtablissement.entityManagerFactoryEnregistree();
-    }
-
     @AfterEach
     void nettoyer() {
         ContexteEtablissement.purger();
-        ContexteEtablissement.enregistrerEntityManagerFactory(entityManagerFactoryOriginale);
     }
 
     @Test
@@ -59,7 +55,6 @@ class FuiteContexteEtablissementTest {
         EntityManager em = mock(EntityManager.class);
         when(em.unwrap(Session.class)).thenThrow(new IllegalStateException("EntityManager fermé"));
 
-        ContexteEtablissement.enregistrerEntityManagerFactory(emf);
         TransactionSynchronizationManager.bindResource(emf, new EntityManagerHolder(em));
         try {
             assertThatThrownBy(() -> ContexteEtablissement.ouvrir(UUID.randomUUID()))
@@ -83,8 +78,7 @@ class FuiteContexteEtablissementTest {
             EntityManager em = mock(EntityManager.class);
             when(em.unwrap(Session.class)).thenThrow(new IllegalStateException("EntityManager fermé"));
 
-            ContexteEtablissement.enregistrerEntityManagerFactory(emf);
-            TransactionSynchronizationManager.bindResource(emf, new EntityManagerHolder(em));
+                TransactionSynchronizationManager.bindResource(emf, new EntityManagerHolder(em));
             try {
                 assertThatThrownBy(() -> ContexteEtablissement.ouvrir(UUID.randomUUID()))
                         .isInstanceOf(IllegalStateException.class);

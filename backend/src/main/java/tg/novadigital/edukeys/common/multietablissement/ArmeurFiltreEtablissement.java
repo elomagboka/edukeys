@@ -24,10 +24,14 @@ import jakarta.persistence.EntityManagerFactory;
  *
  * <p>Le bean {@code EntityManagerFactory} est remplacé une fois pour toutes
  * par ce proxy : c'est donc la même instance qui est injectée partout
- * (repositories, {@code JpaTransactionManager}...), ce qui permet à
- * {@link ContexteEtablissement} de retrouver, via
- * {@code TransactionSynchronizationManager.getResource(emf)}, l'
- * {@code EntityManager} déjà lié au thread courant pour le ré-armer.</p>
+ * (repositories, {@code JpaTransactionManager}...).
+ *
+ * <p>Cette classe n'enregistre volontairement la fabrique nulle part.
+ * {@link ContexteEtablissement} retrouve les {@code EntityManager} liés au
+ * thread courant en parcourant les ressources transactionnelles, sans état
+ * global : un unique emplacement statique se faisait écraser par tout contexte
+ * Spring supplémentaire, désarmant le filtre en silence (voir le commentaire
+ * en tête de {@code ContexteEtablissement}).</p>
  */
 @Component
 public class ArmeurFiltreEtablissement implements BeanPostProcessor {
@@ -47,7 +51,6 @@ public class ArmeurFiltreEtablissement implements BeanPostProcessor {
                 interfacesDe(emf),
                 nouvelInvocationHandler(emf));
 
-        ContexteEtablissement.enregistrerEntityManagerFactory(proxy);
         return proxy;
     }
 

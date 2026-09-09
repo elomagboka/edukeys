@@ -3,7 +3,6 @@ package tg.novadigital.edukeys.common.multietablissement;
 import java.util.Optional;
 import java.util.UUID;
 
-import jakarta.persistence.EntityManagerFactory;
 import org.springframework.orm.jpa.EntityManagerHolder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -27,30 +26,37 @@ public final class ContexteEtablissement {
 
     private static final ThreadLocal<PerimetreEtablissement> COURANT = new ThreadLocal<>();
 
-    /** Renseigné une seule fois au démarrage par {@link ArmeurFiltreEtablissement}, pour ré-armer le filtre à l'ouverture d'un contexte. */
-    private static volatile EntityManagerFactory entityManagerFactory;
-
-    private ContexteEtablissement() {
-    }
-
-    static void enregistrerEntityManagerFactory(EntityManagerFactory emf) {
-        entityManagerFactory = emf;
-    }
-
     /**
-     * Réservé aux tests du package (ex. {@code FuiteContexteEtablissementTest})
-     * qui substituent temporairement un {@code EntityManagerFactory} mock : ce
-     * champ est {@code static}, donc partagé par tout le run JVM, y compris
-     * entre classes de test qui réutilisent un contexte Spring mis en cache.
-     * Un test qui l'écrase doit pouvoir lire la valeur d'origine pour la
-     * restaurer dans son {@code @AfterEach} — la remettre inconditionnellement
-     * à {@code null} laisse un {@code IsolationEtablissementTest} exécuté
-     * ensuite dans le même run sans filtre Hibernate ré-armable, en silence.
+     * <strong>Aucun {@code EntityManagerFactory} n'est mémorisé ici, et c'est
+     * volontaire.</strong> Ce champ a existé — un unique emplacement
+     * {@code static volatile} renseigné par {@link ArmeurFiltreEtablissement}
+     * au démarrage — et il portait un défaut que son propre commentaire
+     * décrivait sans le corriger : « ce champ est static, donc partagé par
+     * tout le run JVM, y compris entre classes de test qui réutilisent un
+     * contexte Spring mis en cache ». Le contournement d'alors se bornait à
+     * demander aux tests qui l'écrasaient de restaurer la valeur d'origine.
+     *
+     * <p>Il ne couvrait pas le cas réel : <strong>chaque contexte Spring
+     * supplémentaire écrase l'emplacement</strong>, sans que personne ne
+     * l'écrase « à la main ». Dès qu'une classe de test surcharge une
+     * propriété ({@code @SpringBootTest(properties = ...)}), un second
+     * contexte démarre, y inscrit sa propre fabrique, et toute classe
+     * réutilisant le contexte précédent perd sa capacité à ré-armer le filtre
+     * — {@code getResource(emf)} ne trouve plus rien et sortait
+     * <em>en silence</em>. Résultat constaté : le filtre Hibernate
+     * n'était plus armé du tout pendant {@code IsolationEtablissementTest},
+     * qui devenait vert sans rien prouver, et {@code findById} traversait la
+     * frontière entre établissements. Invisible pendant trois mois : l'ordre
+     * d'exécution Surefire par défaut ({@code filesystem}) place la classe
+     * fautive après sous NTFS, avant sous ext4.
+     *
+     * <p>La correction supprime l'état global au lieu de le discipliner :
+     * {@link #reArmerFiltreSurSessionLiee()} parcourt désormais les
+     * ressources réellement liées au thread courant. Il n'y a plus rien à
+     * écraser, donc plus de collision possible entre contextes. En
+     * production, où un seul contexte existe, le comportement est
+     * inchangé.</p>
      */
-    static EntityManagerFactory entityManagerFactoryEnregistree() {
-        return entityManagerFactory;
-    }
-
     public static Optional<PerimetreEtablissement> courant() {
         return Optional.ofNullable(COURANT.get());
     }
@@ -117,19 +123,22 @@ public final class ContexteEtablissement {
     }
 
     /**
-     * Ré-arme le filtre sur l'{@code EntityManager} déjà lié au thread courant
-     * (une transaction ouverte avant l'appel à {@code ouvrir}/{@code close}) :
-     * sans cela, une session déjà créée continuerait de filtrer sur l'ancien
-     * établissement jusqu'à sa fermeture.
+     * Ré-arme le filtre sur chaque {@code EntityManager} déjà lié au thread
+     * courant (une transaction ouverte avant l'appel à {@code ouvrir} /
+     * {@code close}) : sans cela, une session déjà créée continuerait de
+     * filtrer sur l'ancien établissement jusqu'à sa fermeture.
+     *
+     * <p>On parcourt toutes les ressources liées plutôt que d'interroger une
+     * fabrique mémorisée : voir le commentaire en tête de classe. En
+     * production la boucle ne rencontre qu'un seul {@code EntityManagerHolder} ;
+     * en test elle rend l'armement indépendant du nombre de contextes Spring
+     * en vie.</p>
      */
     private static void reArmerFiltreSurSessionLiee() {
-        EntityManagerFactory emf = entityManagerFactory;
-        if (emf == null) {
-            return;
-        }
-        Object ressource = TransactionSynchronizationManager.getResource(emf);
-        if (ressource instanceof EntityManagerHolder holder) {
-            ArmeurFiltreEtablissement.armer(holder.getEntityManager());
+        for (Object ressource : TransactionSynchronizationManager.getResourceMap().values()) {
+            if (ressource instanceof EntityManagerHolder holder) {
+                ArmeurFiltreEtablissement.armer(holder.getEntityManager());
+            }
         }
     }
 }
