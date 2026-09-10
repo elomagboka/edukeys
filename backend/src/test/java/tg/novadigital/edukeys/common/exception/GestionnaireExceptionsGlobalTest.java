@@ -26,16 +26,24 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.read.ListAppender;
+import tg.novadigital.edukeys.common.securite.limitation.LimitationDebitProperties;
 import tg.novadigital.edukeys.common.web.CorrelationIdFilter;
 
 /**
  * Sécurité Spring exclue de ce test de slice : il vérifie uniquement le
  * mapping des exceptions métier vers RFC 7807, indépendamment du module
  * identite (T-04) qui sécurise le reste de l'application par défaut.
+ *
+ * <p>{@code LimitationDebitProperties} est importée pour la même raison que
+ * {@code CorrelationIdFilter} : {@code @WebMvcTest} détecte automatiquement
+ * tout bean {@code Filter} du classpath (issue #58), y compris
+ * {@code FiltreLimitationDebit}, hors du périmètre de ce test — sans cette
+ * propriété, sa construction échoue faute de dépendance disponible dans ce
+ * contexte réduit.</p>
  */
 @WebMvcTest(controllers = ExceptionDeDemoControleur.class,
         excludeAutoConfiguration = { SecurityAutoConfiguration.class, SecurityFilterAutoConfiguration.class })
-@Import({ GestionnaireExceptionsGlobal.class, CorrelationIdFilter.class })
+@Import({ GestionnaireExceptionsGlobal.class, CorrelationIdFilter.class, LimitationDebitProperties.class })
 class GestionnaireExceptionsGlobalTest {
 
     @Autowired

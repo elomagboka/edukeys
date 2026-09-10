@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import tg.novadigital.edukeys.common.securite.limitation.FiltreLimitationDebit;
 import tg.novadigital.edukeys.identite.domain.Utilisateur;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
 import tg.novadigital.edukeys.identite.service.UtilisateurService;
@@ -66,6 +68,23 @@ class AuthControllerIntegrationTest {
 
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Autowired
+    private FiltreLimitationDebit filtreLimitationDebit;
+
+    /**
+     * {@link FiltreLimitationDebit} est un singleton Spring, partagé entre
+     * toutes les méthodes de ce test (et potentiellement d'autres classes
+     * réutilisant le même contexte) : sans remise à zéro explicite, les
+     * échecs d'authentification volontairement provoqués par un test
+     * (ex. {@code refuse401_quandMotDePasseIncorrect}) s'accumuleraient et
+     * finiraient par faire échouer un test suivant, pourtant sans rapport,
+     * avec un 429 inattendu (issue #58).
+     */
+    @BeforeEach
+    void reinitialiserLaLimitationDeDebit() {
+        filtreLimitationDebit.reinitialiserPourLesTests();
+    }
 
     @Test
     void connecteEtRenvoieLesJetonsAvecLEtablissementActif_quandIdentifiantsValides() throws Exception {
