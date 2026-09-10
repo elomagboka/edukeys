@@ -1073,6 +1073,15 @@ export interface operations {
                     "*/*": components["schemas"]["JetonsReponseDto"];
                 };
             };
+            /** @description Trop de tentatives (limitation de débit par jeton ou par IP) ; en-tête Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JetonsReponseDto"];
+                };
+            };
         };
     };
     login: {
@@ -1099,6 +1108,15 @@ export interface operations {
             };
             /** @description Identifiants invalides */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JetonsReponseDto"];
+                };
+            };
+            /** @description Trop de tentatives (limitation de débit par compte ou par IP) ; en-tête Retry-After */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
