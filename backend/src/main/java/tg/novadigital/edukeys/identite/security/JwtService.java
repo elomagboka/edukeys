@@ -45,11 +45,18 @@ public class JwtService {
         this.cle = Keys.hmacShaKeyFor(octets);
     }
 
-    public String genererAccessToken(UUID utilisateurId, UUID etablissementId, Set<String> codesRoles) {
+    public String genererAccessToken(
+            UUID utilisateurId, UUID etablissementId, Set<String> codesRoles, boolean motDePasseAChanger) {
         Instant maintenant = Instant.now();
         var builder = Jwts.builder()
                 .subject(utilisateurId.toString())
                 .claim("roles", codesRoles)
+                // Changement de mot de passe obligatoire au premier accès (US-04) :
+                // porté par le jeton, jamais relu en base à chaque requête (même
+                // principe que les rôles, arbitrage T-04 n°5). Absent (donc faux)
+                // plutôt que systématiquement présent : un jeton émis avant cette US
+                // reste valide et se comporte comme motDePasseAChanger = false.
+                .claim("chg", motDePasseAChanger)
                 .issuedAt(Date.from(maintenant))
                 .expiration(Date.from(maintenant.plus(DUREE_ACCESS_TOKEN)))
                 .signWith(cle);
@@ -74,7 +81,10 @@ public class JwtService {
         List<String> roles = claims.get("roles", List.class);
         Set<String> codesRoles = roles == null ? Set.of() : roles.stream().collect(Collectors.toUnmodifiableSet());
 
-        return new UtilisateurPrincipal(utilisateurId, etablissementId, codesRoles);
+        Boolean motDePasseAChanger = claims.get("chg", Boolean.class);
+
+        return new UtilisateurPrincipal(
+                utilisateurId, etablissementId, codesRoles, motDePasseAChanger != null && motDePasseAChanger);
     }
 
     public boolean estValide(String accessToken) {

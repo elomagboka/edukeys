@@ -87,7 +87,7 @@ class JwtAuthenticationFilterTest {
     @Test
     void authentifieAvecLesAutoritesAttendues_quandJetonValide() throws Exception {
         UUID utilisateurId = UUID.randomUUID();
-        UtilisateurPrincipal principal = new UtilisateurPrincipal(utilisateurId, null, Set.of("ENSEIGNANT", "PARENT"));
+        UtilisateurPrincipal principal = new UtilisateurPrincipal(utilisateurId, null, Set.of("ENSEIGNANT", "PARENT"), false);
 
         when(request.getHeader("Authorization")).thenReturn("Bearer un-jeton-valide");
         when(jwtService.analyser("un-jeton-valide")).thenReturn(principal);
@@ -163,7 +163,7 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void neReanalysePasLeJeton_quandDejaAuthentifie() throws Exception {
-        UtilisateurPrincipal dejaAuthentifie = new UtilisateurPrincipal(UUID.randomUUID(), null, Set.of());
+        UtilisateurPrincipal dejaAuthentifie = new UtilisateurPrincipal(UUID.randomUUID(), null, Set.of(), false);
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(dejaAuthentifie, null, Set.of()));
         when(request.getHeader("Authorization")).thenReturn("Bearer un-jeton-quelconque");

@@ -223,11 +223,12 @@ class LogoControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Logo","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(reponse, "$.id");
+        return JsonPath.read(reponse, "$.etablissement.id");
     }
 
     /** Crée un compte ADMIN affecté à l'établissement donné et retourne son jeton d'accès (LogoController exige ETABLISSEMENT_GERER, pas ETABLISSEMENT_CREER). */

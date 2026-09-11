@@ -113,7 +113,7 @@ class DemoEntiteControllerIntegrationTest {
      */
     private ResultActions dansUnContexte(
             org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder requestBuilder) throws Exception {
-        var principal = new UtilisateurPrincipal(UUID.randomUUID(), ETABLISSEMENT_DE_TEST, Set.of());
+        var principal = new UtilisateurPrincipal(UUID.randomUUID(), ETABLISSEMENT_DE_TEST, Set.of(), false);
         var authentification = new UsernamePasswordAuthenticationToken(principal, null, List.of());
         return mockMvc.perform(requestBuilder.with(authentication(authentification)));
     }
@@ -208,7 +208,7 @@ class DemoEntiteControllerIntegrationTest {
     void refuseLHistorique_quandLEntiteAppartientAUnAutreEtablissement() throws Exception {
         UUID entiteId = creerPuisDesactiverEnTantQue(UUID.randomUUID());
 
-        var principalAutreEtablissement = new UtilisateurPrincipal(UUID.randomUUID(), AUTRE_ETABLISSEMENT, Set.of());
+        var principalAutreEtablissement = new UtilisateurPrincipal(UUID.randomUUID(), AUTRE_ETABLISSEMENT, Set.of(), false);
         var authentification = new UsernamePasswordAuthenticationToken(principalAutreEtablissement, null, List.of());
 
         mockMvc.perform(get("/internal/demo/entites/" + entiteId + "/historique").with(authentication(authentification)))
@@ -216,7 +216,7 @@ class DemoEntiteControllerIntegrationTest {
     }
 
     private UUID creerPuisDesactiverEnTantQue(UUID auteurId) {
-        var principal = new UtilisateurPrincipal(auteurId, ETABLISSEMENT_DE_TEST, Set.of());
+        var principal = new UtilisateurPrincipal(auteurId, ETABLISSEMENT_DE_TEST, Set.of(), false);
         var authentification = new UsernamePasswordAuthenticationToken(principal, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentification);
         try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_DE_TEST)) {

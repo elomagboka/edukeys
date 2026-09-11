@@ -17,5 +17,12 @@ public record CreerEtablissementRequestDto(
         @Size(max = 255) String adresseLigne,
         @NotBlank @Email @Size(max = 320) String email,
         @Size(max = 30) String telephone,
-        @Size(max = 255) String siteWeb) {
+        @Size(max = 255) String siteWeb,
+        /**
+         * Premier compte administrateur de l'établissement (US-04 §3) : un
+         * établissement sans administrateur ne doit jamais exister, même
+         * transitoirement — jamais un endpoint de réparation après coup.
+         */
+        @NotBlank @Email @Size(max = 320) String emailAdministrateur,
+        @NotBlank @Size(max = 255) String nomCompletAdministrateur) {
 }

@@ -29,6 +29,7 @@ import tg.novadigital.edukeys.etablissement.repository.LogoEtablissementReposito
 import tg.novadigital.edukeys.etablissement.repository.SiteRepository;
 import tg.novadigital.edukeys.etablissement.web.CreerEtablissementRequestDto;
 import tg.novadigital.edukeys.etablissement.web.ModifierEtablissementRequestDto;
+import tg.novadigital.edukeys.identite.service.CreateurCompteAdministrateur;
 
 /**
  * Tests unitaires du service de référence T-10 (US-00). Le point critique
@@ -46,6 +47,7 @@ class EtablissementServiceTest {
     private LogoEtablissementRepository logoEtablissementRepository;
     private ChargeurReferentielType chargeurReferentielType;
     private EntityManager entityManager;
+    private CreateurCompteAdministrateur createurCompteAdministrateur;
     private EtablissementService service;
 
     @BeforeEach
@@ -55,24 +57,29 @@ class EtablissementServiceTest {
         logoEtablissementRepository = mock(LogoEtablissementRepository.class);
         chargeurReferentielType = mock(ChargeurReferentielType.class);
         entityManager = mock(EntityManager.class);
+        createurCompteAdministrateur = mock(CreateurCompteAdministrateur.class);
 
         when(etablissementRepository.save(any(Etablissement.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(siteRepository.save(any(Site.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(chargeurReferentielType.charger())
                 .thenReturn(new ReferentielType(List.of(), List.of(), List.of(), List.of()));
+        when(createurCompteAdministrateur.creerAdministrateur(any(), any(), any()))
+                .thenReturn(new CreateurCompteAdministrateur.CompteAdministrateurCree(
+                        UUID.randomUUID(), "admin@csj.tg", "MotDePasseTemp123"));
     }
 
     private EtablissementService nouveauService(List<InitialisateurReferentiel> initialisateurs) {
         return new EtablissementService(
                 etablissementRepository, siteRepository, logoEtablissementRepository,
-                chargeurReferentielType, initialisateurs, entityManager);
+                chargeurReferentielType, initialisateurs, entityManager, createurCompteAdministrateur);
     }
 
     private static CreerEtablissementRequestDto requeteCreation() {
         return new CreerEtablissementRequestDto(
                 "csj", "Complexe Scolaire Jean", "CSJ", TypeEtablissement.COMPLEXE,
-                "Lomé", "Bè", null, null, "Contact@CSJ.TG", null, null);
+                "Lomé", "Bè", null, null, "Contact@CSJ.TG", null, null,
+                "admin@csj.tg", "Admin CSJ");
     }
 
     @Test
@@ -81,7 +88,7 @@ class EtablissementServiceTest {
         when(etablissementRepository.existsByCodeIgnoreCaseAndActifTrue("CSJ")).thenReturn(false);
         when(etablissementRepository.existsByEmailIgnoreCaseAndActifTrue("contact@csj.tg")).thenReturn(false);
 
-        Etablissement etablissement = service.creer(requeteCreation());
+        Etablissement etablissement = service.creer(requeteCreation()).etablissement();
 
         assertThat(etablissement.getCode()).isEqualTo("CSJ");
         assertThat(etablissement.getEmail()).isEqualTo("contact@csj.tg");
@@ -102,7 +109,7 @@ class EtablissementServiceTest {
         when(etablissementRepository.existsByCodeIgnoreCaseAndActifTrue(any())).thenReturn(false);
         when(etablissementRepository.existsByEmailIgnoreCaseAndActifTrue(any())).thenReturn(false);
 
-        Etablissement etablissement = service.creer(requeteCreation());
+        Etablissement etablissement = service.creer(requeteCreation()).etablissement();
 
         verify(initialisateur).initialiser(org.mockito.ArgumentMatchers.eq(etablissement.getId()), any());
     }

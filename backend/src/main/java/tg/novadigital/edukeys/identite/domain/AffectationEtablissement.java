@@ -47,6 +47,16 @@ public class AffectationEtablissement extends BaseEntity {
     private UUID etablissementId;
 
     /**
+     * Organisation interne à l'établissement (docs/adr/0005-sites-et-annexes.md),
+     * jamais un second niveau de cloisonnement de sécurité : nullable, absent
+     * de tout filtre Hibernate et de toute clause de cloisonnement (CLAUDE.md,
+     * règle 9) — la direction voit tous ses sites, quel que soit celui associé
+     * à une affectation donnée.
+     */
+    @Column(name = "site_id")
+    private UUID siteId;
+
+    /**
      * Rôles cumulés sur cette affectation. {@link RoleCode} est une énumération
      * (correction T-04, lot 1 n°2) : plus de jointure vers une table
      * {@code roles}, une simple table de collection {@code affectation_roles}
@@ -63,9 +73,14 @@ public class AffectationEtablissement extends BaseEntity {
     }
 
     public AffectationEtablissement(Utilisateur utilisateur, UUID etablissementId, Set<RoleCode> roles) {
+        this(utilisateur, etablissementId, roles, null);
+    }
+
+    public AffectationEtablissement(Utilisateur utilisateur, UUID etablissementId, Set<RoleCode> roles, UUID siteId) {
         this.utilisateur = utilisateur;
         this.etablissementId = etablissementId;
         this.roles = roles.isEmpty() ? EnumSet.noneOf(RoleCode.class) : EnumSet.copyOf(roles);
+        this.siteId = siteId;
     }
 
     public Utilisateur getUtilisateur() {
@@ -76,7 +91,25 @@ public class AffectationEtablissement extends BaseEntity {
         return etablissementId;
     }
 
+    public UUID getSiteId() {
+        return siteId;
+    }
+
     public Set<RoleCode> getRoles() {
         return roles;
+    }
+
+    /** Remplacement complet des rôles de l'affectation (US-04, {@code PUT /api/v1/utilisateurs/{id}/roles}). */
+    public void remplacerRoles(Set<RoleCode> nouveauxRoles) {
+        this.roles = nouveauxRoles.isEmpty() ? EnumSet.noneOf(RoleCode.class) : EnumSet.copyOf(nouveauxRoles);
+    }
+
+    /**
+     * Réactivation logique (US-04) : pendant de {@link #desactiver()},
+     * exposée publiquement comme le prévoit la Javadoc de
+     * {@link tg.novadigital.edukeys.common.domain.BaseEntity#reactiverLogiquement()}.
+     */
+    public void reactiver() {
+        reactiverLogiquement();
     }
 }

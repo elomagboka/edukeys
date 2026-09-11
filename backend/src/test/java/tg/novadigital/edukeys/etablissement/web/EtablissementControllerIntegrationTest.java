@@ -70,14 +70,16 @@ class EtablissementControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Nouvel Établissement","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.code").value(code.toUpperCase()))
-                .andExpect(jsonPath("$.referentielInitialise").value(true))
+                .andExpect(jsonPath("$.etablissement.code").value(code.toUpperCase()))
+                .andExpect(jsonPath("$.etablissement.referentielInitialise").value(true))
+                .andExpect(jsonPath("$.motDePasseTemporaireAdmin").isNotEmpty())
                 .andReturn().getResponse().getContentAsString();
 
-        String etablissementId = JsonPath.read(reponse, "$.id");
+        String etablissementId = JsonPath.read(reponse, "$.etablissement.id");
 
         // GET .../sites n'est plus vérifié via HTTP ici : ce endpoint est
         // gardé par ETABLISSEMENT_GERER (ADMIN, borné à son propre
@@ -109,7 +111,8 @@ class EtablissementControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"CSJ","nom":"Doublon","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"doublon@edukeys.tg"}
+                                 "ville":"Lomé","email":"doublon@edukeys.tg",
+                                 "emailAdministrateur":"admin.doublon@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
                                 """))
                 .andExpect(status().isConflict());
     }
@@ -123,7 +126,8 @@ class EtablissementControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"XYZ","nom":"Refuse","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"refuse@edukeys.tg"}
+                                 "ville":"Lomé","email":"refuse@edukeys.tg",
+                                 "emailAdministrateur":"admin.refuse@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
                                 """))
                 .andExpect(status().isForbidden());
     }
@@ -306,11 +310,12 @@ class EtablissementControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Cascade","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String etablissementId = JsonPath.read(reponseEtab, "$.id");
+        String etablissementId = JsonPath.read(reponseEtab, "$.etablissement.id");
 
         // Site secondaire inséré directement en base (JDBC), pas via
         // SiteController : ce endpoint est gardé par ETABLISSEMENT_GERER
@@ -367,11 +372,12 @@ class EtablissementControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Réactivation","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String etablissementId = JsonPath.read(reponseEtab, "$.id");
+        String etablissementId = JsonPath.read(reponseEtab, "$.etablissement.id");
 
         // Site secondaire + logo insérés directement en base (SiteController/
         // LogoController ne sont plus accessibles à SUPER_ADMIN, voir le test

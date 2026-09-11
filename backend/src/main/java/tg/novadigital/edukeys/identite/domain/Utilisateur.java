@@ -35,6 +35,18 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "super_admin", nullable = false)
     private boolean superAdmin;
 
+    /**
+     * Changement de mot de passe obligatoire au premier accès (US-04) : posé à
+     * {@code true} lorsqu'un mot de passe temporaire vient d'être émis
+     * (création de compte ou régénération), jusqu'à ce que le titulaire le
+     * change lui-même via {@code POST /api/v1/utilisateurs/moi/mot-de-passe}.
+     * Tant qu'il est vrai, une garde centrale
+     * ({@code identite.security.GardeMotDePasseAChangerFilter}) refuse tout
+     * autre endpoint métier — jamais reproduite contrôleur par contrôleur.
+     */
+    @Column(name = "mot_de_passe_a_changer", nullable = false)
+    private boolean motDePasseAChanger;
+
     @OneToMany(mappedBy = "utilisateur", fetch = FetchType.LAZY)
     private Set<AffectationEtablissement> affectations = new HashSet<>();
 
@@ -66,6 +78,29 @@ public class Utilisateur extends BaseEntity {
 
     public boolean isSuperAdmin() {
         return superAdmin;
+    }
+
+    public boolean isMotDePasseAChanger() {
+        return motDePasseAChanger;
+    }
+
+    /** Posé lors de l'émission d'un mot de passe temporaire (création de compte ou régénération, US-04). */
+    public void exigerChangementMotDePasse() {
+        this.motDePasseAChanger = true;
+    }
+
+    /** Levé lorsque le titulaire a lui-même changé son mot de passe (US-04). */
+    public void confirmerChangementMotDePasse() {
+        this.motDePasseAChanger = false;
+    }
+
+    /**
+     * Réactivation logique (US-04) : pendant de {@link #desactiver()},
+     * exposée publiquement comme le prévoit la Javadoc de
+     * {@link tg.novadigital.edukeys.common.domain.BaseEntity#reactiverLogiquement()}.
+     */
+    public void reactiver() {
+        reactiverLogiquement();
     }
 
     public Set<AffectationEtablissement> getAffectations() {

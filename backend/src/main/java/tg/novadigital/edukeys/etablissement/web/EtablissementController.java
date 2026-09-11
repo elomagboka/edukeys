@@ -54,20 +54,23 @@ public class EtablissementController {
         this.historiqueService = historiqueService;
     }
 
-    @Operation(summary = "Crée un établissement (identité, coordonnées, site principal et référentiel pédagogique initialisés en une seule transaction)",
+    @Operation(summary = "Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction)",
             responses = {
-                    @ApiResponse(responseCode = "201", description = "Établissement créé"),
+                    @ApiResponse(responseCode = "201", description = "Établissement créé, avec le mot de passe temporaire de son premier administrateur (retourné une seule fois)"),
                     @ApiResponse(responseCode = "409", description = "Code ou email déjà porté par un établissement actif")
             })
     @PostMapping
     @PreAuthorize("hasAuthority('ETABLISSEMENT_CREER')")
-    public ResponseEntity<EtablissementDto> creer(@Valid @RequestBody CreerEtablissementRequestDto requete) {
-        Etablissement etablissement = etablissementService.creer(requete);
+    public ResponseEntity<EtablissementCreeDto> creer(@Valid @RequestBody CreerEtablissementRequestDto requete) {
+        EtablissementService.EtablissementCree resultat = etablissementService.creer(requete);
+        Etablissement etablissement = resultat.etablissement();
         URI location = ServletUriComponentsBuilder.fromCurrentRequestUri()
                 .path("/{id}")
                 .buildAndExpand(etablissement.getId())
                 .toUri();
-        return ResponseEntity.created(location).body(etablissementMapper.versDto(etablissement));
+        EtablissementCreeDto corps = new EtablissementCreeDto(
+                etablissementMapper.versDto(etablissement), resultat.motDePasseTemporaireAdmin());
+        return ResponseEntity.created(location).body(corps);
     }
 
     @Operation(summary = "Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN)",

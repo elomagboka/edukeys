@@ -96,6 +96,11 @@ class IsolationEtablissementTest {
      */
     private static final Set<Class<?>> HORS_PERIMETRE = Set.of(
             Etablissement.class, Utilisateur.class, AffectationEtablissement.class, JetonRafraichissement.class,
+            // Comme JetonRafraichissement : le mot de passe temporaire est vérifié
+            // à /auth/login (AuthService#connecter), avant tout contexte
+            // multi-établissement ouvert (US-04) — ne peut donc pas être filtré
+            // par établissement, seulement lié à un Utilisateur.
+            tg.novadigital.edukeys.identite.domain.JetonActivationCompte.class,
             RevisionAuteur.class);
 
     @Autowired
@@ -502,7 +507,7 @@ class IsolationEtablissementTest {
         permissionResolver.resoudrePermissions(Set.of(role.name()))
                 .forEach(permission -> autorites.add(new SimpleGrantedAuthority(permission)));
 
-        var principal = new UtilisateurPrincipal(UUID.randomUUID(), etablissementId, Set.of(role.name()));
+        var principal = new UtilisateurPrincipal(UUID.randomUUID(), etablissementId, Set.of(role.name()), false);
         var authentification = new UsernamePasswordAuthenticationToken(principal, null, autorites);
 
         return mockMvc.perform(get("/internal/isolation/demo-entites/nombre").with(authentication(authentification)));

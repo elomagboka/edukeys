@@ -49,6 +49,16 @@ edukeys:
       secret: ${EDUKEYS_JWT_SECRET}
     cors:
       origines-autorisees: ${EDUKEYS_CORS_ORIGINES:http://localhost:5173}
+    # Durée de validité du mot de passe temporaire (US-04) : au-delà, le
+    # jeton d'activation est expiré et /auth/login (ainsi que le changement
+    # de mot de passe par le titulaire) refuse avec le code distinct
+    # MOT_DE_PASSE_TEMPORAIRE_EXPIRE — l'administrateur doit régénérer via
+    # POST /api/v1/utilisateurs/{id}/mot-de-passe-temporaire, pas croire à un
+    # mot de passe mal recopié. Quelques jours : assez pour qu'un mot de
+    # passe remis en main propre (pas encore de canal email, Sprint 10) soit
+    # utilisé, sans rester valable indéfiniment.
+    mot-de-passe-temporaire:
+      duree-validite: 14d
     reseau:
       # Nombre d'intermédiaires que la requête traverse chez nous (Render :
       # l'edge, donc 1). L'IP cliente retenue est le N-ième élément de

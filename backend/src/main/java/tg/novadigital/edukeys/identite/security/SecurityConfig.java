@@ -90,7 +90,8 @@ public class SecurityConfig {
                     authorize.anyRequest().authenticated();
                 })
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService, permissionResolver), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(new ContexteEtablissementFilter(), JwtAuthenticationFilter.class);
+                .addFilterAfter(new GardeMotDePasseAChangerFilter(), JwtAuthenticationFilter.class)
+                .addFilterAfter(new ContexteEtablissementFilter(), GardeMotDePasseAChangerFilter.class);
 
         return http.build();
     }

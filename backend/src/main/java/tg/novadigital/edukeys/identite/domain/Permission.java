@@ -24,6 +24,25 @@ public enum Permission {
      * ADMIN portait aussi UTILISATEUR_GERER et obtenait donc la liste globale.
      */
     UTILISATEUR_GERER_PLATEFORME("Gérer les utilisateurs de tous les établissements"),
+    /**
+     * Lecture des comptes de son établissement, distincte de
+     * {@link #UTILISATEUR_GERER} (US-04) : {@code DIRECTION} doit pouvoir
+     * consulter le personnel de son établissement sans pouvoir créer,
+     * désactiver ou réaffecter un compte.
+     */
+    UTILISATEUR_CONSULTER("Consulter les utilisateurs de son établissement"),
+    /**
+     * Attribution des rôles d'une affectation, volontairement séparée de
+     * {@link #UTILISATEUR_GERER} (US-04). Sans cette scission, gérer les
+     * comptes équivaudrait à pouvoir s'octroyer n'importe quelle permission :
+     * un {@code ADMIN} porteur d'une seule permission « gérer les
+     * utilisateurs » pourrait se créer un compte, puis lui attribuer
+     * {@code SUPER_ADMIN} — élévation de privilège triviale. En pratique
+     * {@code ROLE_ATTRIBUER} reste, elle aussi, refusée sur {@code SUPER_ADMIN}
+     * (rôle de plateforme, jamais attribuable depuis un établissement) : voir
+     * la vérification dans {@code UtilisateurService}.
+     */
+    ROLE_ATTRIBUER("Attribuer les rôles d'un compte de son établissement"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

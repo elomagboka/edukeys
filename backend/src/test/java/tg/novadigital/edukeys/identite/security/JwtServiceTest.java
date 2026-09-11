@@ -34,7 +34,7 @@ class JwtServiceTest {
         UUID utilisateurId = UUID.randomUUID();
         UUID etablissementId = UUID.randomUUID();
 
-        String jeton = jwtService.genererAccessToken(utilisateurId, etablissementId, Set.of("DIRECTION", "ADMIN"));
+        String jeton = jwtService.genererAccessToken(utilisateurId, etablissementId, Set.of("DIRECTION", "ADMIN"), false);
         UtilisateurPrincipal principal = jwtService.analyser(jeton);
 
         assertThat(principal.utilisateurId()).isEqualTo(utilisateurId);
@@ -44,7 +44,7 @@ class JwtServiceTest {
 
     @Test
     void analyseUnJetonSansEtablissement_avecEtablissementIdNull() {
-        String jeton = jwtService.genererAccessToken(UUID.randomUUID(), null, Set.of());
+        String jeton = jwtService.genererAccessToken(UUID.randomUUID(), null, Set.of(), false);
 
         UtilisateurPrincipal principal = jwtService.analyser(jeton);
 
@@ -54,7 +54,7 @@ class JwtServiceTest {
 
     @Test
     void estValideRenvoieTrue_quandJetonValide() {
-        String jeton = jwtService.genererAccessToken(UUID.randomUUID(), null, Set.of());
+        String jeton = jwtService.genererAccessToken(UUID.randomUUID(), null, Set.of(), false);
 
         assertThat(jwtService.estValide(jeton)).isTrue();
     }
@@ -78,7 +78,7 @@ class JwtServiceTest {
 
     @Test
     void refuseLeJeton_quandTronqueOuMalforme() {
-        String jetonValide = jwtService.genererAccessToken(UUID.randomUUID(), null, Set.of());
+        String jetonValide = jwtService.genererAccessToken(UUID.randomUUID(), null, Set.of(), false);
         String jetonTronque = jetonValide.substring(0, jetonValide.length() - 10);
 
         assertThatThrownBy(() -> jwtService.analyser(jetonTronque)).isInstanceOf(JwtException.class);

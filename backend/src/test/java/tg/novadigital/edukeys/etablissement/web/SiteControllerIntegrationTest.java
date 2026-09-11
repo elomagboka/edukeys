@@ -64,11 +64,12 @@ class SiteControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Sites","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String etablissementId = JsonPath.read(reponseEtab, "$.id");
+        String etablissementId = JsonPath.read(reponseEtab, "$.etablissement.id");
 
         // SiteController est gardé par ETABLISSEMENT_GERER (ADMIN, borné à
         // son propre établissement) depuis le durcissement T-10 (2e revue) :
@@ -124,11 +125,12 @@ class SiteControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Compteur","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String etablissementId = JsonPath.read(reponseEtab, "$.id");
+        String etablissementId = JsonPath.read(reponseEtab, "$.etablissement.id");
         entityManager.flush();
 
         // SiteController est gardé par ETABLISSEMENT_GERER (ADMIN seul depuis
@@ -180,11 +182,12 @@ class SiteControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Autre","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String autreEtablissementId = JsonPath.read(reponseEtab, "$.id");
+        String autreEtablissementId = JsonPath.read(reponseEtab, "$.etablissement.id");
 
         Utilisateur compteAdmin = utilisateurRepository.save(new Utilisateur(
                 "admin.us00.sites." + UUID.randomUUID() + "@edukeys.tg",
@@ -252,11 +255,12 @@ class SiteControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"code":"%s","nom":"Établissement Super Admin","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg"}
-                                """.formatted(code, code.toLowerCase())))
+                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
+                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
+                                """.formatted(code, code.toLowerCase(), code.toLowerCase())))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String etablissementId = JsonPath.read(reponseEtab, "$.id");
+        String etablissementId = JsonPath.read(reponseEtab, "$.etablissement.id");
 
         mockMvc.perform(get("/api/v1/etablissements/" + etablissementId + "/sites")
                         .header("Authorization", "Bearer " + jetonSuperAdmin))
