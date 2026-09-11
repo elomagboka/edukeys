@@ -102,11 +102,11 @@ Chaque module suit la même arborescence interne :
 - **Migrations Flyway rétrocompatibles** : jamais de suppression de colonne
   dans la même version que le code qui cesse de l'utiliser. Voir
   `docs/adr/0004-cicd-deploiement.md`.
-- **OpenAPI (T-07)** : `@Tag` par contrôleur, `@Operation` + `responses` par
-  endpoint ; un endpoint public annule le JWT par défaut avec
-  `@SecurityRequirements` vide (voir `AuthController`). Swagger UI : profil
-  `local` seulement ; `/v3/api-docs` reste ouvert en `test` pour
-  `OpenApiExportTest`, qui écrit `target/openapi.json` au build.
+- **OpenAPI (T-07)** : `@Tag` par contrôleur ; `@Operation` + `responses` + `operationId`
+  explicite par endpoint (sinon SpringDoc suffixe `_1`/`_2` selon l'ordre de découverte,
+  et le frontend casse) ; endpoint public : `@SecurityRequirements` vide. Swagger UI en
+  `local` seul. Contrat versionné `docs/api/openapi.json` (écrit par `OpenApiExportTest`) :
+  **une US qui touche un DTO ou un endpoint régénère contrat ET types frontend, même commit.**
 
 ## Environnement de développement
 

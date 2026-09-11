@@ -39,6 +39,21 @@ management:
     health:
       show-details: never
 
+# Les contrôleurs de démonstration et de test (@Profile local/test, plus ceux
+# du classpath de test) n'existent dans aucun environnement réel. Les laisser
+# dans le contrat ferait générer au frontend des types pour des chemins
+# fictifs : le typage cesserait d'être une garantie dès lors qu'il décrit des
+# endpoints qu'on ne peut pas appeler. Exclusion ici plutôt qu'un filtrage
+# après export : elle vaut aussi pour Swagger UI en local et pour
+# /v3/api-docs consulté à la main, et une règle déclarative n'a pas à être
+# retrouvée dans du code de test au moment d'ajouter un contrôleur interne.
+# OpenApiExportTest vérifie que cette propriété fait effectivement son travail
+# (une clé mal orthographiée échouerait en silence).
+springdoc:
+  paths-to-exclude:
+    - /internal/**
+    - /test-exceptions/**
+
 logging:
   pattern:
     level: "%5p [%X{correlationId}]"

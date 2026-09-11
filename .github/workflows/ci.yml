@@ -119,15 +119,25 @@ jobs:
           fi
           echo "Conteneur démarré jusqu'à un échec normal (pas de profil ni de base fournis à ce job) : jar exécutable, runtime Java correct."
 
-      - name: Export du contrat OpenAPI
-        working-directory: backend
-        run: mvn -B -Pgenerate-openapi verify
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: openapi
-          path: backend/target/openapi.json
-          retention-days: 1
+      # Le contrat versionné (docs/api/openapi.json) est réécrit par
+      # OpenApiExportTest, donc par le `mvn verify` ci-dessus : il n'y a rien
+      # à régénérer ici, seulement à constater qu'il n'a pas dérivé du code.
+      #
+      # Un contrat versionné qui dérive est pire que pas de contrat : un
+      # relecteur croit lire l'API et lit son passé. Même mécanisme que pour
+      # les types générés du frontend — régénérer, comparer, échouer.
+      #
+      # (Une étape `mvn -B -Pgenerate-openapi verify` se trouvait ici : le
+      # profil n'a jamais existé dans le pom, Maven se contentait d'un
+      # avertissement et relançait toute la suite backend une seconde fois,
+      # conteneurs Testcontainers compris.)
+      - name: Vérification que le contrat OpenAPI est à jour
+        run: |
+          if ! git diff --exit-code docs/api/openapi.json; then
+            echo "::error::Le contrat OpenAPI versionné ne correspond plus au code."
+            echo "::error::Lance 'mvn verify' dans backend/ et committe docs/api/openapi.json."
+            exit 1
+          fi
 
   frontend:
     runs-on: ubuntu-latest
@@ -145,18 +155,18 @@ jobs:
       - run: npm ci
         working-directory: frontend
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: openapi
-          path: frontend/
-
       # Le contrat backend fait autorité. Si les types générés committés
       # divergent de ce que le backend expose réellement, la PR est refusée :
       # sans ce garde-fou, le frontend compile contre un contrat périmé.
+      #
+      # La source est le contrat versionné, plus un artefact téléchargé du job
+      # backend : c'est le job backend qui garantit que ce fichier correspond
+      # au code (voir « Vérification que le contrat OpenAPI est à jour »), donc
+      # le lire depuis le dépôt est équivalent et vaut aussi en local.
       - name: Vérification que les types générés sont à jour
         working-directory: frontend
         run: |
-          npm run api:generate -- --input ./openapi.json
+          npm run api:generate
           if ! git diff --exit-code src/api/generated/; then
             echo "::error::Les types générés ne correspondent pas au contrat OpenAPI du backend."
             echo "::error::Lance 'npm run api:generate' en local et committe le résultat."

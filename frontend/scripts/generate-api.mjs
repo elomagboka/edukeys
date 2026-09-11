@@ -1,7 +1,11 @@
-// Wrapper autour de la CLI openapi-typescript : accepte --input <fichier>
-// (utilisé par la CI, qui télécharge le contrat backend en artefact et le
-// pointe explicitement) avec une valeur par défaut pour l'usage local, où
-// le build backend a déjà écrit backend/target/openapi.json.
+// Wrapper autour de la CLI openapi-typescript : accepte --input <fichier>,
+// avec pour valeur par défaut le contrat versionné docs/api/openapi.json.
+//
+// Ce contrat est committé dans le dépôt, donc régénérer les types ne demande
+// ni Docker ni build backend : l'export passe par un @SpringBootTest, qui
+// démarre un conteneur PostgreSQL (springdoc introspecte les contrôleurs
+// instanciés, donc leurs services, donc les repositories). C'est le contrat
+// versionné qui découple les deux. La CI vérifie qu'il n'a pas dérivé du code.
 import { spawnSync } from 'node:child_process'
 
 const args = process.argv.slice(2)
@@ -9,7 +13,7 @@ const inputFlagIndex = args.indexOf('--input')
 const input =
   inputFlagIndex !== -1 && args[inputFlagIndex + 1]
     ? args[inputFlagIndex + 1]
-    : '../backend/target/openapi.json'
+    : '../docs/api/openapi.json'
 
 const result = spawnSync(
   'npx',
