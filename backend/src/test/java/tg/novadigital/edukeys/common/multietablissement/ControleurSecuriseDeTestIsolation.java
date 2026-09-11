@@ -1,5 +1,7 @@
 package tg.novadigital.edukeys.common.multietablissement;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,6 +36,7 @@ public class ControleurSecuriseDeTestIsolation {
     }
 
     @PreAuthorize("hasAuthority('NOTE_SAISIR')")
+    @Operation(operationId = "compterDemoEntitesIsolation")
     @GetMapping("/nombre")
     public long compter() {
         return demoEntiteRepository.count();

@@ -37,7 +37,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Connexion par email et mot de passe",
+    @Operation(operationId = "login", summary = "Connexion par email et mot de passe",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Jetons émis"),
                     @ApiResponse(responseCode = "401", description = "Identifiants invalides"),
@@ -49,7 +49,7 @@ public class AuthController {
         return authService.connecter(requete.email(), requete.motDePasse(), FiltreAdresseIpCliente.adresseIpDe(request));
     }
 
-    @Operation(summary = "Rafraîchissement de l'access token à partir d'un refresh token valide",
+    @Operation(operationId = "refresh", summary = "Rafraîchissement de l'access token à partir d'un refresh token valide",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Nouveaux jetons émis"),
                     @ApiResponse(responseCode = "401", description = "Jeton de rafraîchissement invalide, expiré ou révoqué"),
@@ -61,7 +61,7 @@ public class AuthController {
         return authService.rafraichir(requete.refreshToken());
     }
 
-    @Operation(summary = "Bascule l'établissement actif du compte authentifié",
+    @Operation(operationId = "basculerEtablissement", summary = "Bascule l'établissement actif du compte authentifié",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Nouveaux jetons émis pour l'établissement demandé"),
                     @ApiResponse(responseCode = "403", description = "Aucune affectation active sur cet établissement")

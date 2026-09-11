@@ -1,5 +1,7 @@
 package tg.novadigital.edukeys.common.exception;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +21,7 @@ import jakarta.validation.constraints.NotBlank;
 @RestController
 public class ExceptionDeDemoControleur {
 
+    @Operation(operationId = "lancerExceptionDeDemo")
     @GetMapping("/test-exceptions/{type}")
     public void lancer(@PathVariable String type) {
         switch (type) {
@@ -36,6 +39,7 @@ public class ExceptionDeDemoControleur {
      * {@code MethodArgumentNotValidException} avec une valeur arbitraire dans
      * le champ {@code email}, exactement comme {@code LoginRequestDto}.
      */
+    @Operation(operationId = "validerRequeteDeDemo")
     @PostMapping("/test-exceptions/valider")
     public void valider(@Valid @RequestBody RequeteDeDemo requete) {
     }

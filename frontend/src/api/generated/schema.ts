@@ -13,7 +13,7 @@ export interface paths {
         };
         get?: never;
         /** Remplace les rôles d'un compte de l'établissement courant */
-        put: operations["remplacerRoles"];
+        put: operations["remplacerRolesUtilisateur"];
         post?: never;
         delete?: never;
         options?: never;
@@ -29,9 +29,9 @@ export interface paths {
             cookie?: never;
         };
         /** Détail d'un établissement */
-        get: operations["obtenir"];
+        get: operations["obtenirEtablissement"];
         /** Modifie l'identité et les coordonnées d'un établissement (le code est immuable) */
-        put: operations["modifier"];
+        put: operations["modifierEtablissement"];
         post?: never;
         delete?: never;
         options?: never;
@@ -48,7 +48,7 @@ export interface paths {
         };
         get?: never;
         /** Modifie un site */
-        put: operations["modifier_1"];
+        put: operations["modifierSite"];
         post?: never;
         delete?: never;
         options?: never;
@@ -64,12 +64,12 @@ export interface paths {
             cookie?: never;
         };
         /** Télécharge le logo d'un établissement */
-        get: operations["obtenir_1"];
+        get: operations["obtenirLogoEtablissement"];
         /** Remplace le logo d'un établissement (l'ancien est désactivé, un nouveau créé) */
-        put: operations["remplacer"];
+        put: operations["remplacerLogoEtablissement"];
         post?: never;
         /** Supprime (désactivation logique) le logo d'un établissement */
-        delete: operations["supprimer"];
+        delete: operations["supprimerLogoEtablissement"];
         options?: never;
         head?: never;
         patch?: never;
@@ -84,7 +84,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["valider"];
+        post: operations["validerRequeteDeDemo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -99,10 +99,10 @@ export interface paths {
             cookie?: never;
         };
         /** Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme) */
-        get: operations["lister"];
+        get: operations["listerUtilisateursPlateforme"];
         put?: never;
         /** Crée un compte dans l'établissement courant */
-        post: operations["creer"];
+        post: operations["creerUtilisateur"];
         delete?: never;
         options?: never;
         head?: never;
@@ -119,7 +119,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Réactive l'affectation d'un compte à l'établissement courant */
-        post: operations["reactiver"];
+        post: operations["reactiverUtilisateur"];
         delete?: never;
         options?: never;
         head?: never;
@@ -168,10 +168,10 @@ export interface paths {
             cookie?: never;
         };
         /** Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN) */
-        get: operations["lister_1"];
+        get: operations["listerEtablissements"];
         put?: never;
         /** Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction) */
-        post: operations["creer_1"];
+        post: operations["creerEtablissement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -188,7 +188,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Réactive un établissement, si son code et son email restent disponibles */
-        post: operations["reactiver_1"];
+        post: operations["reactiverEtablissement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -205,7 +205,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Désactive un établissement (et, en cascade logique, ses sites et son logo) */
-        post: operations["desactiver"];
+        post: operations["desactiverEtablissement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -220,10 +220,10 @@ export interface paths {
             cookie?: never;
         };
         /** Liste des sites actifs d'un établissement */
-        get: operations["lister_2"];
+        get: operations["listerSites"];
         put?: never;
         /** Crée un site pour un établissement */
-        post: operations["creer_2"];
+        post: operations["creerSite"];
         delete?: never;
         options?: never;
         head?: never;
@@ -240,7 +240,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Désigne un site comme principal (bascule transactionnelle) */
-        post: operations["designerPrincipal"];
+        post: operations["designerSitePrincipal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -257,7 +257,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Désactive un site (refusé pour le site principal) */
-        post: operations["desactiver_1"];
+        post: operations["desactiverSite"];
         delete?: never;
         options?: never;
         head?: never;
@@ -322,7 +322,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lancer"];
+        get: operations["lancerExceptionDeDemo"];
         put?: never;
         post?: never;
         delete?: never;
@@ -338,7 +338,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["compter"];
+        get: operations["compterDemoEntitesIsolation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -354,7 +354,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["fuiter"];
+        get: operations["declencherFuiteContexte"];
         put?: never;
         post?: never;
         delete?: never;
@@ -370,7 +370,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_3"];
+        get: operations["listerDemoEntites"];
         put?: never;
         post?: never;
         delete?: never;
@@ -386,7 +386,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["historique"];
+        get: operations["listerHistoriqueDemoEntite"];
         put?: never;
         post?: never;
         delete?: never;
@@ -403,7 +403,7 @@ export interface paths {
             cookie?: never;
         };
         /** Liste paginée des comptes de l'établissement courant */
-        get: operations["listerMonEtablissement"];
+        get: operations["listerUtilisateursMonEtablissement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -420,7 +420,7 @@ export interface paths {
             cookie?: never;
         };
         /** Compte de l'établissement courant par identifiant */
-        get: operations["obtenirMonEtablissement"];
+        get: operations["obtenirUtilisateurMonEtablissement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -437,7 +437,7 @@ export interface paths {
             cookie?: never;
         };
         /** Profil du compte authentifié */
-        get: operations["moi"];
+        get: operations["obtenirMonProfil"];
         put?: never;
         post?: never;
         delete?: never;
@@ -454,7 +454,7 @@ export interface paths {
             cookie?: never;
         };
         /** Historique des révisions d'un établissement */
-        get: operations["historique_1"];
+        get: operations["listerHistoriqueEtablissement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -471,7 +471,7 @@ export interface paths {
             cookie?: never;
         };
         /** Établissement de l'appelant courant (ADMIN) */
-        get: operations["obtenirCourant"];
+        get: operations["obtenirEtablissementCourant"];
         put?: never;
         post?: never;
         delete?: never;
@@ -491,7 +491,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Désactive (logiquement) l'affectation d'un compte à l'établissement courant */
-        delete: operations["desactiver_2"];
+        delete: operations["desactiverUtilisateur"];
         options?: never;
         head?: never;
         patch?: never;
@@ -772,7 +772,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    remplacerRoles: {
+    remplacerRolesUtilisateur: {
         parameters: {
             query?: never;
             header?: never;
@@ -810,7 +810,7 @@ export interface operations {
             };
         };
     };
-    obtenir: {
+    obtenirEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -841,7 +841,7 @@ export interface operations {
             };
         };
     };
-    modifier: {
+    modifierEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -885,7 +885,7 @@ export interface operations {
             };
         };
     };
-    modifier_1: {
+    modifierSite: {
         parameters: {
             query?: never;
             header?: never;
@@ -921,7 +921,7 @@ export interface operations {
             };
         };
     };
-    obtenir_1: {
+    obtenirLogoEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -954,7 +954,7 @@ export interface operations {
             };
         };
     };
-    remplacer: {
+    remplacerLogoEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1001,7 +1001,7 @@ export interface operations {
             };
         };
     };
-    supprimer: {
+    supprimerLogoEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1021,7 +1021,7 @@ export interface operations {
             };
         };
     };
-    valider: {
+    validerRequeteDeDemo: {
         parameters: {
             query?: never;
             header?: never;
@@ -1043,7 +1043,7 @@ export interface operations {
             };
         };
     };
-    lister: {
+    listerUtilisateursPlateforme: {
         parameters: {
             query?: {
                 page?: number;
@@ -1075,7 +1075,7 @@ export interface operations {
             };
         };
     };
-    creer: {
+    creerUtilisateur: {
         parameters: {
             query?: never;
             header?: never;
@@ -1117,7 +1117,7 @@ export interface operations {
             };
         };
     };
-    reactiver: {
+    reactiverUtilisateur: {
         parameters: {
             query?: never;
             header?: never;
@@ -1204,7 +1204,7 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    listerEtablissements: {
         parameters: {
             query?: {
                 page?: number;
@@ -1227,7 +1227,7 @@ export interface operations {
             };
         };
     };
-    creer_1: {
+    creerEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1260,7 +1260,7 @@ export interface operations {
             };
         };
     };
-    reactiver_1: {
+    reactiverEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1287,7 +1287,7 @@ export interface operations {
             };
         };
     };
-    desactiver: {
+    desactiverEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1307,7 +1307,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
+    listerSites: {
         parameters: {
             query?: never;
             header?: never;
@@ -1329,7 +1329,7 @@ export interface operations {
             };
         };
     };
-    creer_2: {
+    creerSite: {
         parameters: {
             query?: never;
             header?: never;
@@ -1364,7 +1364,7 @@ export interface operations {
             };
         };
     };
-    designerPrincipal: {
+    designerSitePrincipal: {
         parameters: {
             query?: never;
             header?: never;
@@ -1385,7 +1385,7 @@ export interface operations {
             };
         };
     };
-    desactiver_1: {
+    desactiverSite: {
         parameters: {
             query?: never;
             header?: never;
@@ -1530,7 +1530,7 @@ export interface operations {
             };
         };
     };
-    lancer: {
+    lancerExceptionDeDemo: {
         parameters: {
             query?: never;
             header?: never;
@@ -1550,7 +1550,7 @@ export interface operations {
             };
         };
     };
-    compter: {
+    compterDemoEntitesIsolation: {
         parameters: {
             query?: never;
             header?: never;
@@ -1570,7 +1570,7 @@ export interface operations {
             };
         };
     };
-    fuiter: {
+    declencherFuiteContexte: {
         parameters: {
             query?: never;
             header?: never;
@@ -1588,7 +1588,7 @@ export interface operations {
             };
         };
     };
-    lister_3: {
+    listerDemoEntites: {
         parameters: {
             query?: {
                 page?: number;
@@ -1613,7 +1613,7 @@ export interface operations {
             };
         };
     };
-    historique: {
+    listerHistoriqueDemoEntite: {
         parameters: {
             query?: never;
             header?: never;
@@ -1635,7 +1635,7 @@ export interface operations {
             };
         };
     };
-    listerMonEtablissement: {
+    listerUtilisateursMonEtablissement: {
         parameters: {
             query?: {
                 page?: number;
@@ -1658,7 +1658,7 @@ export interface operations {
             };
         };
     };
-    obtenirMonEtablissement: {
+    obtenirUtilisateurMonEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1689,7 +1689,7 @@ export interface operations {
             };
         };
     };
-    moi: {
+    obtenirMonProfil: {
         parameters: {
             query?: never;
             header?: never;
@@ -1709,7 +1709,7 @@ export interface operations {
             };
         };
     };
-    historique_1: {
+    listerHistoriqueEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1740,7 +1740,7 @@ export interface operations {
             };
         };
     };
-    obtenirCourant: {
+    obtenirEtablissementCourant: {
         parameters: {
             query?: never;
             header?: never;
@@ -1760,7 +1760,7 @@ export interface operations {
             };
         };
     };
-    desactiver_2: {
+    desactiverUtilisateur: {
         parameters: {
             query?: never;
             header?: never;

@@ -2,6 +2,8 @@ package tg.novadigital.edukeys.common.demo.web;
 
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +33,7 @@ import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 @RequestMapping("/internal/demo/fuite-contexte")
 public class DemoFuiteContexteController {
 
+    @Operation(operationId = "declencherFuiteContexte")
     @GetMapping
     public void fuiter() {
         ContexteEtablissement.ouvrir(UUID.randomUUID());

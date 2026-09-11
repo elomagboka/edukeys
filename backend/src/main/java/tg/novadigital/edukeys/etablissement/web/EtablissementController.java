@@ -54,7 +54,7 @@ public class EtablissementController {
         this.historiqueService = historiqueService;
     }
 
-    @Operation(summary = "Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction)",
+    @Operation(operationId = "creerEtablissement", summary = "Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction)",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Établissement créé, avec le mot de passe temporaire de son premier administrateur (retourné une seule fois)"),
                     @ApiResponse(responseCode = "409", description = "Code ou email déjà porté par un établissement actif")
@@ -73,7 +73,7 @@ public class EtablissementController {
         return ResponseEntity.created(location).body(corps);
     }
 
-    @Operation(summary = "Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN)",
+    @Operation(operationId = "listerEtablissements", summary = "Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN)",
             responses = @ApiResponse(responseCode = "200", description = "Page d'établissements"))
     @GetMapping
     @PreAuthorize("hasAuthority('ETABLISSEMENT_CREER')")
@@ -96,7 +96,7 @@ public class EtablissementController {
      * multi-établissement de l'appelant, jamais un identifiant fourni par la
      * requête.
      */
-    @Operation(summary = "Établissement de l'appelant courant (ADMIN)",
+    @Operation(operationId = "obtenirEtablissementCourant", summary = "Établissement de l'appelant courant (ADMIN)",
             responses = @ApiResponse(responseCode = "200", description = "Établissement courant"))
     @GetMapping("/courant")
     @PreAuthorize("hasAuthority('ETABLISSEMENT_GERER')")
@@ -104,7 +104,7 @@ public class EtablissementController {
         return etablissementMapper.versDto(etablissementService.obtenirCourant());
     }
 
-    @Operation(summary = "Détail d'un établissement",
+    @Operation(operationId = "obtenirEtablissement", summary = "Détail d'un établissement",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Établissement trouvé"),
                     @ApiResponse(responseCode = "404", description = "Établissement introuvable")
@@ -116,7 +116,7 @@ public class EtablissementController {
         return etablissementMapper.versDto(etablissementService.obtenir(id));
     }
 
-    @Operation(summary = "Modifie l'identité et les coordonnées d'un établissement (le code est immuable)",
+    @Operation(operationId = "modifierEtablissement", summary = "Modifie l'identité et les coordonnées d'un établissement (le code est immuable)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Établissement modifié"),
                     @ApiResponse(responseCode = "404", description = "Établissement introuvable"),
@@ -129,7 +129,7 @@ public class EtablissementController {
         return etablissementMapper.versDto(etablissementService.modifier(id, requete));
     }
 
-    @Operation(summary = "Désactive un établissement (et, en cascade logique, ses sites et son logo)",
+    @Operation(operationId = "desactiverEtablissement", summary = "Désactive un établissement (et, en cascade logique, ses sites et son logo)",
             responses = @ApiResponse(responseCode = "204", description = "Établissement désactivé"))
     @PostMapping("/{id}/desactivation")
     @PreAuthorize("hasAuthority('ETABLISSEMENT_CREER')")
@@ -138,7 +138,7 @@ public class EtablissementController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Réactive un établissement, si son code et son email restent disponibles",
+    @Operation(operationId = "reactiverEtablissement", summary = "Réactive un établissement, si son code et son email restent disponibles",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Établissement réactivé"),
                     @ApiResponse(responseCode = "409", description = "Code ou email repris par un autre établissement actif entre-temps")
@@ -156,7 +156,7 @@ public class EtablissementController {
      * explicite un ADMIN pourrait lire l'historique de n'importe quel
      * établissement.
      */
-    @Operation(summary = "Historique des révisions d'un établissement",
+    @Operation(operationId = "listerHistoriqueEtablissement", summary = "Historique des révisions d'un établissement",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Révisions de l'établissement"),
                     @ApiResponse(responseCode = "404", description = "Établissement introuvable")

@@ -36,7 +36,7 @@ public class LogoController {
         this.logoMapper = logoMapper;
     }
 
-    @Operation(summary = "Remplace le logo d'un établissement (l'ancien est désactivé, un nouveau créé)",
+    @Operation(operationId = "remplacerLogoEtablissement", summary = "Remplace le logo d'un établissement (l'ancien est désactivé, un nouveau créé)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Logo remplacé"),
                     @ApiResponse(responseCode = "415", description = "Format non pris en charge (magic bytes)"),
@@ -50,7 +50,7 @@ public class LogoController {
         return logoMapper.versDto(logo);
     }
 
-    @Operation(summary = "Télécharge le logo d'un établissement",
+    @Operation(operationId = "obtenirLogoEtablissement", summary = "Télécharge le logo d'un établissement",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Flux binaire du logo", content = @io.swagger.v3.oas.annotations.media.Content(mediaType = "image/*")),
                     @ApiResponse(responseCode = "404", description = "Aucun logo pour cet établissement")
@@ -67,7 +67,7 @@ public class LogoController {
                 .body(logo.getContenu());
     }
 
-    @Operation(summary = "Supprime (désactivation logique) le logo d'un établissement",
+    @Operation(operationId = "supprimerLogoEtablissement", summary = "Supprime (désactivation logique) le logo d'un établissement",
             responses = @ApiResponse(responseCode = "204", description = "Logo supprimé"))
     @DeleteMapping
     @PreAuthorize("hasAuthority('ETABLISSEMENT_GERER')")

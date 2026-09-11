@@ -65,7 +65,7 @@ public class UtilisateurController {
         this.utilisateurMapper = utilisateurMapper;
     }
 
-    @Operation(summary = "Profil du compte authentifié",
+    @Operation(operationId = "obtenirMonProfil", summary = "Profil du compte authentifié",
             responses = @ApiResponse(responseCode = "200", description = "Profil de l'utilisateur courant"))
     @GetMapping("/moi")
     @PreAuthorize("isAuthenticated()")
@@ -80,7 +80,7 @@ public class UtilisateurController {
      * (qui, lui, est borné à l'établissement d'ADMIN — voir la javadoc de
      * classe pour l'incident que cette distinction corrige).
      */
-    @Operation(summary = "Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme)",
+    @Operation(operationId = "listerUtilisateursPlateforme", summary = "Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme)",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Page de comptes"),
                     @ApiResponse(responseCode = "403", description = "Permission UTILISATEUR_GERER_PLATEFORME requise")
@@ -128,7 +128,7 @@ public class UtilisateurController {
      * Toujours {@code 201}, toujours un mot de passe temporaire dans la
      * réponse.
      */
-    @Operation(summary = "Crée un compte dans l'établissement courant",
+    @Operation(operationId = "creerUtilisateur", summary = "Crée un compte dans l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Compte créé, avec le mot de passe temporaire de son titulaire (retourné une seule fois)"),
                     @ApiResponse(responseCode = "409", description = "Cet email est déjà utilisé sur la plateforme (message unique, y compris pour un compte de plateforme)"),
@@ -142,7 +142,7 @@ public class UtilisateurController {
         return ResponseEntity.status(HttpStatus.CREATED).body(utilisateurMapper.versCompteCreeDto(compteCree));
     }
 
-    @Operation(summary = "Liste paginée des comptes de l'établissement courant",
+    @Operation(operationId = "listerUtilisateursMonEtablissement", summary = "Liste paginée des comptes de l'établissement courant",
             responses = @ApiResponse(responseCode = "200", description = "Page de comptes de l'établissement courant"))
     @GetMapping("/mon-etablissement")
     @PreAuthorize("hasAuthority('UTILISATEUR_CONSULTER')")
@@ -154,7 +154,7 @@ public class UtilisateurController {
         return PageReponse.depuis(resultat.map(utilisateurMapper::versCompteDto));
     }
 
-    @Operation(summary = "Compte de l'établissement courant par identifiant",
+    @Operation(operationId = "obtenirUtilisateurMonEtablissement", summary = "Compte de l'établissement courant par identifiant",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Compte de l'établissement courant"),
                     @ApiResponse(responseCode = "404", description = "Aucun compte actif portant cet identifiant dans l'établissement courant")
@@ -166,7 +166,7 @@ public class UtilisateurController {
         return utilisateurMapper.versCompteDto(affectation);
     }
 
-    @Operation(summary = "Remplace les rôles d'un compte de l'établissement courant",
+    @Operation(operationId = "remplacerRolesUtilisateur", summary = "Remplace les rôles d'un compte de l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Rôles remplacés"),
                     @ApiResponse(responseCode = "404", description = "Aucun compte actif portant cet identifiant dans l'établissement courant"),
@@ -182,7 +182,7 @@ public class UtilisateurController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Désactive (logiquement) l'affectation d'un compte à l'établissement courant",
+    @Operation(operationId = "desactiverUtilisateur", summary = "Désactive (logiquement) l'affectation d'un compte à l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Affectation désactivée"),
                     @ApiResponse(responseCode = "404", description = "Aucun compte actif portant cet identifiant dans l'établissement courant"),
@@ -196,7 +196,7 @@ public class UtilisateurController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Réactive l'affectation d'un compte à l'établissement courant",
+    @Operation(operationId = "reactiverUtilisateur", summary = "Réactive l'affectation d'un compte à l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Affectation réactivée"),
                     @ApiResponse(responseCode = "404", description = "Aucun compte portant cet identifiant dans l'établissement courant")
@@ -208,7 +208,7 @@ public class UtilisateurController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Régénère un mot de passe temporaire pour un compte de l'établissement courant",
+    @Operation(operationId = "regenererMotDePasseTemporaire", summary = "Régénère un mot de passe temporaire pour un compte de l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Nouveau mot de passe temporaire (retourné une seule fois)"),
                     @ApiResponse(responseCode = "404", description = "Aucun compte actif portant cet identifiant dans l'établissement courant")
@@ -219,7 +219,7 @@ public class UtilisateurController {
         return new MotDePasseTemporaireDto(utilisateurService.regenererMotDePasseTemporaire(id));
     }
 
-    @Operation(summary = "Change le mot de passe du compte authentifié",
+    @Operation(operationId = "changerMonMotDePasse", summary = "Change le mot de passe du compte authentifié",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Mot de passe changé"),
                     @ApiResponse(responseCode = "401", description = "Ancien mot de passe incorrect")
