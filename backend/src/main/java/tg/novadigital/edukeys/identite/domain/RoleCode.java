@@ -9,6 +9,8 @@ import static tg.novadigital.edukeys.identite.domain.Permission.ENFANT_CONSULTER
 import static tg.novadigital.edukeys.identite.domain.Permission.ETABLISSEMENT_CREER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ETABLISSEMENT_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.NOTE_SAISIR;
+import static tg.novadigital.edukeys.identite.domain.Permission.ROLE_ATTRIBUER;
+import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_CONSULTER;
 import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_GERER_PLATEFORME;
 
@@ -34,8 +36,16 @@ public enum RoleCode {
     // (UTILISATEUR_GERER_PLATEFORME), jamais sur les sites ou le logo d'un
     // établissement client.
     SUPER_ADMIN(ETABLISSEMENT_CREER, UTILISATEUR_GERER_PLATEFORME),
-    ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER),
-    DIRECTION(),
+    // ADMIN cumule UTILISATEUR_GERER (création/désactivation de comptes) ET
+    // ROLE_ATTRIBUER (US-04) : les deux sont volontairement des permissions
+    // distinctes (voir Permission#ROLE_ATTRIBUER) même si ADMIN les porte
+    // toutes les deux — un futur rôle pourrait un jour ne porter que l'une
+    // des deux (ex. un rôle « support » qui gère les comptes sans jamais
+    // pouvoir toucher aux rôles).
+    ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER, UTILISATEUR_CONSULTER, ROLE_ATTRIBUER),
+    // DIRECTION lit le personnel de son établissement, mais ne crée ni
+    // n'attribue rien (US-04).
+    DIRECTION(UTILISATEUR_CONSULTER),
     GESTIONNAIRE(),
     ENSEIGNANT(NOTE_SAISIR, DEVOIR_CREER),
     PARENT(ENFANT_CONSULTER, BULLETIN_CONSULTER),

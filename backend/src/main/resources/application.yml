@@ -39,6 +39,21 @@ management:
     health:
       show-details: never
 
+# Les contrôleurs de démonstration et de test (@Profile local/test, plus ceux
+# du classpath de test) n'existent dans aucun environnement réel. Les laisser
+# dans le contrat ferait générer au frontend des types pour des chemins
+# fictifs : le typage cesserait d'être une garantie dès lors qu'il décrit des
+# endpoints qu'on ne peut pas appeler. Exclusion ici plutôt qu'un filtrage
+# après export : elle vaut aussi pour Swagger UI en local et pour
+# /v3/api-docs consulté à la main, et une règle déclarative n'a pas à être
+# retrouvée dans du code de test au moment d'ajouter un contrôleur interne.
+# OpenApiExportTest vérifie que cette propriété fait effectivement son travail
+# (une clé mal orthographiée échouerait en silence).
+springdoc:
+  paths-to-exclude:
+    - /internal/**
+    - /test-exceptions/**
+
 logging:
   pattern:
     level: "%5p [%X{correlationId}]"
@@ -49,6 +64,16 @@ edukeys:
       secret: ${EDUKEYS_JWT_SECRET}
     cors:
       origines-autorisees: ${EDUKEYS_CORS_ORIGINES:http://localhost:5173}
+    # Durée de validité du mot de passe temporaire (US-04) : au-delà, le
+    # jeton d'activation est expiré et /auth/login (ainsi que le changement
+    # de mot de passe par le titulaire) refuse avec le code distinct
+    # MOT_DE_PASSE_TEMPORAIRE_EXPIRE — l'administrateur doit régénérer via
+    # POST /api/v1/utilisateurs/{id}/mot-de-passe-temporaire, pas croire à un
+    # mot de passe mal recopié. Quelques jours : assez pour qu'un mot de
+    # passe remis en main propre (pas encore de canal email, Sprint 10) soit
+    # utilisé, sans rester valable indéfiniment.
+    mot-de-passe-temporaire:
+      duree-validite: 14d
     reseau:
       # Nombre d'intermédiaires que la requête traverse chez nous (Render :
       # l'edge, donc 1). L'IP cliente retenue est le N-ième élément de

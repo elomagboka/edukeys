@@ -1,0 +1,1956 @@
+{
+  "components" : {
+    "schemas" : {
+      "BasculerEtablissementRequestDto" : {
+        "properties" : {
+          "etablissementId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "etablissementId"
+        ],
+        "type" : "object"
+      },
+      "ChangerMotDePasseRequestDto" : {
+        "properties" : {
+          "ancienMotDePasse" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "nouveauMotDePasse" : {
+            "maxLength" : 255,
+            "minLength" : 8,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CompteCreeDto" : {
+        "properties" : {
+          "compte" : {
+            "$ref" : "#/components/schemas/UtilisateurCompteDto"
+          },
+          "motDePasseTemporaire" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CreerEtablissementRequestDto" : {
+        "properties" : {
+          "adresseLigne" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "boitePostale" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "code" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "maxLength" : 320,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "emailAdministrateur" : {
+            "maxLength" : 320,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nom" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nomCompletAdministrateur" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "quartier" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "sigle" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "siteWeb" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "telephone" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "typeEtablissement" : {
+            "enum" : [
+              "PRESCOLAIRE",
+              "PRIMAIRE",
+              "COLLEGE",
+              "LYCEE",
+              "COMPLEXE"
+            ],
+            "type" : "string"
+          },
+          "ville" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "typeEtablissement"
+        ],
+        "type" : "object"
+      },
+      "CreerSiteRequestDto" : {
+        "properties" : {
+          "adresseLigne" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "code" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nom" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "quartier" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "telephone" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ville" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CreerUtilisateurRequestDto" : {
+        "properties" : {
+          "email" : {
+            "maxLength" : 320,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nomComplet" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "enum" : [
+                "SUPER_ADMIN",
+                "ADMIN",
+                "DIRECTION",
+                "GESTIONNAIRE",
+                "ENSEIGNANT",
+                "PARENT",
+                "ELEVE"
+              ],
+              "type" : "string"
+            },
+            "minItems" : 1,
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "siteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EtablissementCreeDto" : {
+        "properties" : {
+          "etablissement" : {
+            "$ref" : "#/components/schemas/EtablissementDto"
+          },
+          "motDePasseTemporaireAdmin" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EtablissementDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "adresseLigne" : {
+            "type" : "string"
+          },
+          "boitePostale" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateModification" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "deviseCode" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fuseauHoraire" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "langueDefaut" : {
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "paysCode" : {
+            "type" : "string"
+          },
+          "quartier" : {
+            "type" : "string"
+          },
+          "referentielInitialise" : {
+            "type" : "boolean"
+          },
+          "sigle" : {
+            "type" : "string"
+          },
+          "siteWeb" : {
+            "type" : "string"
+          },
+          "telephone" : {
+            "type" : "string"
+          },
+          "typeEtablissement" : {
+            "enum" : [
+              "PRESCOLAIRE",
+              "PRIMAIRE",
+              "COLLEGE",
+              "LYCEE",
+              "COMPLEXE"
+            ],
+            "type" : "string"
+          },
+          "ville" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EtablissementHistoriqueDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "numeroRevision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "typeRevision" : {
+            "type" : "string"
+          },
+          "ville" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EtablissementResumeDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "nombreSites" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sigle" : {
+            "type" : "string"
+          },
+          "typeEtablissement" : {
+            "enum" : [
+              "PRESCOLAIRE",
+              "PRIMAIRE",
+              "COLLEGE",
+              "LYCEE",
+              "COMPLEXE"
+            ],
+            "type" : "string"
+          },
+          "ville" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "JetonsReponseDto" : {
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "etablissementId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "expiresDansSecondes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "refreshToken" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "LoginRequestDto" : {
+        "properties" : {
+          "email" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "motDePasse" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LogoDto" : {
+        "properties" : {
+          "empreinteSha256" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nomFichier" : {
+            "type" : "string"
+          },
+          "tailleOctets" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "typeMime" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ModifierEtablissementRequestDto" : {
+        "properties" : {
+          "adresseLigne" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "boitePostale" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "deviseCode" : {
+            "maxLength" : 3,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "maxLength" : 320,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fuseauHoraire" : {
+            "maxLength" : 64,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "langueDefaut" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nom" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "quartier" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "sigle" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "siteWeb" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "telephone" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "typeEtablissement" : {
+            "enum" : [
+              "PRESCOLAIRE",
+              "PRIMAIRE",
+              "COLLEGE",
+              "LYCEE",
+              "COMPLEXE"
+            ],
+            "type" : "string"
+          },
+          "ville" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "typeEtablissement"
+        ],
+        "type" : "object"
+      },
+      "ModifierRolesRequestDto" : {
+        "properties" : {
+          "roles" : {
+            "items" : {
+              "enum" : [
+                "SUPER_ADMIN",
+                "ADMIN",
+                "DIRECTION",
+                "GESTIONNAIRE",
+                "ENSEIGNANT",
+                "PARENT",
+                "ELEVE"
+              ],
+              "type" : "string"
+            },
+            "minItems" : 1,
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        },
+        "type" : "object"
+      },
+      "ModifierSiteRequestDto" : {
+        "properties" : {
+          "adresseLigne" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "nom" : {
+            "maxLength" : 255,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "quartier" : {
+            "maxLength" : 150,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "telephone" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ville" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "MotDePasseTemporaireDto" : {
+        "properties" : {
+          "motDePasseTemporaire" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PageReponseEtablissementResumeDto" : {
+        "properties" : {
+          "contenu" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EtablissementResumeDto"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "taille" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PageReponseUtilisateurCompteDto" : {
+        "properties" : {
+          "contenu" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UtilisateurCompteDto"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "taille" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PageReponseUtilisateurResumeDto" : {
+        "properties" : {
+          "contenu" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UtilisateurResumeDto"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "taille" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "RefreshRequestDto" : {
+        "properties" : {
+          "refreshToken" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SiteDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "adresseLigne" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "etablissementId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "principal" : {
+            "type" : "boolean"
+          },
+          "quartier" : {
+            "type" : "string"
+          },
+          "telephone" : {
+            "type" : "string"
+          },
+          "ville" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "UtilisateurCompteDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "motDePasseAChanger" : {
+            "type" : "boolean"
+          },
+          "nomComplet" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "enum" : [
+                "SUPER_ADMIN",
+                "ADMIN",
+                "DIRECTION",
+                "GESTIONNAIRE",
+                "ENSEIGNANT",
+                "PARENT",
+                "ELEVE"
+              ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "siteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "UtilisateurResumeDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "motDePasseAChanger" : {
+            "type" : "boolean"
+          },
+          "nomComplet" : {
+            "type" : "string"
+          },
+          "superAdmin" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      }
+    },
+    "securitySchemes" : {
+      "bearerAuth" : {
+        "bearerFormat" : "JWT",
+        "in" : "header",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  },
+  "info" : {
+    "description" : "API de gestion scolaire Edukeys, éditée par Nova Digital (Togo).",
+    "title" : "Edukeys — API",
+    "version" : "v1"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/v1/auth/etablissement-actif" : {
+      "post" : {
+        "operationId" : "basculerEtablissement",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BasculerEtablissementRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Nouveaux jetons émis pour l'établissement demandé"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Aucune affectation active sur cet établissement"
+          }
+        },
+        "summary" : "Bascule l'établissement actif du compte authentifié",
+        "tags" : [
+          "Authentification"
+        ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "operationId" : "login",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Jetons émis"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Identifiants invalides"
+          },
+          "429" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Trop de tentatives (limitation de débit par compte ou par IP) ; en-tête Retry-After"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Connexion par email et mot de passe",
+        "tags" : [
+          "Authentification"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh" : {
+      "post" : {
+        "operationId" : "refresh",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefreshRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Nouveaux jetons émis"
+          },
+          "401" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Jeton de rafraîchissement invalide, expiré ou révoqué"
+          },
+          "429" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/JetonsReponseDto"
+                }
+              }
+            },
+            "description" : "Trop de tentatives (limitation de débit par jeton ou par IP) ; en-tête Retry-After"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Rafraîchissement de l'access token à partir d'un refresh token valide",
+        "tags" : [
+          "Authentification"
+        ]
+      }
+    },
+    "/api/v1/etablissements" : {
+      "get" : {
+        "operationId" : "listerEtablissements",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "page",
+            "required" : false,
+            "schema" : {
+              "format" : "int32",
+              "type" : "integer"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "size",
+            "required" : false,
+            "schema" : {
+              "format" : "int32",
+              "type" : "integer"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageReponseEtablissementResumeDto"
+                }
+              }
+            },
+            "description" : "Page d'établissements"
+          }
+        },
+        "summary" : "Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN)",
+        "tags" : [
+          "Établissements"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerEtablissement",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerEtablissementRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementCreeDto"
+                }
+              }
+            },
+            "description" : "Établissement créé, avec le mot de passe temporaire de son premier administrateur (retourné une seule fois)"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementCreeDto"
+                }
+              }
+            },
+            "description" : "Code ou email déjà porté par un établissement actif"
+          }
+        },
+        "summary" : "Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction)",
+        "tags" : [
+          "Établissements"
+        ]
+      }
+    },
+    "/api/v1/etablissements/courant" : {
+      "get" : {
+        "operationId" : "obtenirEtablissementCourant",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementDto"
+                }
+              }
+            },
+            "description" : "Établissement courant"
+          }
+        },
+        "summary" : "Établissement de l'appelant courant (ADMIN)",
+        "tags" : [
+          "Établissements"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{etablissementId}/logo" : {
+      "delete" : {
+        "operationId" : "supprimerLogoEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Logo supprimé"
+          }
+        },
+        "summary" : "Supprime (désactivation logique) le logo d'un établissement",
+        "tags" : [
+          "Logo établissement"
+        ]
+      },
+      "get" : {
+        "operationId" : "obtenirLogoEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "image/*" : { }
+            },
+            "description" : "Flux binaire du logo"
+          },
+          "404" : {
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/png" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              },
+              "image/webp" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Aucun logo pour cet établissement"
+          }
+        },
+        "summary" : "Télécharge le logo d'un établissement",
+        "tags" : [
+          "Logo établissement"
+        ]
+      },
+      "put" : {
+        "operationId" : "remplacerLogoEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "fichier" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [
+                  "fichier"
+                ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LogoDto"
+                }
+              }
+            },
+            "description" : "Logo remplacé"
+          },
+          "413" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LogoDto"
+                }
+              }
+            },
+            "description" : "Fichier trop volumineux (> 1 Mo)"
+          },
+          "415" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LogoDto"
+                }
+              }
+            },
+            "description" : "Format non pris en charge (magic bytes)"
+          }
+        },
+        "summary" : "Remplace le logo d'un établissement (l'ancien est désactivé, un nouveau créé)",
+        "tags" : [
+          "Logo établissement"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{etablissementId}/sites" : {
+      "get" : {
+        "operationId" : "listerSites",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/SiteDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Sites de l'établissement"
+          }
+        },
+        "summary" : "Liste des sites actifs d'un établissement",
+        "tags" : [
+          "Sites"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerSite",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerSiteRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SiteDto"
+                }
+              }
+            },
+            "description" : "Site créé"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SiteDto"
+                }
+              }
+            },
+            "description" : "Code de site déjà utilisé dans cet établissement"
+          }
+        },
+        "summary" : "Crée un site pour un établissement",
+        "tags" : [
+          "Sites"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{etablissementId}/sites/{siteId}" : {
+      "put" : {
+        "operationId" : "modifierSite",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "siteId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierSiteRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SiteDto"
+                }
+              }
+            },
+            "description" : "Site modifié"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SiteDto"
+                }
+              }
+            },
+            "description" : "Site introuvable"
+          }
+        },
+        "summary" : "Modifie un site",
+        "tags" : [
+          "Sites"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{etablissementId}/sites/{siteId}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverSite",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "siteId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Site désactivé"
+          },
+          "422" : {
+            "description" : "Le site principal ne peut pas être désactivé directement"
+          }
+        },
+        "summary" : "Désactive un site (refusé pour le site principal)",
+        "tags" : [
+          "Sites"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{etablissementId}/sites/{siteId}/principal" : {
+      "post" : {
+        "operationId" : "designerSitePrincipal",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "etablissementId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "siteId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Site désigné principal"
+          }
+        },
+        "summary" : "Désigne un site comme principal (bascule transactionnelle)",
+        "tags" : [
+          "Sites"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{id}" : {
+      "get" : {
+        "operationId" : "obtenirEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementDto"
+                }
+              }
+            },
+            "description" : "Établissement trouvé"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementDto"
+                }
+              }
+            },
+            "description" : "Établissement introuvable"
+          }
+        },
+        "summary" : "Détail d'un établissement",
+        "tags" : [
+          "Établissements"
+        ]
+      },
+      "put" : {
+        "operationId" : "modifierEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierEtablissementRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementDto"
+                }
+              }
+            },
+            "description" : "Établissement modifié"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementDto"
+                }
+              }
+            },
+            "description" : "Établissement introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EtablissementDto"
+                }
+              }
+            },
+            "description" : "Email déjà porté par un autre établissement actif"
+          }
+        },
+        "summary" : "Modifie l'identité et les coordonnées d'un établissement (le code est immuable)",
+        "tags" : [
+          "Établissements"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{id}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Établissement désactivé"
+          }
+        },
+        "summary" : "Désactive un établissement (et, en cascade logique, ses sites et son logo)",
+        "tags" : [
+          "Établissements"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{id}/historique" : {
+      "get" : {
+        "operationId" : "listerHistoriqueEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EtablissementHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Révisions de l'établissement"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/EtablissementHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Établissement introuvable"
+          }
+        },
+        "summary" : "Historique des révisions d'un établissement",
+        "tags" : [
+          "Établissements"
+        ]
+      }
+    },
+    "/api/v1/etablissements/{id}/reactivation" : {
+      "post" : {
+        "operationId" : "reactiverEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Établissement réactivé"
+          },
+          "409" : {
+            "description" : "Code ou email repris par un autre établissement actif entre-temps"
+          }
+        },
+        "summary" : "Réactive un établissement, si son code et son email restent disponibles",
+        "tags" : [
+          "Établissements"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs" : {
+      "get" : {
+        "operationId" : "listerUtilisateursPlateforme",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "page",
+            "required" : false,
+            "schema" : {
+              "format" : "int32",
+              "type" : "integer"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "size",
+            "required" : false,
+            "schema" : {
+              "format" : "int32",
+              "type" : "integer"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageReponseUtilisateurResumeDto"
+                }
+              }
+            },
+            "description" : "Page de comptes"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageReponseUtilisateurResumeDto"
+                }
+              }
+            },
+            "description" : "Permission UTILISATEUR_GERER_PLATEFORME requise"
+          }
+        },
+        "summary" : "Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme)",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerUtilisateur",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerUtilisateurRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CompteCreeDto"
+                }
+              }
+            },
+            "description" : "Compte créé, avec le mot de passe temporaire de son titulaire (retourné une seule fois)"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CompteCreeDto"
+                }
+              }
+            },
+            "description" : "Cet email est déjà utilisé sur la plateforme (message unique, y compris pour un compte de plateforme)"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CompteCreeDto"
+                }
+              }
+            },
+            "description" : "Aucun rôle fourni, ou SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici)"
+          }
+        },
+        "summary" : "Crée un compte dans l'établissement courant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/moi" : {
+      "get" : {
+        "operationId" : "obtenirMonProfil",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UtilisateurResumeDto"
+                }
+              }
+            },
+            "description" : "Profil de l'utilisateur courant"
+          }
+        },
+        "summary" : "Profil du compte authentifié",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/moi/mot-de-passe" : {
+      "post" : {
+        "operationId" : "changerMonMotDePasse",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangerMotDePasseRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Mot de passe changé"
+          },
+          "401" : {
+            "description" : "Ancien mot de passe incorrect"
+          }
+        },
+        "summary" : "Change le mot de passe du compte authentifié",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/mon-etablissement" : {
+      "get" : {
+        "operationId" : "listerUtilisateursMonEtablissement",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "page",
+            "required" : false,
+            "schema" : {
+              "format" : "int32",
+              "type" : "integer"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "size",
+            "required" : false,
+            "schema" : {
+              "format" : "int32",
+              "type" : "integer"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageReponseUtilisateurCompteDto"
+                }
+              }
+            },
+            "description" : "Page de comptes de l'établissement courant"
+          }
+        },
+        "summary" : "Liste paginée des comptes de l'établissement courant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/mon-etablissement/{id}" : {
+      "get" : {
+        "operationId" : "obtenirUtilisateurMonEtablissement",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UtilisateurCompteDto"
+                }
+              }
+            },
+            "description" : "Compte de l'établissement courant"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UtilisateurCompteDto"
+                }
+              }
+            },
+            "description" : "Aucun compte actif portant cet identifiant dans l'établissement courant"
+          }
+        },
+        "summary" : "Compte de l'établissement courant par identifiant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/{id}" : {
+      "delete" : {
+        "operationId" : "desactiverUtilisateur",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Affectation désactivée"
+          },
+          "404" : {
+            "description" : "Aucun compte actif portant cet identifiant dans l'établissement courant"
+          },
+          "422" : {
+            "description" : "Tentative de désactiver son propre compte, ou dernier ADMIN actif de l'établissement"
+          }
+        },
+        "summary" : "Désactive (logiquement) l'affectation d'un compte à l'établissement courant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/{id}/mot-de-passe-temporaire" : {
+      "post" : {
+        "operationId" : "regenererMotDePasseTemporaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MotDePasseTemporaireDto"
+                }
+              }
+            },
+            "description" : "Nouveau mot de passe temporaire (retourné une seule fois)"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MotDePasseTemporaireDto"
+                }
+              }
+            },
+            "description" : "Aucun compte actif portant cet identifiant dans l'établissement courant"
+          }
+        },
+        "summary" : "Régénère un mot de passe temporaire pour un compte de l'établissement courant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/{id}/reactiver" : {
+      "post" : {
+        "operationId" : "reactiverUtilisateur",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Affectation réactivée"
+          },
+          "404" : {
+            "description" : "Aucun compte portant cet identifiant dans l'établissement courant"
+          }
+        },
+        "summary" : "Réactive l'affectation d'un compte à l'établissement courant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    },
+    "/api/v1/utilisateurs/{id}/roles" : {
+      "put" : {
+        "operationId" : "remplacerRolesUtilisateur",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierRolesRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Rôles remplacés"
+          },
+          "404" : {
+            "description" : "Aucun compte actif portant cet identifiant dans l'établissement courant"
+          },
+          "422" : {
+            "description" : "Aucun rôle fourni, SUPER_ADMIN demandé, ou tentative de modifier ses propres rôles"
+          }
+        },
+        "summary" : "Remplace les rôles d'un compte de l'établissement courant",
+        "tags" : [
+          "Utilisateurs"
+        ]
+      }
+    }
+  },
+  "security" : [
+    {
+      "bearerAuth" : [ ]
+    }
+  ],
+  "servers" : [
+    {
+      "description" : "Generated server url",
+      "url" : "http://localhost"
+    }
+  ]
+}

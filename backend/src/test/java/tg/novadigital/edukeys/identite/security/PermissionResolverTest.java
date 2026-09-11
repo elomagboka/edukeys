@@ -46,9 +46,11 @@ class PermissionResolverTest {
         // et UTILISATEUR_GERER_PLATEFORME (SUPER_ADMIN, tous établissements)
         // restent délibérément distinctes depuis la relecture T-04 qui a
         // montré qu'une permission partagée entre les deux rôles fuitait
-        // entre établissements.
+        // entre établissements. UTILISATEUR_CONSULTER et ROLE_ATTRIBUER
+        // (US-04) sont, elles aussi, portées par ADMIN.
         assertThat(permissions).containsExactlyInAnyOrder(
-                "ETABLISSEMENT_CREER", "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME");
+                "ETABLISSEMENT_CREER", "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME",
+                "UTILISATEUR_CONSULTER", "ROLE_ATTRIBUER");
     }
 
     @Test
@@ -60,9 +62,19 @@ class PermissionResolverTest {
 
     @Test
     void neRenvoieAucunePermission_quandRoleSansPermissionAttribuee() {
-        Set<String> permissions = resolver.resoudrePermissions(Set.of("DIRECTION", "GESTIONNAIRE", "ELEVE"));
+        Set<String> permissions = resolver.resoudrePermissions(Set.of("GESTIONNAIRE", "ELEVE"));
 
         assertThat(permissions).isEmpty();
+    }
+
+    @Test
+    void neRenvoieQueLaLecture_quandRoleDirection() {
+        // DIRECTION porte UTILISATEUR_CONSULTER depuis US-04 (lecture du
+        // personnel de son établissement), mais ni UTILISATEUR_GERER ni
+        // ROLE_ATTRIBUER : elle ne crée ni n'attribue rien.
+        Set<String> permissions = resolver.resoudrePermissions(Set.of("DIRECTION"));
+
+        assertThat(permissions).containsExactly("UTILISATEUR_CONSULTER");
     }
 
     /**

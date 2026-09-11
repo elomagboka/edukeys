@@ -37,6 +37,20 @@ public class GestionnaireExceptionsGlobal {
         return construire(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
+    /**
+     * Code distinct de {@code gererIdentifiantsInvalides} (US-04) : le mot de
+     * passe temporaire présenté était correct, mais son jeton d'activation a
+     * expiré. Le {@code code} ne doit apparaître que dans une réponse à un
+     * appel où le mot de passe s'est révélé correct par ailleurs — voir la
+     * Javadoc de {@link MotDePasseTemporaireExpireException}.
+     */
+    @ExceptionHandler(MotDePasseTemporaireExpireException.class)
+    public ProblemDetail gererMotDePasseTemporaireExpire(MotDePasseTemporaireExpireException ex, HttpServletRequest request) {
+        ProblemDetail problemDetail = construire(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        problemDetail.setProperty("code", "MOT_DE_PASSE_TEMPORAIRE_EXPIRE");
+        return problemDetail;
+    }
+
     @ExceptionHandler(RegleMetierViolee.class)
     public ProblemDetail gererRegleMetierViolee(RegleMetierViolee ex, HttpServletRequest request) {
         return construire(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);

@@ -25,6 +25,7 @@ import tg.novadigital.edukeys.etablissement.repository.LogoEtablissementReposito
 import tg.novadigital.edukeys.etablissement.repository.SiteRepository;
 import tg.novadigital.edukeys.etablissement.web.CreerEtablissementRequestDto;
 import tg.novadigital.edukeys.etablissement.web.ModifierEtablissementRequestDto;
+import tg.novadigital.edukeys.identite.service.CreateurCompteAdministrateur;
 
 import static tg.novadigital.edukeys.etablissement.service.UtilitairesEtablissement.normaliserCode;
 
@@ -47,6 +48,7 @@ public class EtablissementService {
     private final ChargeurReferentielType chargeurReferentielType;
     private final List<InitialisateurReferentiel> initialisateursReferentiel;
     private final EntityManager entityManager;
+    private final CreateurCompteAdministrateur createurCompteAdministrateur;
 
     public EtablissementService(
             EtablissementRepository etablissementRepository,
@@ -54,13 +56,15 @@ public class EtablissementService {
             LogoEtablissementRepository logoEtablissementRepository,
             ChargeurReferentielType chargeurReferentielType,
             List<InitialisateurReferentiel> initialisateursReferentiel,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            CreateurCompteAdministrateur createurCompteAdministrateur) {
         this.etablissementRepository = etablissementRepository;
         this.siteRepository = siteRepository;
         this.logoEtablissementRepository = logoEtablissementRepository;
         this.chargeurReferentielType = chargeurReferentielType;
         this.initialisateursReferentiel = initialisateursReferentiel;
         this.entityManager = entityManager;
+        this.createurCompteAdministrateur = createurCompteAdministrateur;
     }
 
     /**
@@ -75,11 +79,21 @@ public class EtablissementService {
      *   <li>créer le site principal ;</li>
      *   <li>initialiser le référentiel pédagogique (liste vide acceptée tant
      *       qu'aucun module ne fournit d'implémentation concrète, T-10) ;</li>
+     *   <li>créer le premier compte {@code ADMIN} de l'établissement, dans le
+     *       même contexte déjà ouvert (US-04 §3) : un établissement sans
+     *       administrateur est un état impossible, jamais un état à réparer
+     *       après coup — voir {@link CreateurCompteAdministrateur} ;</li>
      *   <li>marquer le référentiel initialisé (R7).</li>
      * </ol>
+     *
+     * <p>{@code etablissement} n'importe ni {@code Utilisateur} ni
+     * {@code AffectationEtablissement} (CLAUDE.md, règle 1) : la création du
+     * compte administrateur passe entièrement par le port
+     * {@link CreateurCompteAdministrateur}, exposé par le module
+     * {@code identite}.</p>
      */
     @Transactional
-    public Etablissement creer(CreerEtablissementRequestDto requete) {
+    public EtablissementCree creer(CreerEtablissementRequestDto requete) {
         String code = normaliserCode(requete.code());
         String email = requete.email().toLowerCase(Locale.ROOT);
 
@@ -100,6 +114,7 @@ public class EtablissementService {
         etablissement = etablissementRepository.save(etablissement);
         entityManager.flush();
 
+        String motDePasseTemporaireAdmin;
         try (PorteeEtablissement portee = ContexteEtablissement.ouvrir(etablissement.getId())) {
             Site sitePrincipal = new Site(
                     etablissement.getId(),
@@ -117,6 +132,12 @@ public class EtablissementService {
             ReferentielType modele = chargeurReferentielType.charger();
             initialisateursReferentiel.forEach(initialisateur -> initialisateur.initialiser(etablissementId, modele));
 
+            // Premier compte ADMIN, dans le même contexte déjà ouvert (US-04 §3) :
+            // voir la Javadoc de méthode.
+            motDePasseTemporaireAdmin = createurCompteAdministrateur
+                    .creerAdministrateur(etablissementId, requete.emailAdministrateur(), requete.nomCompletAdministrateur())
+                    .motDePasseTemporaire();
+
             etablissement.marquerReferentielInitialise();
             etablissement = etablissementRepository.save(etablissement);
 
@@ -127,11 +148,16 @@ public class EtablissementService {
             // hors de ce try-with-resources déjà refermé, et
             // ContexteEtablissementAbsentException serait levée en conditions
             // réelles (piège T-10, A1, distinct de l'ouverture de contexte
-            // elle-même).
+            // elle-même). Vaut aussi pour l'écriture du compte administrateur
+            // (CLAUDE.md, règle 12).
             entityManager.flush();
         }
 
-        return etablissement;
+        return new EtablissementCree(etablissement, motDePasseTemporaireAdmin);
+    }
+
+    /** Établissement créé et le mot de passe temporaire de son premier administrateur (US-04 §3), à ne renvoyer qu'une seule fois. */
+    public record EtablissementCree(Etablissement etablissement, String motDePasseTemporaireAdmin) {
     }
 
     public Etablissement obtenir(UUID id) {

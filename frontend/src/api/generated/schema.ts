@@ -4,61 +4,7 @@
  */
 
 export interface paths {
-    "/api/v1/etablissements/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Détail d'un établissement */
-        get: operations["obtenir"];
-        /** Modifie l'identité et les coordonnées d'un établissement (le code est immuable) */
-        put: operations["modifier"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{etablissementId}/sites/{siteId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Modifie un site */
-        put: operations["modifier_1"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{etablissementId}/logo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Télécharge le logo d'un établissement */
-        get: operations["obtenir_1"];
-        /** Remplace le logo d'un établissement (l'ancien est désactivé, un nouveau créé) */
-        put: operations["remplacer"];
-        post?: never;
-        /** Supprime (désactivation logique) le logo d'un établissement */
-        delete: operations["supprimer"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/test-exceptions/valider": {
+    "/api/v1/auth/etablissement-actif": {
         parameters: {
             query?: never;
             header?: never;
@@ -67,128 +13,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["valider"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN) */
-        get: operations["lister"];
-        put?: never;
-        /** Crée un établissement (identité, coordonnées, site principal et référentiel pédagogique initialisés en une seule transaction) */
-        post: operations["creer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{id}/reactivation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Réactive un établissement, si son code et son email restent disponibles */
-        post: operations["reactiver"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{id}/desactivation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Désactive un établissement (et, en cascade logique, ses sites et son logo) */
-        post: operations["desactiver"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{etablissementId}/sites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liste des sites actifs d'un établissement */
-        get: operations["lister_1"];
-        put?: never;
-        /** Crée un site pour un établissement */
-        post: operations["creer_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{etablissementId}/sites/{siteId}/principal": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Désigne un site comme principal (bascule transactionnelle) */
-        post: operations["designerPrincipal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{etablissementId}/sites/{siteId}/desactivation": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Désactive un site (refusé pour le site principal) */
-        post: operations["desactiver_1"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Rafraîchissement de l'access token à partir d'un refresh token valide */
-        post: operations["refresh"];
+        /** Bascule l'établissement actif du compte authentifié */
+        post: operations["basculerEtablissement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -212,7 +38,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/etablissement-actif": {
+    "/api/v1/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -221,139 +47,26 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bascule l'établissement actif du compte authentifié */
-        post: operations["basculerEtablissement"];
+        /** Rafraîchissement de l'access token à partir d'un refresh token valide */
+        post: operations["refresh"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/test-exceptions/{type}": {
+    "/api/v1/etablissements": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["lancer"];
+        /** Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN) */
+        get: operations["listerEtablissements"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/isolation/demo-entites/nombre": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["compter"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/demo/fuite-contexte": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["fuiter"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/demo/entites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["lister_2"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/demo/entites/{id}/historique": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["historique"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/utilisateurs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme) */
-        get: operations["lister_3"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/utilisateurs/moi": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Profil du compte authentifié */
-        get: operations["moi"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/etablissements/{id}/historique": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Historique des révisions d'un établissement */
-        get: operations["historique_1"];
-        put?: never;
-        post?: never;
+        /** Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction) */
+        post: operations["creerEtablissement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -368,8 +81,319 @@ export interface paths {
             cookie?: never;
         };
         /** Établissement de l'appelant courant (ADMIN) */
-        get: operations["obtenirCourant"];
+        get: operations["obtenirEtablissementCourant"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{etablissementId}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Télécharge le logo d'un établissement */
+        get: operations["obtenirLogoEtablissement"];
+        /** Remplace le logo d'un établissement (l'ancien est désactivé, un nouveau créé) */
+        put: operations["remplacerLogoEtablissement"];
+        post?: never;
+        /** Supprime (désactivation logique) le logo d'un établissement */
+        delete: operations["supprimerLogoEtablissement"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{etablissementId}/sites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste des sites actifs d'un établissement */
+        get: operations["listerSites"];
+        put?: never;
+        /** Crée un site pour un établissement */
+        post: operations["creerSite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{etablissementId}/sites/{siteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Modifie un site */
+        put: operations["modifierSite"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{etablissementId}/sites/{siteId}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive un site (refusé pour le site principal) */
+        post: operations["desactiverSite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{etablissementId}/sites/{siteId}/principal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désigne un site comme principal (bascule transactionnelle) */
+        post: operations["designerSitePrincipal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'un établissement */
+        get: operations["obtenirEtablissement"];
+        /** Modifie l'identité et les coordonnées d'un établissement (le code est immuable) */
+        put: operations["modifierEtablissement"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive un établissement (et, en cascade logique, ses sites et son logo) */
+        post: operations["desactiverEtablissement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'un établissement */
+        get: operations["listerHistoriqueEtablissement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/etablissements/{id}/reactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Réactive un établissement, si son code et son email restent disponibles */
+        post: operations["reactiverEtablissement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme) */
+        get: operations["listerUtilisateursPlateforme"];
+        put?: never;
+        /** Crée un compte dans l'établissement courant */
+        post: operations["creerUtilisateur"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/moi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Profil du compte authentifié */
+        get: operations["obtenirMonProfil"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/moi/mot-de-passe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change le mot de passe du compte authentifié */
+        post: operations["changerMonMotDePasse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/mon-etablissement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste paginée des comptes de l'établissement courant */
+        get: operations["listerUtilisateursMonEtablissement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/mon-etablissement/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compte de l'établissement courant par identifiant */
+        get: operations["obtenirUtilisateurMonEtablissement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Désactive (logiquement) l'affectation d'un compte à l'établissement courant */
+        delete: operations["desactiverUtilisateur"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/{id}/mot-de-passe-temporaire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Régénère un mot de passe temporaire pour un compte de l'établissement courant */
+        post: operations["regenererMotDePasseTemporaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/{id}/reactiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Réactive l'affectation d'un compte à l'établissement courant */
+        post: operations["reactiverUtilisateur"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Remplace les rôles d'un compte de l'établissement courant */
+        put: operations["remplacerRolesUtilisateur"];
         post?: never;
         delete?: never;
         options?: never;
@@ -381,189 +405,157 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        ModifierEtablissementRequestDto: {
+        BasculerEtablissementRequestDto: {
+            /** Format: uuid */
+            etablissementId: string;
+        };
+        ChangerMotDePasseRequestDto: {
+            ancienMotDePasse?: string;
+            nouveauMotDePasse?: string;
+        };
+        CompteCreeDto: {
+            compte?: components["schemas"]["UtilisateurCompteDto"];
+            motDePasseTemporaire?: string;
+        };
+        CreerEtablissementRequestDto: {
+            adresseLigne?: string;
+            boitePostale?: string;
+            code?: string;
+            email?: string;
+            emailAdministrateur?: string;
             nom?: string;
+            nomCompletAdministrateur?: string;
+            quartier?: string;
             sigle?: string;
+            siteWeb?: string;
+            telephone?: string;
             /** @enum {string} */
             typeEtablissement: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
             ville?: string;
-            quartier?: string;
-            boitePostale?: string;
-            adresseLigne?: string;
-            email?: string;
-            telephone?: string;
-            siteWeb?: string;
-            fuseauHoraire?: string;
-            deviseCode?: string;
-            langueDefaut?: string;
         };
-        EtablissementDto: {
-            /** Format: uuid */
-            id?: string;
+        CreerSiteRequestDto: {
+            adresseLigne?: string;
             code?: string;
             nom?: string;
-            sigle?: string;
-            /** @enum {string} */
-            typeEtablissement?: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
-            ville?: string;
             quartier?: string;
-            boitePostale?: string;
-            adresseLigne?: string;
-            email?: string;
             telephone?: string;
-            siteWeb?: string;
-            paysCode?: string;
-            fuseauHoraire?: string;
-            deviseCode?: string;
-            langueDefaut?: string;
-            referentielInitialise?: boolean;
+            ville?: string;
+        };
+        CreerUtilisateurRequestDto: {
+            email?: string;
+            nomComplet?: string;
+            roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
+            /** Format: uuid */
+            siteId?: string;
+        };
+        EtablissementCreeDto: {
+            etablissement?: components["schemas"]["EtablissementDto"];
+            motDePasseTemporaireAdmin?: string;
+        };
+        EtablissementDto: {
             actif?: boolean;
+            adresseLigne?: string;
+            boitePostale?: string;
+            code?: string;
             /** Format: date-time */
             dateCreation?: string;
             /** Format: date-time */
             dateModification?: string;
-        };
-        ModifierSiteRequestDto: {
-            nom?: string;
-            ville?: string;
-            quartier?: string;
-            adresseLigne?: string;
-            telephone?: string;
-        };
-        SiteDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            etablissementId?: string;
-            code?: string;
-            nom?: string;
-            principal?: boolean;
-            ville?: string;
-            quartier?: string;
-            adresseLigne?: string;
-            telephone?: string;
-            actif?: boolean;
-        };
-        LogoDto: {
-            /** Format: uuid */
-            id?: string;
-            nomFichier?: string;
-            typeMime?: string;
-            /** Format: int32 */
-            tailleOctets?: number;
-            empreinteSha256?: string;
-        };
-        RequeteDeDemo: {
+            deviseCode?: string;
             email?: string;
-        };
-        CreerEtablissementRequestDto: {
-            code?: string;
+            fuseauHoraire?: string;
+            /** Format: uuid */
+            id?: string;
+            langueDefaut?: string;
             nom?: string;
+            paysCode?: string;
+            quartier?: string;
+            referentielInitialise?: boolean;
+            sigle?: string;
+            siteWeb?: string;
+            telephone?: string;
+            /** @enum {string} */
+            typeEtablissement?: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
+            ville?: string;
+        };
+        EtablissementHistoriqueDto: {
+            actif?: boolean;
+            auteur?: string;
+            code?: string;
+            /** Format: date-time */
+            date?: string;
+            email?: string;
+            /** Format: uuid */
+            id?: string;
+            nom?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            typeRevision?: string;
+            ville?: string;
+        };
+        EtablissementResumeDto: {
+            actif?: boolean;
+            code?: string;
+            /** Format: uuid */
+            id?: string;
+            nom?: string;
+            /** Format: int32 */
+            nombreSites?: number;
             sigle?: string;
             /** @enum {string} */
-            typeEtablissement: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
+            typeEtablissement?: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
             ville?: string;
-            quartier?: string;
-            boitePostale?: string;
-            adresseLigne?: string;
-            email?: string;
-            telephone?: string;
-            siteWeb?: string;
-        };
-        CreerSiteRequestDto: {
-            code?: string;
-            nom?: string;
-            ville?: string;
-            quartier?: string;
-            adresseLigne?: string;
-            telephone?: string;
-        };
-        RefreshRequestDto: {
-            refreshToken?: string;
         };
         JetonsReponseDto: {
             accessToken?: string;
-            refreshToken?: string;
-            /** Format: int64 */
-            expiresDansSecondes?: number;
             /** Format: uuid */
             etablissementId?: string;
+            /** Format: int64 */
+            expiresDansSecondes?: number;
+            refreshToken?: string;
             roles?: string[];
         };
         LoginRequestDto: {
             email?: string;
             motDePasse?: string;
         };
-        BasculerEtablissementRequestDto: {
-            /** Format: uuid */
-            etablissementId: string;
-        };
-        DemoEntiteDto: {
+        LogoDto: {
+            empreinteSha256?: string;
             /** Format: uuid */
             id?: string;
-            libelle?: string;
-            categorie?: string;
+            nomFichier?: string;
             /** Format: int32 */
-            quantite?: number;
-            actif?: boolean;
+            tailleOctets?: number;
+            typeMime?: string;
         };
-        PageReponseDemoEntiteDto: {
-            contenu?: components["schemas"]["DemoEntiteDto"][];
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            taille?: number;
-            /** Format: int64 */
-            totalElements?: number;
-            /** Format: int32 */
-            totalPages?: number;
-        };
-        DemoEntiteHistoriqueDto: {
-            /** Format: int64 */
-            revision?: number;
-            /** Format: date-time */
-            date?: string;
-            auteur?: string;
-            typeRevision?: string;
-            /** Format: uuid */
-            id?: string;
-            libelle?: string;
-            categorie?: string;
-            /** Format: int32 */
-            quantite?: number;
-            actif?: boolean;
-        };
-        PageReponseUtilisateurResumeDto: {
-            contenu?: components["schemas"]["UtilisateurResumeDto"][];
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            taille?: number;
-            /** Format: int64 */
-            totalElements?: number;
-            /** Format: int32 */
-            totalPages?: number;
-        };
-        UtilisateurResumeDto: {
-            /** Format: uuid */
-            id?: string;
+        ModifierEtablissementRequestDto: {
+            adresseLigne?: string;
+            boitePostale?: string;
+            deviseCode?: string;
             email?: string;
-            nomComplet?: string;
-            superAdmin?: boolean;
-            actif?: boolean;
-        };
-        EtablissementResumeDto: {
-            /** Format: uuid */
-            id?: string;
-            code?: string;
+            fuseauHoraire?: string;
+            langueDefaut?: string;
             nom?: string;
+            quartier?: string;
             sigle?: string;
+            siteWeb?: string;
+            telephone?: string;
             /** @enum {string} */
-            typeEtablissement?: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
+            typeEtablissement: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
             ville?: string;
-            actif?: boolean;
-            /** Format: int32 */
-            nombreSites?: number;
+        };
+        ModifierRolesRequestDto: {
+            roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
+        };
+        ModifierSiteRequestDto: {
+            adresseLigne?: string;
+            nom?: string;
+            quartier?: string;
+            telephone?: string;
+            ville?: string;
+        };
+        MotDePasseTemporaireDto: {
+            motDePasseTemporaire?: string;
         };
         PageReponseEtablissementResumeDto: {
             contenu?: components["schemas"]["EtablissementResumeDto"][];
@@ -576,20 +568,66 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
-        EtablissementHistoriqueDto: {
+        PageReponseUtilisateurCompteDto: {
+            contenu?: components["schemas"]["UtilisateurCompteDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            taille?: number;
             /** Format: int64 */
-            numeroRevision?: number;
-            /** Format: date-time */
-            date?: string;
-            auteur?: string;
-            typeRevision?: string;
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageReponseUtilisateurResumeDto: {
+            contenu?: components["schemas"]["UtilisateurResumeDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            taille?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        RefreshRequestDto: {
+            refreshToken?: string;
+        };
+        SiteDto: {
+            actif?: boolean;
+            adresseLigne?: string;
+            code?: string;
+            /** Format: uuid */
+            etablissementId?: string;
             /** Format: uuid */
             id?: string;
-            code?: string;
             nom?: string;
+            principal?: boolean;
+            quartier?: string;
+            telephone?: string;
             ville?: string;
-            email?: string;
+        };
+        UtilisateurCompteDto: {
             actif?: boolean;
+            /** Format: date-time */
+            dateCreation?: string;
+            email?: string;
+            /** Format: uuid */
+            id?: string;
+            motDePasseAChanger?: boolean;
+            nomComplet?: string;
+            roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
+            /** Format: uuid */
+            siteId?: string;
+        };
+        UtilisateurResumeDto: {
+            actif?: boolean;
+            email?: string;
+            /** Format: uuid */
+            id?: string;
+            motDePasseAChanger?: boolean;
+            nomComplet?: string;
+            superAdmin?: boolean;
         };
     };
     responses: never;
@@ -600,218 +638,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    obtenir: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Établissement trouvé */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-            /** @description Établissement introuvable */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-        };
-    };
-    modifier: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ModifierEtablissementRequestDto"];
-            };
-        };
-        responses: {
-            /** @description Établissement modifié */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-            /** @description Établissement introuvable */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-            /** @description Email déjà porté par un autre établissement actif */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-        };
-    };
-    modifier_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-                siteId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ModifierSiteRequestDto"];
-            };
-        };
-        responses: {
-            /** @description Site modifié */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SiteDto"];
-                };
-            };
-            /** @description Site introuvable */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SiteDto"];
-                };
-            };
-        };
-    };
-    obtenir_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Flux binaire du logo */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "image/*": unknown;
-                };
-            };
-            /** @description Aucun logo pour cet établissement */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "image/png": string;
-                    "image/jpeg": string;
-                    "image/webp": string;
-                };
-            };
-        };
-    };
-    remplacer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "multipart/form-data": {
-                    /** Format: binary */
-                    fichier: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Logo remplacé */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LogoDto"];
-                };
-            };
-            /** @description Fichier trop volumineux (> 1 Mo) */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LogoDto"];
-                };
-            };
-            /** @description Format non pris en charge (magic bytes) */
-            415: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["LogoDto"];
-                };
-            };
-        };
-    };
-    supprimer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Logo supprimé */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    valider: {
+    basculerEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -820,242 +647,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RequeteDeDemo"];
+                "application/json": components["schemas"]["BasculerEtablissementRequestDto"];
             };
         };
         responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    lister: {
-        parameters: {
-            query?: {
-                page?: number;
-                size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Page d'établissements */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["PageReponseEtablissementResumeDto"];
-                };
-            };
-        };
-    };
-    creer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreerEtablissementRequestDto"];
-            };
-        };
-        responses: {
-            /** @description Établissement créé */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-            /** @description Code ou email déjà porté par un établissement actif */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
-                };
-            };
-        };
-    };
-    reactiver: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Établissement réactivé */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Code ou email repris par un autre établissement actif entre-temps */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    desactiver: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Établissement désactivé */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    lister_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Sites de l'établissement */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SiteDto"][];
-                };
-            };
-        };
-    };
-    creer_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreerSiteRequestDto"];
-            };
-        };
-        responses: {
-            /** @description Site créé */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SiteDto"];
-                };
-            };
-            /** @description Code de site déjà utilisé dans cet établissement */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["SiteDto"];
-                };
-            };
-        };
-    };
-    designerPrincipal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-                siteId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Site désigné principal */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    desactiver_1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                etablissementId: string;
-                siteId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Site désactivé */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Le site principal ne peut pas être désactivé directement */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    refresh: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshRequestDto"];
-            };
-        };
-        responses: {
-            /** @description Nouveaux jetons émis */
+            /** @description Nouveaux jetons émis pour l'établissement demandé */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1064,17 +660,8 @@ export interface operations {
                     "*/*": components["schemas"]["JetonsReponseDto"];
                 };
             };
-            /** @description Jeton de rafraîchissement invalide, expiré ou révoqué */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["JetonsReponseDto"];
-                };
-            };
-            /** @description Trop de tentatives (limitation de débit par jeton ou par IP) ; en-tête Retry-After */
-            429: {
+            /** @description Aucune affectation active sur cet établissement */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1126,7 +713,7 @@ export interface operations {
             };
         };
     };
-    basculerEtablissement: {
+    refresh: {
         parameters: {
             query?: never;
             header?: never;
@@ -1135,11 +722,11 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BasculerEtablissementRequestDto"];
+                "application/json": components["schemas"]["RefreshRequestDto"];
             };
         };
         responses: {
-            /** @description Nouveaux jetons émis pour l'établissement demandé */
+            /** @description Nouveaux jetons émis */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -1148,8 +735,17 @@ export interface operations {
                     "*/*": components["schemas"]["JetonsReponseDto"];
                 };
             };
-            /** @description Aucune affectation active sur cet établissement */
-            403: {
+            /** @description Jeton de rafraîchissement invalide, expiré ou révoqué */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JetonsReponseDto"];
+                };
+            };
+            /** @description Trop de tentatives (limitation de débit par jeton ou par IP) ; en-tête Retry-After */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1159,71 +755,11 @@ export interface operations {
             };
         };
     };
-    lancer: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                type: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    compter: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": number;
-                };
-            };
-        };
-    };
-    fuiter: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    lister_2: {
+    listerEtablissements: {
         parameters: {
             query?: {
                 page?: number;
                 size?: number;
-                libelle?: string;
-                categorie?: string;
             };
             header?: never;
             path?: never;
@@ -1231,18 +767,313 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Page d'établissements */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PageReponseDemoEntiteDto"];
+                    "*/*": components["schemas"]["PageReponseEtablissementResumeDto"];
                 };
             };
         };
     };
-    historique: {
+    creerEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerEtablissementRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Établissement créé, avec le mot de passe temporaire de son premier administrateur (retourné une seule fois) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementCreeDto"];
+                };
+            };
+            /** @description Code ou email déjà porté par un établissement actif */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementCreeDto"];
+                };
+            };
+        };
+    };
+    obtenirEtablissementCourant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Établissement courant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementDto"];
+                };
+            };
+        };
+    };
+    obtenirLogoEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flux binaire du logo */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/*": unknown;
+                };
+            };
+            /** @description Aucun logo pour cet établissement */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                    "image/webp": string;
+                };
+            };
+        };
+    };
+    remplacerLogoEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    fichier: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Logo remplacé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LogoDto"];
+                };
+            };
+            /** @description Fichier trop volumineux (> 1 Mo) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LogoDto"];
+                };
+            };
+            /** @description Format non pris en charge (magic bytes) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["LogoDto"];
+                };
+            };
+        };
+    };
+    supprimerLogoEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logo supprimé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listerSites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sites de l'établissement */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SiteDto"][];
+                };
+            };
+        };
+    };
+    creerSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerSiteRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Site créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SiteDto"];
+                };
+            };
+            /** @description Code de site déjà utilisé dans cet établissement */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SiteDto"];
+                };
+            };
+        };
+    };
+    modifierSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+                siteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierSiteRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Site modifié */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SiteDto"];
+                };
+            };
+            /** @description Site introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SiteDto"];
+                };
+            };
+        };
+    };
+    desactiverSite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+                siteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Site désactivé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Le site principal ne peut pas être désactivé directement */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    designerSitePrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                etablissementId: string;
+                siteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Site désigné principal */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    obtenirEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1253,18 +1084,149 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Établissement trouvé */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["DemoEntiteHistoriqueDto"][];
+                    "*/*": components["schemas"]["EtablissementDto"];
+                };
+            };
+            /** @description Établissement introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementDto"];
                 };
             };
         };
     };
-    lister_3: {
+    modifierEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierEtablissementRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Établissement modifié */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementDto"];
+                };
+            };
+            /** @description Établissement introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementDto"];
+                };
+            };
+            /** @description Email déjà porté par un autre établissement actif */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementDto"];
+                };
+            };
+        };
+    };
+    desactiverEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Établissement désactivé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listerHistoriqueEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions de l'établissement */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementHistoriqueDto"][];
+                };
+            };
+            /** @description Établissement introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    reactiverEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Établissement réactivé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Code ou email repris par un autre établissement actif entre-temps */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listerUtilisateursPlateforme: {
         parameters: {
             query?: {
                 page?: number;
@@ -1296,7 +1258,49 @@ export interface operations {
             };
         };
     };
-    moi: {
+    creerUtilisateur: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerUtilisateurRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Compte créé, avec le mot de passe temporaire de son titulaire (retourné une seule fois) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompteCreeDto"];
+                };
+            };
+            /** @description Cet email est déjà utilisé sur la plateforme (message unique, y compris pour un compte de plateforme) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompteCreeDto"];
+                };
+            };
+            /** @description Aucun rôle fourni, ou SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompteCreeDto"];
+                };
+            };
+        };
+    };
+    obtenirMonProfil: {
         parameters: {
             query?: never;
             header?: never;
@@ -1316,7 +1320,59 @@ export interface operations {
             };
         };
     };
-    historique_1: {
+    changerMonMotDePasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangerMotDePasseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Mot de passe changé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ancien mot de passe incorrect */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listerUtilisateursMonEtablissement: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page de comptes de l'établissement courant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageReponseUtilisateurCompteDto"];
+                };
+            };
+        };
+    };
+    obtenirUtilisateurMonEtablissement: {
         parameters: {
             query?: never;
             header?: never;
@@ -1327,43 +1383,153 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Révisions de l'établissement */
+            /** @description Compte de l'établissement courant */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["EtablissementHistoriqueDto"][];
+                    "*/*": components["schemas"]["UtilisateurCompteDto"];
                 };
             };
-            /** @description Établissement introuvable */
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["EtablissementHistoriqueDto"][];
+                    "*/*": components["schemas"]["UtilisateurCompteDto"];
                 };
             };
         };
     };
-    obtenirCourant: {
+    desactiverUtilisateur: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Établissement courant */
+            /** @description Affectation désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tentative de désactiver son propre compte, ou dernier ADMIN actif de l'établissement */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    regenererMotDePasseTemporaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nouveau mot de passe temporaire (retourné une seule fois) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
+                    "*/*": components["schemas"]["MotDePasseTemporaireDto"];
                 };
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MotDePasseTemporaireDto"];
+                };
+            };
+        };
+    };
+    reactiverUtilisateur: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Affectation réactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun compte portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    remplacerRolesUtilisateur: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierRolesRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Rôles remplacés */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun rôle fourni, SUPER_ADMIN demandé, ou tentative de modifier ses propres rôles */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

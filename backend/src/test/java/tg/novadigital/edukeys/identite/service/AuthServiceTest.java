@@ -3,6 +3,7 @@ package tg.novadigital.edukeys.identite.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ import tg.novadigital.edukeys.identite.domain.JetonRafraichissement;
 import tg.novadigital.edukeys.identite.domain.RoleCode;
 import tg.novadigital.edukeys.identite.domain.Utilisateur;
 import tg.novadigital.edukeys.identite.repository.AffectationEtablissementRepository;
+import tg.novadigital.edukeys.identite.repository.JetonActivationCompteRepository;
 import tg.novadigital.edukeys.identite.repository.JetonRafraichissementRepository;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
 import tg.novadigital.edukeys.identite.security.JwtService;
@@ -39,6 +41,7 @@ class AuthServiceTest {
     private UtilisateurRepository utilisateurRepository;
     private AffectationEtablissementRepository affectationEtablissementRepository;
     private JetonRafraichissementRepository jetonRafraichissementRepository;
+    private JetonActivationCompteRepository jetonActivationCompteRepository;
     private PasswordEncoder passwordEncoder;
     private JwtService jwtService;
     private JetonHacheur jetonHacheur;
@@ -52,6 +55,7 @@ class AuthServiceTest {
         utilisateurRepository = mock(UtilisateurRepository.class);
         affectationEtablissementRepository = mock(AffectationEtablissementRepository.class);
         jetonRafraichissementRepository = mock(JetonRafraichissementRepository.class);
+        jetonActivationCompteRepository = mock(JetonActivationCompteRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
         jwtService = mock(JwtService.class);
         jetonHacheur = mock(JetonHacheur.class);
@@ -60,6 +64,7 @@ class AuthServiceTest {
                 utilisateurRepository,
                 affectationEtablissementRepository,
                 jetonRafraichissementRepository,
+                jetonActivationCompteRepository,
                 passwordEncoder,
                 jwtService,
                 jetonHacheur);
@@ -145,7 +150,7 @@ class AuthServiceTest {
                 .thenReturn(List.of(affectation));
         when(jetonHacheur.genererJetonEnClair()).thenReturn("jeton-clair");
         when(jetonHacheur.hacher("jeton-clair")).thenReturn("jeton-hache");
-        when(jwtService.genererAccessToken(any(), any(), any())).thenReturn("access-token");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("access-token");
 
         JetonsReponseDto reponse = authService.connecter(utilisateur.getEmail(), "bonMotDePasse", "203.0.113.1");
 
@@ -164,7 +169,7 @@ class AuthServiceTest {
                 .thenReturn(List.of());
         when(jetonHacheur.genererJetonEnClair()).thenReturn("jeton-clair");
         when(jetonHacheur.hacher(any())).thenReturn("jeton-hache");
-        when(jwtService.genererAccessToken(any(), any(), any())).thenReturn("access-token");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("access-token");
 
         JetonsReponseDto reponse = authService.connecter(utilisateur.getEmail(), "bonMotDePasse", "203.0.113.1");
 
@@ -217,7 +222,7 @@ class AuthServiceTest {
                 .thenReturn(List.of());
         when(jetonHacheur.genererJetonEnClair()).thenReturn("nouveau-jeton-clair");
         when(jetonHacheur.hacher("nouveau-jeton-clair")).thenReturn("nouveau-jeton-hache");
-        when(jwtService.genererAccessToken(any(), any(), any())).thenReturn("nouveau-access-token");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("nouveau-access-token");
 
         authService.rafraichir("jeton");
 
@@ -272,7 +277,7 @@ class AuthServiceTest {
                 .thenReturn(List.of(affectationAncienne, affectationActive));
         when(jetonHacheur.genererJetonEnClair()).thenReturn("nouveau-jeton-clair");
         when(jetonHacheur.hacher("nouveau-jeton-clair")).thenReturn("nouveau-jeton-hache");
-        when(jwtService.genererAccessToken(any(), any(), any())).thenReturn("nouveau-access-token");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("nouveau-access-token");
 
         JetonsReponseDto reponse = authService.rafraichir("jeton");
 
@@ -295,7 +300,7 @@ class AuthServiceTest {
                 .thenReturn(List.of(affectation));
         when(jetonHacheur.genererJetonEnClair()).thenReturn("jeton-clair");
         when(jetonHacheur.hacher(any())).thenReturn("jeton-hache");
-        when(jwtService.genererAccessToken(any(), any(), any())).thenReturn("access-token");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("access-token");
 
         JetonsReponseDto reponse = authService.basculerEtablissement(utilisateurId, etablissementCible);
 
@@ -328,11 +333,49 @@ class AuthServiceTest {
                 .thenReturn(List.of());
         when(jetonHacheur.genererJetonEnClair()).thenReturn("jeton-clair");
         when(jetonHacheur.hacher(any())).thenReturn("jeton-hache");
-        when(jwtService.genererAccessToken(any(), any(), any())).thenReturn("access-token");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("access-token");
 
         JetonsReponseDto reponse = authService.basculerEtablissement(utilisateurId, etablissementCible);
 
         assertThat(reponse.etablissementId()).isEqualTo(etablissementCible);
         assertThat(reponse.roles()).containsExactly("SUPER_ADMIN");
+    }
+
+    @Test
+    void refuseLaConnexion_avecCodeDistinct_quandMotDePasseTemporaireExpire() {
+        Utilisateur utilisateur = unUtilisateur();
+        utilisateur.exigerChangementMotDePasse();
+
+        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(passwordEncoder.matches("motDePasseTemporaire", utilisateur.getMotDePasseHache())).thenReturn(true);
+        when(jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(eq(utilisateur.getId()), any()))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> authService.connecter(utilisateur.getEmail(), "motDePasseTemporaire", "203.0.113.1"))
+                .isInstanceOf(tg.novadigital.edukeys.common.exception.MotDePasseTemporaireExpireException.class);
+
+        // Jamais évalué avant que le mot de passe se soit révélé correct :
+        // aucune émission de jeton n'a dû être tentée.
+        verify(jwtService, org.mockito.Mockito.never()).genererAccessToken(any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void accepteLaConnexion_quandMotDePasseTemporaireEncoreValide() {
+        Utilisateur utilisateur = unUtilisateur();
+        utilisateur.exigerChangementMotDePasse();
+
+        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(passwordEncoder.matches("motDePasseTemporaire", utilisateur.getMotDePasseHache())).thenReturn(true);
+        when(jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(eq(utilisateur.getId()), any()))
+                .thenReturn(false);
+        when(affectationEtablissementRepository.findByUtilisateurIdAndActifTrueOrderByDateCreationAsc(any()))
+                .thenReturn(List.of());
+        when(jetonHacheur.genererJetonEnClair()).thenReturn("jeton-clair");
+        when(jetonHacheur.hacher(any())).thenReturn("jeton-hache");
+        when(jwtService.genererAccessToken(any(), any(), any(), anyBoolean())).thenReturn("access-token");
+
+        JetonsReponseDto reponse = authService.connecter(utilisateur.getEmail(), "motDePasseTemporaire", "203.0.113.1");
+
+        assertThat(reponse.accessToken()).isEqualTo("access-token");
     }
 }

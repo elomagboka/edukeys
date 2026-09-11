@@ -3,6 +3,8 @@ package tg.novadigital.edukeys.common.demo.web;
 import java.util.List;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +44,7 @@ public class DemoEntiteController {
         this.historiqueService = historiqueService;
     }
 
+    @Operation(operationId = "listerDemoEntites")
     @GetMapping
     public PageReponse<DemoEntiteDto> lister(
             @RequestParam(required = false) Integer page,
@@ -68,6 +71,7 @@ public class DemoEntiteController {
      * propre variante avec son type d'entité, {@code common} ne pouvant
      * importer aucune entité métier (CLAUDE.md, règle 1).
      */
+    @Operation(operationId = "listerHistoriqueDemoEntite")
     @GetMapping("/{id}/historique")
     public List<DemoEntiteHistoriqueDto> historique(@PathVariable UUID id) {
         return historiqueService.historique(DemoEntite.class, id).stream()

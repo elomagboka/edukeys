@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import tg.novadigital.edukeys.common.exception.AccesInterditException;
 import tg.novadigital.edukeys.common.exception.IdentifiantsInvalidesException;
+import tg.novadigital.edukeys.common.exception.MotDePasseTemporaireExpireException;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.securite.JournalSecurite;
 import tg.novadigital.edukeys.identite.domain.AffectationEtablissement;
@@ -20,6 +21,7 @@ import tg.novadigital.edukeys.identite.domain.JetonRafraichissement;
 import tg.novadigital.edukeys.identite.domain.RoleCode;
 import tg.novadigital.edukeys.identite.domain.Utilisateur;
 import tg.novadigital.edukeys.identite.repository.AffectationEtablissementRepository;
+import tg.novadigital.edukeys.identite.repository.JetonActivationCompteRepository;
 import tg.novadigital.edukeys.identite.repository.JetonRafraichissementRepository;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
 import tg.novadigital.edukeys.identite.security.JwtService;
@@ -54,6 +56,7 @@ public class AuthService {
     private final UtilisateurRepository utilisateurRepository;
     private final AffectationEtablissementRepository affectationEtablissementRepository;
     private final JetonRafraichissementRepository jetonRafraichissementRepository;
+    private final JetonActivationCompteRepository jetonActivationCompteRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final JetonHacheur jetonHacheur;
@@ -62,12 +65,14 @@ public class AuthService {
             UtilisateurRepository utilisateurRepository,
             AffectationEtablissementRepository affectationEtablissementRepository,
             JetonRafraichissementRepository jetonRafraichissementRepository,
+            JetonActivationCompteRepository jetonActivationCompteRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             JetonHacheur jetonHacheur) {
         this.utilisateurRepository = utilisateurRepository;
         this.affectationEtablissementRepository = affectationEtablissementRepository;
         this.jetonRafraichissementRepository = jetonRafraichissementRepository;
+        this.jetonActivationCompteRepository = jetonActivationCompteRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.jetonHacheur = jetonHacheur;
@@ -90,6 +95,17 @@ public class AuthService {
             JournalSecurite.echecAuthentificationCompteExistant(
                     utilisateur.getId(), adresseIp, "mot_de_passe_incorrect");
             throw new IdentifiantsInvalidesException("Email ou mot de passe incorrect.");
+        }
+
+        // Vérifié seulement après un mot de passe reconnu correct (voir la
+        // Javadoc de MotDePasseTemporaireExpireException) : sinon un
+        // attaquant qui ne connaît pas le mot de passe apprendrait que ce
+        // compte porte un mot de passe temporaire expiré. Sans objet pour un
+        // compte normal (motDePasseAChanger = false, US-04).
+        if (utilisateur.isMotDePasseAChanger()
+                && jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(
+                        utilisateur.getId(), Instant.now())) {
+            throw new MotDePasseTemporaireExpireException("Le mot de passe temporaire a expiré : demandez-en un nouveau.");
         }
 
         return emettreJetons(utilisateur);
@@ -197,7 +213,8 @@ public class AuthService {
 
         Set<String> codesRoles = Set.copyOf(codesRolesMutable);
 
-        String accessToken = jwtService.genererAccessToken(utilisateur.getId(), etablissementActif, codesRoles);
+        String accessToken = jwtService.genererAccessToken(
+                utilisateur.getId(), etablissementActif, codesRoles, utilisateur.isMotDePasseAChanger());
 
         String refreshTokenEnClair = jetonHacheur.genererJetonEnClair();
         JetonRafraichissement jetonRafraichissement = new JetonRafraichissement(

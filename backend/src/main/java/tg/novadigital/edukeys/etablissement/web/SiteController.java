@@ -37,7 +37,7 @@ public class SiteController {
         this.siteMapper = siteMapper;
     }
 
-    @Operation(summary = "Liste des sites actifs d'un établissement",
+    @Operation(operationId = "listerSites", summary = "Liste des sites actifs d'un établissement",
             responses = @ApiResponse(responseCode = "200", description = "Sites de l'établissement"))
     @GetMapping
     @PreAuthorize("hasAuthority('ETABLISSEMENT_GERER')")
@@ -46,7 +46,7 @@ public class SiteController {
         return siteService.lister(etablissementId).stream().map(siteMapper::versDto).toList();
     }
 
-    @Operation(summary = "Crée un site pour un établissement",
+    @Operation(operationId = "creerSite", summary = "Crée un site pour un établissement",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Site créé"),
                     @ApiResponse(responseCode = "409", description = "Code de site déjà utilisé dans cet établissement")
@@ -63,7 +63,7 @@ public class SiteController {
         return ResponseEntity.created(location).body(siteMapper.versDto(site));
     }
 
-    @Operation(summary = "Modifie un site",
+    @Operation(operationId = "modifierSite", summary = "Modifie un site",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Site modifié"),
                     @ApiResponse(responseCode = "404", description = "Site introuvable")
@@ -75,7 +75,7 @@ public class SiteController {
         return siteMapper.versDto(siteService.modifier(etablissementId, siteId, requete));
     }
 
-    @Operation(summary = "Désigne un site comme principal (bascule transactionnelle)",
+    @Operation(operationId = "designerSitePrincipal", summary = "Désigne un site comme principal (bascule transactionnelle)",
             responses = @ApiResponse(responseCode = "204", description = "Site désigné principal"))
     @PostMapping("/{siteId}/principal")
     @PreAuthorize("hasAuthority('ETABLISSEMENT_GERER')")
@@ -85,7 +85,7 @@ public class SiteController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Désactive un site (refusé pour le site principal)",
+    @Operation(operationId = "desactiverSite", summary = "Désactive un site (refusé pour le site principal)",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Site désactivé"),
                     @ApiResponse(responseCode = "422", description = "Le site principal ne peut pas être désactivé directement")
