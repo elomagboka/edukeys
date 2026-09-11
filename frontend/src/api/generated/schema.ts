@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/utilisateurs/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Remplace les rôles d'un compte de l'établissement courant */
+        put: operations["remplacerRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/etablissements/{id}": {
         parameters: {
             query?: never;
@@ -74,6 +91,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/utilisateurs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme) */
+        get: operations["lister"];
+        put?: never;
+        /** Crée un compte dans l'établissement courant */
+        post: operations["creer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/{id}/reactiver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Réactive l'affectation d'un compte à l'établissement courant */
+        post: operations["reactiver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/{id}/mot-de-passe-temporaire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Régénère un mot de passe temporaire pour un compte de l'établissement courant */
+        post: operations["regenererMotDePasseTemporaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/moi/mot-de-passe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change le mot de passe du compte authentifié */
+        post: operations["changerMonMotDePasse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/etablissements": {
         parameters: {
             query?: never;
@@ -82,10 +168,10 @@ export interface paths {
             cookie?: never;
         };
         /** Liste paginée de tous les établissements de la plateforme (opération SUPER_ADMIN) */
-        get: operations["lister"];
+        get: operations["lister_1"];
         put?: never;
-        /** Crée un établissement (identité, coordonnées, site principal et référentiel pédagogique initialisés en une seule transaction) */
-        post: operations["creer"];
+        /** Crée un établissement (identité, coordonnées, site principal, premier compte ADMIN et référentiel pédagogique initialisés en une seule transaction) */
+        post: operations["creer_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -102,7 +188,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Réactive un établissement, si son code et son email restent disponibles */
-        post: operations["reactiver"];
+        post: operations["reactiver_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -134,10 +220,10 @@ export interface paths {
             cookie?: never;
         };
         /** Liste des sites actifs d'un établissement */
-        get: operations["lister_1"];
+        get: operations["lister_2"];
         put?: never;
         /** Crée un site pour un établissement */
-        post: operations["creer_1"];
+        post: operations["creer_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -284,7 +370,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["lister_2"];
+        get: operations["lister_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -309,15 +395,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/utilisateurs": {
+    "/api/v1/utilisateurs/mon-etablissement": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Liste paginée des comptes utilisateurs de tous les établissements (administration de plateforme) */
-        get: operations["lister_3"];
+        /** Liste paginée des comptes de l'établissement courant */
+        get: operations["listerMonEtablissement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/utilisateurs/mon-etablissement/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compte de l'établissement courant par identifiant */
+        get: operations["obtenirMonEtablissement"];
         put?: never;
         post?: never;
         delete?: never;
@@ -377,10 +480,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/utilisateurs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Désactive (logiquement) l'affectation d'un compte à l'établissement courant */
+        delete: operations["desactiver_2"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ModifierRolesRequestDto: {
+            roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
+        };
         ModifierEtablissementRequestDto: {
             nom?: string;
             sigle?: string;
@@ -456,6 +579,37 @@ export interface components {
         RequeteDeDemo: {
             email?: string;
         };
+        CreerUtilisateurRequestDto: {
+            email?: string;
+            nomComplet?: string;
+            roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
+            /** Format: uuid */
+            siteId?: string;
+        };
+        CompteCreeDto: {
+            compte?: components["schemas"]["UtilisateurCompteDto"];
+            motDePasseTemporaire?: string;
+        };
+        UtilisateurCompteDto: {
+            /** Format: uuid */
+            id?: string;
+            email?: string;
+            nomComplet?: string;
+            actif?: boolean;
+            motDePasseAChanger?: boolean;
+            roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
+            /** Format: uuid */
+            siteId?: string;
+            /** Format: date-time */
+            dateCreation?: string;
+        };
+        MotDePasseTemporaireDto: {
+            motDePasseTemporaire?: string;
+        };
+        ChangerMotDePasseRequestDto: {
+            ancienMotDePasse?: string;
+            nouveauMotDePasse?: string;
+        };
         CreerEtablissementRequestDto: {
             code?: string;
             nom?: string;
@@ -469,6 +623,12 @@ export interface components {
             email?: string;
             telephone?: string;
             siteWeb?: string;
+            emailAdministrateur?: string;
+            nomCompletAdministrateur?: string;
+        };
+        EtablissementCreeDto: {
+            etablissement?: components["schemas"]["EtablissementDto"];
+            motDePasseTemporaireAdmin?: string;
         };
         CreerSiteRequestDto: {
             code?: string;
@@ -551,6 +711,18 @@ export interface components {
             nomComplet?: string;
             superAdmin?: boolean;
             actif?: boolean;
+            motDePasseAChanger?: boolean;
+        };
+        PageReponseUtilisateurCompteDto: {
+            contenu?: components["schemas"]["UtilisateurCompteDto"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            taille?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         EtablissementResumeDto: {
             /** Format: uuid */
@@ -600,6 +772,44 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    remplacerRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierRolesRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Rôles remplacés */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun rôle fourni, SUPER_ADMIN demandé, ou tentative de modifier ses propres rôles */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     obtenir: {
         parameters: {
             query?: never;
@@ -845,13 +1055,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Page d'établissements */
+            /** @description Page de comptes */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PageReponseEtablissementResumeDto"];
+                    "*/*": components["schemas"]["PageReponseUtilisateurResumeDto"];
+                };
+            };
+            /** @description Permission UTILISATEUR_GERER_PLATEFORME requise */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageReponseUtilisateurResumeDto"];
                 };
             };
         };
@@ -865,17 +1084,169 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreerEtablissementRequestDto"];
+                "application/json": components["schemas"]["CreerUtilisateurRequestDto"];
             };
         };
         responses: {
-            /** @description Établissement créé */
+            /** @description Compte créé, avec le mot de passe temporaire de son titulaire (retourné une seule fois) */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
+                    "*/*": components["schemas"]["CompteCreeDto"];
+                };
+            };
+            /** @description Cet email est déjà utilisé sur la plateforme (message unique, y compris pour un compte de plateforme) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompteCreeDto"];
+                };
+            };
+            /** @description Aucun rôle fourni, ou SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CompteCreeDto"];
+                };
+            };
+        };
+    };
+    reactiver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Affectation réactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun compte portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    regenererMotDePasseTemporaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nouveau mot de passe temporaire (retourné une seule fois) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MotDePasseTemporaireDto"];
+                };
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MotDePasseTemporaireDto"];
+                };
+            };
+        };
+    };
+    changerMonMotDePasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangerMotDePasseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Mot de passe changé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ancien mot de passe incorrect */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    lister_1: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page d'établissements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageReponseEtablissementResumeDto"];
+                };
+            };
+        };
+    };
+    creer_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerEtablissementRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Établissement créé, avec le mot de passe temporaire de son premier administrateur (retourné une seule fois) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["EtablissementCreeDto"];
                 };
             };
             /** @description Code ou email déjà porté par un établissement actif */
@@ -884,12 +1255,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["EtablissementDto"];
+                    "*/*": components["schemas"]["EtablissementCreeDto"];
                 };
             };
         };
     };
-    reactiver: {
+    reactiver_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -936,7 +1307,7 @@ export interface operations {
             };
         };
     };
-    lister_1: {
+    lister_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -958,7 +1329,7 @@ export interface operations {
             };
         };
     };
-    creer_1: {
+    creer_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -1217,7 +1588,7 @@ export interface operations {
             };
         };
     };
-    lister_2: {
+    lister_3: {
         parameters: {
             query?: {
                 page?: number;
@@ -1264,7 +1635,7 @@ export interface operations {
             };
         };
     };
-    lister_3: {
+    listerMonEtablissement: {
         parameters: {
             query?: {
                 page?: number;
@@ -1276,22 +1647,44 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Page de comptes */
+            /** @description Page de comptes de l'établissement courant */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PageReponseUtilisateurResumeDto"];
+                    "*/*": components["schemas"]["PageReponseUtilisateurCompteDto"];
                 };
             };
-            /** @description Permission UTILISATEUR_GERER_PLATEFORME requise */
-            403: {
+        };
+    };
+    obtenirMonEtablissement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Compte de l'établissement courant */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["PageReponseUtilisateurResumeDto"];
+                    "*/*": components["schemas"]["UtilisateurCompteDto"];
+                };
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["UtilisateurCompteDto"];
                 };
             };
         };
@@ -1364,6 +1757,40 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["EtablissementDto"];
                 };
+            };
+        };
+    };
+    desactiver_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Affectation désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Aucun compte actif portant cet identifiant dans l'établissement courant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tentative de désactiver son propre compte, ou dernier ADMIN actif de l'établissement */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
