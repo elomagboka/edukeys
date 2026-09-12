@@ -24,7 +24,7 @@ US-04 (modèle de permissions), et le récapitulatif annonçait 25 stories
 | 7 | Facturation | 2 sem | US-21, 22, 23 |
 | 8 | Trésorerie | 2 sem | US-24, 25, 26 |
 | 9 | Portails | 2 sem | US-27, 30, 31 |
-| 10 | Communication | 2 sem | US-28a, 28b, 28d |
+| 10 | Communication | 2 sem | US-28a, 28b, 28d + #77, #78 (reports d'US-04) |
 | 11 | Pilotage | 2 sem | US-29, 33, 34, 35 |
 | — | *Phase mobile* | *à définir* | *App mobile + US-28c (push)* |
 
@@ -154,8 +154,26 @@ plafond de dépense par établissement.
 Le canal push (US-28c) **n'est pas ici** : sans application mobile pour
 recevoir les notifications, il serait impossible à tester.
 
+**Deux reports d'US-04 sont attachés à ce sprint**, parce qu'ils attendent
+l'un et l'autre un canal de délivrance :
+
+- **#77 — invitation avec consentement.** ADR-0002 pose « un compte, N
+  affectations », mais l'API ne sait plus créer un compte partagé entre deux
+  écoles : le rattachement unilatéral permettait à l'ADMIN de A de prendre le
+  contrôle d'un compte de B, il a été fermé. Le rattachement doit repasser par
+  l'accord du titulaire, donc par une invitation.
+- **#78 — récupération de mot de passe d'un compte multi-établissements.**
+  Conséquence de la même fermeture : chacun des deux établissements voit
+  l'affectation active de l'autre et refuse de régénérer. Plus largement, il
+  n'existe aujourd'hui aucune réinitialisation en libre-service.
+
+Ordre imposé : **#77 avant #78**. Tant qu'aucun compte multi-établissements ne
+peut exister, #78 n'a aucun impact réel — le traiter d'abord serait corriger
+un symptôme qui ne s'est pas encore produit.
+
 Sprint dense. Si le temps manque, US-28b (email) peut glisser d'un sprint —
-jamais le plafond de dépense du SMS.
+jamais le plafond de dépense du SMS. Attention : #77 et #78 dépendent tous
+deux d'US-28b, et glisseraient avec elle.
 
 ### Sprint 11 — Pilotage
 
