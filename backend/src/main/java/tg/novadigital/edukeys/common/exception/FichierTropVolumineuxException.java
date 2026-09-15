@@ -7,7 +7,7 @@ package tg.novadigital.edukeys.common.exception;
  */
 public class FichierTropVolumineuxException extends EdukeysException {
 
-    public FichierTropVolumineuxException(String message) {
-        super(message);
+    public FichierTropVolumineuxException(CodeErreur code, String message) {
+        super(code, message);
     }
 }

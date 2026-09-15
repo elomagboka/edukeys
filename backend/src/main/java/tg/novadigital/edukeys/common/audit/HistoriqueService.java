@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.common.domain.EntiteEtablissement;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 
@@ -87,7 +88,7 @@ public class HistoriqueService {
         UUID etablissementCourant = ContexteEtablissement.exigerEtablissementId();
         UUID etablissementDeLEntite = ((EntiteEtablissement) revisions.get(0).entite()).getEtablissementId();
         if (!etablissementCourant.equals(etablissementDeLEntite)) {
-            throw new RessourceIntrouvableException("Historique introuvable.");
+            throw new RessourceIntrouvableException(CodeErreur.HISTORIQUE_INTROUVABLE, "Historique introuvable.");
         }
     }
 }

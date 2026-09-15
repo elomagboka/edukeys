@@ -17,6 +17,6 @@ package tg.novadigital.edukeys.common.exception;
 public class MotDePasseTemporaireExpireException extends EdukeysException {
 
     public MotDePasseTemporaireExpireException(String message) {
-        super(message);
+        super(CodeErreur.MOT_DE_PASSE_TEMPORAIRE_EXPIRE, message);
     }
 }

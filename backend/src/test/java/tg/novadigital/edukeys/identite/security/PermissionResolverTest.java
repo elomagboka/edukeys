@@ -31,7 +31,7 @@ class PermissionResolverTest {
         // calculée (ex. seul le premier rôle résolu, ou une intersection) ne
         // la contiendrait pas.
         assertThat(permissions).containsExactlyInAnyOrder(
-                "NOTE_SAISIR", "DEVOIR_CREER", "ENFANT_CONSULTER", "BULLETIN_CONSULTER");
+                "NOTE_SAISIR", "DEVOIR_CREER", "ANNEE_SCOLAIRE_CONSULTER", "ENFANT_CONSULTER", "BULLETIN_CONSULTER");
     }
 
     @Test
@@ -50,7 +50,7 @@ class PermissionResolverTest {
         // (US-04) sont, elles aussi, portées par ADMIN.
         assertThat(permissions).containsExactlyInAnyOrder(
                 "ETABLISSEMENT_CREER", "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME",
-                "UTILISATEUR_CONSULTER", "ROLE_ATTRIBUER");
+                "UTILISATEUR_CONSULTER", "ROLE_ATTRIBUER", "ANNEE_SCOLAIRE_GERER", "ANNEE_SCOLAIRE_CONSULTER");
     }
 
     @Test
@@ -61,20 +61,24 @@ class PermissionResolverTest {
     }
 
     @Test
-    void neRenvoieAucunePermission_quandRoleSansPermissionAttribuee() {
+    void neRenvoieAucunePermissionDeGestionDeComptes_quandRoleSansPermissionAttribuee() {
+        // GESTIONNAIRE porte désormais ANNEE_SCOLAIRE_CONSULTER (US-01) :
+        // ce test ne prouve plus un ensemble vide, mais l'absence de toute
+        // permission de gestion de comptes/établissement pour ces deux rôles.
         Set<String> permissions = resolver.resoudrePermissions(Set.of("GESTIONNAIRE", "ELEVE"));
 
-        assertThat(permissions).isEmpty();
+        assertThat(permissions).containsExactly("ANNEE_SCOLAIRE_CONSULTER");
     }
 
     @Test
     void neRenvoieQueLaLecture_quandRoleDirection() {
         // DIRECTION porte UTILISATEUR_CONSULTER depuis US-04 (lecture du
-        // personnel de son établissement), mais ni UTILISATEUR_GERER ni
-        // ROLE_ATTRIBUER : elle ne crée ni n'attribue rien.
+        // personnel de son établissement) et ANNEE_SCOLAIRE_CONSULTER depuis
+        // US-01, mais ni UTILISATEUR_GERER ni ROLE_ATTRIBUER : elle ne crée
+        // ni n'attribue rien.
         Set<String> permissions = resolver.resoudrePermissions(Set.of("DIRECTION"));
 
-        assertThat(permissions).containsExactly("UTILISATEUR_CONSULTER");
+        assertThat(permissions).containsExactlyInAnyOrder("UTILISATEUR_CONSULTER", "ANNEE_SCOLAIRE_CONSULTER");
     }
 
     /**

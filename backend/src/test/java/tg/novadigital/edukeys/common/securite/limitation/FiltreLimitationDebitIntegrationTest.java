@@ -249,15 +249,19 @@ class FiltreLimitationDebitIntegrationTest {
                 .andExpect(jsonPath("$.detail").exists())
                 .andExpect(jsonPath("$.instance").value("/api/v1/auth/login"))
                 .andExpect(jsonPath("$.correlationId").exists())
+                .andExpect(jsonPath("$.code").value("TROP_DE_REQUETES"))
                 .andReturn();
 
         // Même jeu de clés qu'une erreur applicative ordinaire (404, 422...) :
         // aucune clé additionnelle qui trahirait le mécanisme de limitation.
+        // "code" y figure désormais (DELTA 3, US-01) : invariant « tout
+        // ProblemDetail porte un code », y compris celui écrit à la main par
+        // ce filtre, hors du @RestControllerAdvice.
         @SuppressWarnings("unchecked")
         java.util.Map<String, Object> corps = new com.fasterxml.jackson.databind.ObjectMapper()
                 .readValue(resultat.getResponse().getContentAsString(), java.util.Map.class);
         assertThat(corps.keySet()).containsExactlyInAnyOrder(
-                "type", "title", "status", "detail", "instance", "correlationId");
+                "type", "title", "status", "detail", "instance", "correlationId", "code");
     }
 
     /**

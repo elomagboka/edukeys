@@ -29,51 +29,49 @@ public class GestionnaireExceptionsGlobal {
 
     @ExceptionHandler(RessourceIntrouvableException.class)
     public ProblemDetail gererRessourceIntrouvable(RessourceIntrouvableException ex, HttpServletRequest request) {
-        return construire(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+        return construire(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(IdentifiantsInvalidesException.class)
     public ProblemDetail gererIdentifiantsInvalides(IdentifiantsInvalidesException ex, HttpServletRequest request) {
-        return construire(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return construire(HttpStatus.UNAUTHORIZED, ex.getCode(), ex.getMessage(), request);
     }
 
     /**
-     * Code distinct de {@code gererIdentifiantsInvalides} (US-04) : le mot de
-     * passe temporaire présenté était correct, mais son jeton d'activation a
-     * expiré. Le {@code code} ne doit apparaître que dans une réponse à un
+     * Statut distinct de {@code gererIdentifiantsInvalides} (US-04) : le mot
+     * de passe temporaire présenté était correct, mais son jeton d'activation
+     * a expiré. Le {@code code} ne doit apparaître que dans une réponse à un
      * appel où le mot de passe s'est révélé correct par ailleurs — voir la
      * Javadoc de {@link MotDePasseTemporaireExpireException}.
      */
     @ExceptionHandler(MotDePasseTemporaireExpireException.class)
     public ProblemDetail gererMotDePasseTemporaireExpire(MotDePasseTemporaireExpireException ex, HttpServletRequest request) {
-        ProblemDetail problemDetail = construire(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-        problemDetail.setProperty("code", "MOT_DE_PASSE_TEMPORAIRE_EXPIRE");
-        return problemDetail;
+        return construire(HttpStatus.UNAUTHORIZED, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(RegleMetierViolee.class)
     public ProblemDetail gererRegleMetierViolee(RegleMetierViolee ex, HttpServletRequest request) {
-        return construire(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+        return construire(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(FormatFichierNonSupporteException.class)
     public ProblemDetail gererFormatFichierNonSupporte(FormatFichierNonSupporteException ex, HttpServletRequest request) {
-        return construire(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage(), request);
+        return construire(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(FichierTropVolumineuxException.class)
     public ProblemDetail gererFichierTropVolumineuxMetier(FichierTropVolumineuxException ex, HttpServletRequest request) {
-        return construire(HttpStatus.PAYLOAD_TOO_LARGE, ex.getMessage(), request);
+        return construire(HttpStatus.PAYLOAD_TOO_LARGE, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(ConflitException.class)
     public ProblemDetail gererConflit(ConflitException ex, HttpServletRequest request) {
-        return construire(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return construire(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccesInterditException.class)
     public ProblemDetail gererAccesInterdit(AccesInterditException ex, HttpServletRequest request) {
-        return construire(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+        return construire(HttpStatus.FORBIDDEN, ex.getCode(), ex.getMessage(), request);
     }
 
     /**
@@ -88,7 +86,7 @@ public class GestionnaireExceptionsGlobal {
     @ExceptionHandler(tg.novadigital.edukeys.common.multietablissement.ContexteEtablissementAbsentException.class)
     public ProblemDetail gererContexteEtablissementAbsent(
             tg.novadigital.edukeys.common.multietablissement.ContexteEtablissementAbsentException ex, HttpServletRequest request) {
-        return construire(HttpStatus.FORBIDDEN, "Accès refusé.", request);
+        return construire(HttpStatus.FORBIDDEN, CodeErreur.ACCES_REFUSE, "Accès refusé.", request);
     }
 
     /**
@@ -108,7 +106,7 @@ public class GestionnaireExceptionsGlobal {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail gererAccesRefuse(AccessDeniedException ex, HttpServletRequest request) {
-        return construire(HttpStatus.FORBIDDEN, "Accès refusé.", request);
+        return construire(HttpStatus.FORBIDDEN, CodeErreur.ACCES_REFUSE, "Accès refusé.", request);
     }
 
     /**
@@ -127,7 +125,7 @@ public class GestionnaireExceptionsGlobal {
                 .map(erreur -> erreur.getField() + " : " + erreur.getDefaultMessage())
                 .toList();
 
-        ProblemDetail problemDetail = construire(HttpStatus.BAD_REQUEST, "Requête invalide.", request);
+        ProblemDetail problemDetail = construire(HttpStatus.BAD_REQUEST, CodeErreur.REQUETE_INVALIDE, "Requête invalide.", request);
         problemDetail.setProperty("champsInvalides", champsInvalides);
         LOG.debug("Requête invalide [correlationId={}, champs={}]",
                 problemDetail.getProperties().get("correlationId"),
@@ -143,7 +141,7 @@ public class GestionnaireExceptionsGlobal {
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ProblemDetail gererFichierTropVolumineux(MaxUploadSizeExceededException ex, HttpServletRequest request) {
-        return construire(HttpStatus.PAYLOAD_TOO_LARGE, "Fichier trop volumineux.", request);
+        return construire(HttpStatus.PAYLOAD_TOO_LARGE, CodeErreur.FICHIER_TROP_VOLUMINEUX, "Fichier trop volumineux.", request);
     }
 
     /**
@@ -153,7 +151,7 @@ public class GestionnaireExceptionsGlobal {
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail gererCorpsIllisible(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        ProblemDetail problemDetail = construire(HttpStatus.BAD_REQUEST, "Corps de requête illisible.", request);
+        ProblemDetail problemDetail = construire(HttpStatus.BAD_REQUEST, CodeErreur.CORPS_ILLISIBLE, "Corps de requête illisible.", request);
         LOG.debug("Corps de requête illisible [correlationId={}]", problemDetail.getProperties().get("correlationId"));
         return problemDetail;
     }
@@ -166,15 +164,16 @@ public class GestionnaireExceptionsGlobal {
      */
     @ExceptionHandler(Exception.class)
     public ProblemDetail gererErreurInattendue(Exception ex, HttpServletRequest request) {
-        ProblemDetail problemDetail = construire(HttpStatus.INTERNAL_SERVER_ERROR, "Une erreur inattendue est survenue.", request);
+        ProblemDetail problemDetail = construire(HttpStatus.INTERNAL_SERVER_ERROR, CodeErreur.ERREUR_INATTENDUE, "Une erreur inattendue est survenue.", request);
         LOG.error("Erreur inattendue [correlationId={}]", problemDetail.getProperties().get("correlationId"), ex);
         return problemDetail;
     }
 
-    private ProblemDetail construire(HttpStatus statut, String message, HttpServletRequest request) {
+    private ProblemDetail construire(HttpStatus statut, CodeErreur code, String message, HttpServletRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(statut, message);
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUT_REQUETE);
         problemDetail.setProperty("correlationId", correlationId);
+        problemDetail.setProperty("code", code.name());
         return problemDetail;
     }
 }

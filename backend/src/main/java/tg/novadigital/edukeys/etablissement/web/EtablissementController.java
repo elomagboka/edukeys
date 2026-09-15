@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import tg.novadigital.edukeys.common.audit.HistoriqueService;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.etablissement.domain.Etablissement;
 import tg.novadigital.edukeys.etablissement.mapper.EtablissementMapper;
@@ -169,7 +170,7 @@ public class EtablissementController {
                 .map(etablissementMapper::versHistoriqueDto)
                 .toList();
         if (revisions.isEmpty() && !etablissementService.existe(id)) {
-            throw new RessourceIntrouvableException("Établissement introuvable.");
+            throw new RessourceIntrouvableException(CodeErreur.ETABLISSEMENT_INTROUVABLE, "Établissement introuvable.");
         }
         return revisions;
     }

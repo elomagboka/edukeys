@@ -43,6 +43,16 @@ public enum Permission {
      * la vérification dans {@code UtilisateurService}.
      */
     ROLE_ATTRIBUER("Attribuer les rôles d'un compte de son établissement"),
+    /** Consultation des années scolaires de son établissement (US-01). */
+    ANNEE_SCOLAIRE_CONSULTER("Consulter les années scolaires de son établissement"),
+    /**
+     * Gestion des années scolaires (création, modification, activation,
+     * clôture, désactivation — US-01). Volontairement distincte de
+     * {@link #ETABLISSEMENT_GERER} : réutiliser cette dernière élargirait
+     * silencieusement sa portée (CLAUDE.md, règle 11 — piège déjà rencontré
+     * sur {@code SiteController}/{@code LogoController}).
+     */
+    ANNEE_SCOLAIRE_GERER("Gérer les années scolaires de son établissement"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

@@ -7,7 +7,14 @@ package tg.novadigital.edukeys.common.exception;
  */
 public abstract class EdukeysException extends RuntimeException {
 
-    protected EdukeysException(String message) {
+    private final CodeErreur code;
+
+    protected EdukeysException(CodeErreur code, String message) {
         super(message);
+        this.code = code;
+    }
+
+    public CodeErreur getCode() {
+        return code;
     }
 }

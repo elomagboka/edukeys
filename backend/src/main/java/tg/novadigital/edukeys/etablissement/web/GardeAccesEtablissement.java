@@ -2,6 +2,7 @@ package tg.novadigital.edukeys.etablissement.web;
 
 import java.util.UUID;
 
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 import tg.novadigital.edukeys.common.multietablissement.PerimetreEtablissement;
@@ -32,7 +33,7 @@ public final class GardeAccesEtablissement {
                 .map(PerimetreEtablissement::etablissementId)
                 .filter(courant -> !courant.equals(etablissementId))
                 .ifPresent(courant -> {
-                    throw new RessourceIntrouvableException("Établissement introuvable.");
+                    throw new RessourceIntrouvableException(CodeErreur.ETABLISSEMENT_INTROUVABLE, "Établissement introuvable.");
                 });
     }
 }

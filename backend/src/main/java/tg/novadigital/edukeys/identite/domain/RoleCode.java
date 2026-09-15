@@ -3,6 +3,8 @@ package tg.novadigital.edukeys.identite.domain;
 import java.util.EnumSet;
 import java.util.Set;
 
+import static tg.novadigital.edukeys.identite.domain.Permission.ANNEE_SCOLAIRE_CONSULTER;
+import static tg.novadigital.edukeys.identite.domain.Permission.ANNEE_SCOLAIRE_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.BULLETIN_CONSULTER;
 import static tg.novadigital.edukeys.identite.domain.Permission.DEVOIR_CREER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ENFANT_CONSULTER;
@@ -42,12 +44,13 @@ public enum RoleCode {
     // toutes les deux — un futur rôle pourrait un jour ne porter que l'une
     // des deux (ex. un rôle « support » qui gère les comptes sans jamais
     // pouvoir toucher aux rôles).
-    ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER, UTILISATEUR_CONSULTER, ROLE_ATTRIBUER),
+    ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER, UTILISATEUR_CONSULTER, ROLE_ATTRIBUER,
+            ANNEE_SCOLAIRE_GERER, ANNEE_SCOLAIRE_CONSULTER),
     // DIRECTION lit le personnel de son établissement, mais ne crée ni
     // n'attribue rien (US-04).
-    DIRECTION(UTILISATEUR_CONSULTER),
-    GESTIONNAIRE(),
-    ENSEIGNANT(NOTE_SAISIR, DEVOIR_CREER),
+    DIRECTION(UTILISATEUR_CONSULTER, ANNEE_SCOLAIRE_CONSULTER),
+    GESTIONNAIRE(ANNEE_SCOLAIRE_CONSULTER),
+    ENSEIGNANT(NOTE_SAISIR, DEVOIR_CREER, ANNEE_SCOLAIRE_CONSULTER),
     PARENT(ENFANT_CONSULTER, BULLETIN_CONSULTER),
     ELEVE();
 

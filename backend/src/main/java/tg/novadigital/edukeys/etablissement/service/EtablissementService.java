@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.ConflitException;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.initialisation.ChargeurReferentielType;
@@ -98,10 +99,10 @@ public class EtablissementService {
         String email = requete.email().toLowerCase(Locale.ROOT);
 
         if (etablissementRepository.existsByCodeIgnoreCaseAndActifTrue(code)) {
-            throw new ConflitException("Un établissement actif porte déjà ce code.");
+            throw new ConflitException(CodeErreur.ETABLISSEMENT_CODE_DUPLIQUE, "Un établissement actif porte déjà ce code.");
         }
         if (etablissementRepository.existsByEmailIgnoreCaseAndActifTrue(email)) {
-            throw new ConflitException("Un établissement actif porte déjà cet email.");
+            throw new ConflitException(CodeErreur.ETABLISSEMENT_EMAIL_DUPLIQUE, "Un établissement actif porte déjà cet email.");
         }
 
         Etablissement etablissement = new Etablissement(code, requete.nom(), requete.typeEtablissement(), requete.ville(), email);
@@ -162,7 +163,7 @@ public class EtablissementService {
 
     public Etablissement obtenir(UUID id) {
         return etablissementRepository.findById(id)
-                .orElseThrow(() -> new RessourceIntrouvableException("Établissement introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.ETABLISSEMENT_INTROUVABLE, "Établissement introuvable."));
     }
 
     /** Existence brute, sans lever d'exception : évite au controller un try/catch utilisé comme contrôle de flux. */
@@ -197,7 +198,7 @@ public class EtablissementService {
 
         if (!email.equalsIgnoreCase(etablissement.getEmail())
                 && etablissementRepository.existsByEmailIgnoreCaseAndActifTrueAndIdNot(email, id)) {
-            throw new ConflitException("Un établissement actif porte déjà cet email.");
+            throw new ConflitException(CodeErreur.ETABLISSEMENT_EMAIL_DUPLIQUE, "Un établissement actif porte déjà cet email.");
         }
 
         etablissement.modifierIdentite(requete.nom(), requete.sigle(), requete.typeEtablissement());
@@ -255,10 +256,10 @@ public class EtablissementService {
         Etablissement etablissement = obtenir(id);
 
         if (etablissementRepository.existsByCodeIgnoreCaseAndActifTrueAndIdNot(etablissement.getCode(), id)) {
-            throw new ConflitException("Le code de cet établissement est désormais porté par un autre établissement actif.");
+            throw new ConflitException(CodeErreur.ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION, "Le code de cet établissement est désormais porté par un autre établissement actif.");
         }
         if (etablissementRepository.existsByEmailIgnoreCaseAndActifTrueAndIdNot(etablissement.getEmail(), id)) {
-            throw new ConflitException("L'email de cet établissement est désormais porté par un autre établissement actif.");
+            throw new ConflitException(CodeErreur.ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION, "L'email de cet établissement est désormais porté par un autre établissement actif.");
         }
 
         etablissement.reactiver();

@@ -260,21 +260,21 @@ class UtilisateurServiceTest {
         when(utilisateurRepository.existsByEmailAndActifTrue("compte.ordinaire@edukeys.tg")).thenReturn(true);
         when(utilisateurRepository.existsByEmailAndActifTrue("super.admin@edukeys.tg")).thenReturn(true);
 
-        String messageCompteOrdinaire;
-        String messageSuperAdmin;
+        tg.novadigital.edukeys.common.exception.CodeErreur codeCompteOrdinaire;
+        tg.novadigital.edukeys.common.exception.CodeErreur codeSuperAdmin;
         try (var portee = ContexteEtablissement.ouvrir(etablissementCourant)) {
-            messageCompteOrdinaire = org.assertj.core.api.Assertions.catchThrowableOfType(
+            codeCompteOrdinaire = org.assertj.core.api.Assertions.catchThrowableOfType(
                     () -> utilisateurService.creerCompteAvecRoles(
                             "compte.ordinaire@edukeys.tg", "Peu importe", Set.of(RoleCode.GESTIONNAIRE), null),
-                    ConflitException.class).getMessage();
-            messageSuperAdmin = org.assertj.core.api.Assertions.catchThrowableOfType(
+                    ConflitException.class).getCode();
+            codeSuperAdmin = org.assertj.core.api.Assertions.catchThrowableOfType(
                     () -> utilisateurService.creerCompteAvecRoles(
                             "super.admin@edukeys.tg", "Peu importe", Set.of(RoleCode.GESTIONNAIRE), null),
-                    ConflitException.class).getMessage();
+                    ConflitException.class).getCode();
         }
 
-        assertThat(messageCompteOrdinaire).isNotBlank();
-        assertThat(messageCompteOrdinaire).isEqualTo(messageSuperAdmin);
+        assertThat(codeCompteOrdinaire).isNotNull();
+        assertThat(codeCompteOrdinaire).isEqualTo(codeSuperAdmin);
     }
 
     // ------------------------------------------------------------------

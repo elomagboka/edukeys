@@ -72,6 +72,7 @@ class GestionnaireExceptionsGlobalTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.detail").value("Ressource introuvable."))
+                .andExpect(jsonPath("$.code").exists())
                 .andExpect(jsonPath("$.correlationId").exists());
     }
 
@@ -80,7 +81,8 @@ class GestionnaireExceptionsGlobalTest {
         mockMvc.perform(get("/test-exceptions/regle-metier"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
-                .andExpect(jsonPath("$.detail").value("Règle métier violée."));
+                .andExpect(jsonPath("$.detail").value("Règle métier violée."))
+                .andExpect(jsonPath("$.code").exists());
     }
 
     @Test
@@ -88,7 +90,8 @@ class GestionnaireExceptionsGlobalTest {
         mockMvc.perform(get("/test-exceptions/conflit"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
-                .andExpect(jsonPath("$.detail").value("Conflit détecté."));
+                .andExpect(jsonPath("$.detail").value("Conflit détecté."))
+                .andExpect(jsonPath("$.code").exists());
     }
 
     @Test
@@ -96,21 +99,24 @@ class GestionnaireExceptionsGlobalTest {
         mockMvc.perform(get("/test-exceptions/acces-interdit"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
-                .andExpect(jsonPath("$.detail").value("Accès interdit."));
+                .andExpect(jsonPath("$.detail").value("Accès interdit."))
+                .andExpect(jsonPath("$.code").exists());
     }
 
     @Test
     void autorisationRefusee_renvoie403() throws Exception {
         mockMvc.perform(get("/test-exceptions/autorisation-refusee"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.status").value(403));
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
     }
 
     @Test
     void erreurInattendue_renvoie500() throws Exception {
         mockMvc.perform(get("/test-exceptions/autre-chose"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.status").value(500));
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.code").value("ERREUR_INATTENDUE"));
     }
 
     @Test
@@ -122,6 +128,7 @@ class GestionnaireExceptionsGlobalTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("REQUETE_INVALIDE"))
                 .andExpect(jsonPath("$.champsInvalides[0]").value(containsString("email")));
     }
 
@@ -131,7 +138,30 @@ class GestionnaireExceptionsGlobalTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("pas-du-json-valide"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("CORPS_ILLISIBLE"));
+    }
+
+    /**
+     * Invariant DELTA 3 (US-01) : tout {@code ProblemDetail} sorti de ce
+     * {@code @RestControllerAdvice} porte un {@code code} non vide, pour
+     * chacun des types d'exception gérés.
+     */
+    @Test
+    void toutProblemDetail_porteUnCodeNonVide() throws Exception {
+        List<String> chemins = List.of(
+                "/test-exceptions/introuvable",
+                "/test-exceptions/regle-metier",
+                "/test-exceptions/conflit",
+                "/test-exceptions/acces-interdit",
+                "/test-exceptions/autorisation-refusee",
+                "/test-exceptions/autre-chose");
+
+        for (String chemin : chemins) {
+            mockMvc.perform(get(chemin))
+                    .andExpect(jsonPath("$.code").exists())
+                    .andExpect(jsonPath("$.code").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.emptyOrNullString())));
+        }
     }
 
     /**

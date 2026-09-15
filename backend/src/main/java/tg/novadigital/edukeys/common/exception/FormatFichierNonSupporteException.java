@@ -8,7 +8,7 @@ package tg.novadigital.edukeys.common.exception;
  */
 public class FormatFichierNonSupporteException extends EdukeysException {
 
-    public FormatFichierNonSupporteException(String message) {
-        super(message);
+    public FormatFichierNonSupporteException(CodeErreur code, String message) {
+        super(code, message);
     }
 }

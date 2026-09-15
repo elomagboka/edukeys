@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.ConflitException;
 import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
@@ -65,7 +66,7 @@ public class SiteService {
 
         try (PorteeEtablissement portee = ContexteEtablissement.ouvrir(etablissementId)) {
             if (siteRepository.findByEtablissementIdAndCodeIgnoreCaseAndActifTrue(etablissementId, code).isPresent()) {
-                throw new ConflitException("Un site actif porte déjà ce code dans cet établissement.");
+                throw new ConflitException(CodeErreur.SITE_CODE_DUPLIQUE, "Un site actif porte déjà ce code dans cet établissement.");
             }
             Site site = new Site(etablissementId, code, requete.nom(), false,
                     requete.ville(), requete.quartier(), requete.adresseLigne(), requete.telephone());
@@ -123,7 +124,7 @@ public class SiteService {
         try (PorteeEtablissement portee = ContexteEtablissement.ouvrir(etablissementId)) {
             Site site = obtenirSiteActif(siteId);
             if (site.isPrincipal()) {
-                throw new RegleMetierViolee(
+                throw new RegleMetierViolee(CodeErreur.SITE_PRINCIPAL_NON_DESACTIVABLE,
                         "Le site principal ne peut pas être désactivé directement : désignez un autre site principal d'abord.");
             }
             site.desactiver();
@@ -137,11 +138,11 @@ public class SiteService {
     private Site obtenirSiteActif(UUID siteId) {
         return siteRepository.findById(siteId)
                 .filter(Site::isActif)
-                .orElseThrow(() -> new RessourceIntrouvableException("Site introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.SITE_INTROUVABLE, "Site introuvable."));
     }
 
     private Etablissement obtenirEtablissement(UUID etablissementId) {
         return etablissementRepository.findById(etablissementId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Établissement introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.ETABLISSEMENT_INTROUVABLE, "Établissement introuvable."));
     }
 }
