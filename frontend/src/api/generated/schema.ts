@@ -762,6 +762,18 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
+        ProblemDetailEdukeys: {
+            /** @enum {string} */
+            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
+            correlationId?: string;
+            detail?: string;
+            instance?: string;
+            /** Format: int32 */
+            status?: unknown;
+            title?: string;
+            /** @example about:blank */
+            type?: string;
+        };
         RefreshRequestDto: {
             refreshToken?: string;
         };
@@ -1091,14 +1103,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
             /** @description Désactivation refusée hors préparation */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
@@ -1543,7 +1559,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
@@ -1717,7 +1735,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
@@ -1840,7 +1860,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
@@ -1921,14 +1943,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
             /** @description Tentative de désactiver son propre compte, ou dernier ADMIN actif de l'établissement */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
@@ -1986,7 +2012,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
@@ -2017,14 +2045,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
             /** @description Aucun rôle fourni, SUPER_ADMIN demandé, ou tentative de modifier ses propres rôles */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
             };
         };
     };
