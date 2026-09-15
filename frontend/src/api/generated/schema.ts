@@ -4,6 +4,127 @@
  */
 
 export interface paths {
+    "/api/v1/annees-scolaires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste des années scolaires de l'établissement courant */
+        get: operations["listerAnneesScolaires"];
+        put?: never;
+        /** Crée une année scolaire pour l'établissement courant */
+        post: operations["creerAnneeScolaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/annees-scolaires/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Année scolaire actuellement active de l'établissement courant */
+        get: operations["obtenirAnneeScolaireActive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/annees-scolaires/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une année scolaire */
+        get: operations["obtenirAnneeScolaire"];
+        /** Modifie les dates (et éventuellement le libellé) d'une année scolaire */
+        put: operations["modifierAnneeScolaire"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/annees-scolaires/{id}/activation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Active une année en préparation (bascule transactionnelle : l'année active en cours est clôturée) */
+        post: operations["activerAnneeScolaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/annees-scolaires/{id}/cloture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clôture une année active */
+        post: operations["cloturerAnneeScolaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/annees-scolaires/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive une année en préparation */
+        post: operations["desactiverAnneeScolaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/annees-scolaires/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'une année scolaire */
+        get: operations["obtenirHistoriqueAnneeScolaire"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/etablissement-actif": {
         parameters: {
             query?: never;
@@ -405,6 +526,43 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AnneeScolaireDto: {
+            actif?: boolean;
+            /** Format: date-time */
+            dateActivation?: string;
+            /** Format: date-time */
+            dateCloture?: string;
+            /** Format: date-time */
+            dateCreation?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            /** Format: date-time */
+            dateModification?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** @enum {string} */
+            statut?: "PREPARATION" | "ACTIVE" | "CLOTUREE";
+        };
+        AnneeScolaireHistoriqueDto: {
+            actif?: boolean;
+            auteur?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            statut?: string;
+            typeRevision?: string;
+        };
         BasculerEtablissementRequestDto: {
             /** Format: uuid */
             etablissementId: string;
@@ -416,6 +574,13 @@ export interface components {
         CompteCreeDto: {
             compte?: components["schemas"]["UtilisateurCompteDto"];
             motDePasseTemporaire?: string;
+        };
+        CreerAnneeScolaireRequestDto: {
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin: string;
+            libelle?: string;
         };
         CreerEtablissementRequestDto: {
             adresseLigne?: string;
@@ -528,6 +693,13 @@ export interface components {
             tailleOctets?: number;
             typeMime?: string;
         };
+        ModifierAnneeScolaireRequestDto: {
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin: string;
+            libelle?: string;
+        };
         ModifierEtablissementRequestDto: {
             adresseLigne?: string;
             boitePostale?: string;
@@ -638,6 +810,329 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listerAnneesScolaires: {
+        parameters: {
+            query?: {
+                statut?: "PREPARATION" | "ACTIVE" | "CLOTUREE";
+                inclureInactives?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Années scolaires */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"][];
+                };
+            };
+        };
+    };
+    creerAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerAnneeScolaireRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Année scolaire créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Libellé déjà utilisé ou période chevauchant une autre année */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Dates incohérentes, durée invalide ou libellé vide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+        };
+    };
+    obtenirAnneeScolaireActive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Année active */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Aucune année active pour cet établissement */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+        };
+    };
+    obtenirAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Année scolaire trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+        };
+    };
+    modifierAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierAnneeScolaireRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Année scolaire modifiée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Libellé déjà utilisé ou période chevauchant une autre année */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Dates incohérentes, durée invalide ou année clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+        };
+    };
+    activerAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Année scolaire activée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Transition invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+        };
+    };
+    cloturerAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Année scolaire clôturée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+            /** @description Transition invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireDto"];
+                };
+            };
+        };
+    };
+    desactiverAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Année scolaire désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Désactivation refusée hors préparation */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    obtenirHistoriqueAnneeScolaire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions de l'année scolaire */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireHistoriqueDto"][];
+                };
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AnneeScolaireHistoriqueDto"][];
+                };
+            };
+        };
+    };
     basculerEtablissement: {
         parameters: {
             query?: never;

@@ -1,6 +1,93 @@
 {
   "components" : {
     "schemas" : {
+      "AnneeScolaireDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "dateActivation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateCloture" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateDebut" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dateFin" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dateModification" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "statut" : {
+            "enum" : [
+              "PREPARATION",
+              "ACTIVE",
+              "CLOTUREE"
+            ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AnneeScolaireHistoriqueDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateDebut" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dateFin" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "numeroRevision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "statut" : {
+            "type" : "string"
+          },
+          "typeRevision" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "BasculerEtablissementRequestDto" : {
         "properties" : {
           "etablissementId" : {
@@ -36,6 +123,28 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "CreerAnneeScolaireRequestDto" : {
+        "properties" : {
+          "dateDebut" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dateFin" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "dateDebut",
+          "dateFin"
+        ],
         "type" : "object"
       },
       "CreerEtablissementRequestDto" : {
@@ -409,6 +518,28 @@
         },
         "type" : "object"
       },
+      "ModifierAnneeScolaireRequestDto" : {
+        "properties" : {
+          "dateDebut" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dateFin" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "dateDebut",
+          "dateFin"
+        ],
+        "type" : "object"
+      },
       "ModifierEtablissementRequestDto" : {
         "properties" : {
           "adresseLigne" : {
@@ -760,6 +891,429 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/v1/annees-scolaires" : {
+      "get" : {
+        "operationId" : "listerAnneesScolaires",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "statut",
+            "required" : false,
+            "schema" : {
+              "enum" : [
+                "PREPARATION",
+                "ACTIVE",
+                "CLOTUREE"
+              ],
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "inclureInactives",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AnneeScolaireDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Années scolaires"
+          }
+        },
+        "summary" : "Liste des années scolaires de l'établissement courant",
+        "tags" : [
+          "Années scolaires"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerAnneeScolaire",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerAnneeScolaireRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire créée"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Libellé déjà utilisé ou période chevauchant une autre année"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Dates incohérentes, durée invalide ou libellé vide"
+          }
+        },
+        "summary" : "Crée une année scolaire pour l'établissement courant",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
+    "/api/v1/annees-scolaires/active" : {
+      "get" : {
+        "operationId" : "obtenirAnneeScolaireActive",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année active"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Aucune année active pour cet établissement"
+          }
+        },
+        "summary" : "Année scolaire actuellement active de l'établissement courant",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
+    "/api/v1/annees-scolaires/{id}" : {
+      "get" : {
+        "operationId" : "obtenirAnneeScolaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire trouvée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire introuvable"
+          }
+        },
+        "summary" : "Détail d'une année scolaire",
+        "tags" : [
+          "Années scolaires"
+        ]
+      },
+      "put" : {
+        "operationId" : "modifierAnneeScolaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierAnneeScolaireRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire modifiée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Libellé déjà utilisé ou période chevauchant une autre année"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Dates incohérentes, durée invalide ou année clôturée"
+          }
+        },
+        "summary" : "Modifie les dates (et éventuellement le libellé) d'une année scolaire",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
+    "/api/v1/annees-scolaires/{id}/activation" : {
+      "post" : {
+        "operationId" : "activerAnneeScolaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire activée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire introuvable"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Transition invalide"
+          }
+        },
+        "summary" : "Active une année en préparation (bascule transactionnelle : l'année active en cours est clôturée)",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
+    "/api/v1/annees-scolaires/{id}/cloture" : {
+      "post" : {
+        "operationId" : "cloturerAnneeScolaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire clôturée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Année scolaire introuvable"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AnneeScolaireDto"
+                }
+              }
+            },
+            "description" : "Transition invalide"
+          }
+        },
+        "summary" : "Clôture une année active",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
+    "/api/v1/annees-scolaires/{id}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverAnneeScolaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Année scolaire désactivée"
+          },
+          "404" : {
+            "description" : "Année scolaire introuvable"
+          },
+          "422" : {
+            "description" : "Désactivation refusée hors préparation"
+          }
+        },
+        "summary" : "Désactive une année en préparation",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
+    "/api/v1/annees-scolaires/{id}/historique" : {
+      "get" : {
+        "operationId" : "obtenirHistoriqueAnneeScolaire",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AnneeScolaireHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Révisions de l'année scolaire"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AnneeScolaireHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Année scolaire introuvable"
+          }
+        },
+        "summary" : "Historique des révisions d'une année scolaire",
+        "tags" : [
+          "Années scolaires"
+        ]
+      }
+    },
     "/api/v1/auth/etablissement-actif" : {
       "post" : {
         "operationId" : "basculerEtablissement",
