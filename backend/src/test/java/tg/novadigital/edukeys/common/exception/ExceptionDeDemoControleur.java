@@ -25,10 +25,10 @@ public class ExceptionDeDemoControleur {
     @GetMapping("/test-exceptions/{type}")
     public void lancer(@PathVariable String type) {
         switch (type) {
-            case "introuvable" -> throw new RessourceIntrouvableException("Ressource introuvable.");
-            case "regle-metier" -> throw new RegleMetierViolee("Règle métier violée.");
-            case "conflit" -> throw new ConflitException("Conflit détecté.");
-            case "acces-interdit" -> throw new AccesInterditException("Accès interdit.");
+            case "introuvable" -> throw new RessourceIntrouvableException(CodeErreur.ERREUR_INATTENDUE, "Ressource introuvable.");
+            case "regle-metier" -> throw new RegleMetierViolee(CodeErreur.ERREUR_INATTENDUE, "Règle métier violée.");
+            case "conflit" -> throw new ConflitException(CodeErreur.ERREUR_INATTENDUE, "Conflit détecté.");
+            case "acces-interdit" -> throw new AccesInterditException(CodeErreur.ERREUR_INATTENDUE, "Accès interdit.");
             case "autorisation-refusee" -> throw new AuthorizationDeniedException("Autorisation refusée.");
             default -> throw new IllegalStateException("Erreur inattendue.");
         }

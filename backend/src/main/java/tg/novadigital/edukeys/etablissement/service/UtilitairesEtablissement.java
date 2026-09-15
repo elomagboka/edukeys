@@ -3,6 +3,7 @@ package tg.novadigital.edukeys.etablissement.service;
 import java.util.Locale;
 import java.util.UUID;
 
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.etablissement.repository.EtablissementRepository;
 
@@ -26,7 +27,7 @@ final class UtilitairesEtablissement {
 
     static void verifierEtablissementExiste(EtablissementRepository etablissementRepository, UUID etablissementId) {
         if (!etablissementRepository.existsById(etablissementId)) {
-            throw new RessourceIntrouvableException("Établissement introuvable.");
+            throw new RessourceIntrouvableException(CodeErreur.ETABLISSEMENT_INTROUVABLE, "Établissement introuvable.");
         }
     }
 }

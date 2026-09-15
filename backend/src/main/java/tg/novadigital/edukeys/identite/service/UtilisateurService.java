@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.ConflitException;
 import tg.novadigital.edukeys.common.exception.IdentifiantsInvalidesException;
 import tg.novadigital.edukeys.common.exception.MotDePasseTemporaireExpireException;
@@ -115,7 +116,7 @@ public class UtilisateurService {
      */
     public Utilisateur obtenirSoiMeme(UtilisateurPrincipal principal) {
         return utilisateurRepository.findById(principal.utilisateurId())
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
     }
 
     /**
@@ -139,10 +140,10 @@ public class UtilisateurService {
         boolean affecteAEtablissementCourant = affectationEtablissementRepository
                 .existsByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId);
         if (!affecteAEtablissementCourant) {
-            throw new RessourceIntrouvableException("Utilisateur introuvable.");
+            throw new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable.");
         }
         return utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
     }
 
     /**
@@ -155,7 +156,7 @@ public class UtilisateurService {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
         return affectationEtablissementRepository
                 .findByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
     }
 
     /**
@@ -314,7 +315,7 @@ public class UtilisateurService {
      */
     private void validerEmailDisponible(String emailNormalise) {
         if (utilisateurRepository.existsByEmailAndActifTrue(emailNormalise)) {
-            throw new ConflitException("Cet email est déjà utilisé sur la plateforme.");
+            throw new ConflitException(CodeErreur.UTILISATEUR_EMAIL_DUPLIQUE, "Cet email est déjà utilisé sur la plateforme.");
         }
     }
 
@@ -328,14 +329,14 @@ public class UtilisateurService {
     @Transactional
     public void remplacerRoles(UUID utilisateurId, Set<RoleCode> nouveauxRoles, UUID appelantId) {
         if (utilisateurId.equals(appelantId)) {
-            throw new RegleMetierViolee("Vous ne pouvez pas modifier vos propres rôles.");
+            throw new RegleMetierViolee(CodeErreur.ROLES_AUTO_MODIFICATION_REFUSEE, "Vous ne pouvez pas modifier vos propres rôles.");
         }
         validerRolesAttribuables(nouveauxRoles);
 
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
         AffectationEtablissement affectation = affectationEtablissementRepository
                 .findByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         affectation.remplacerRoles(nouveauxRoles);
         affectationEtablissementRepository.save(affectation);
@@ -352,19 +353,19 @@ public class UtilisateurService {
     @Transactional
     public void desactiverDansEtablissementCourant(UUID utilisateurId, UUID appelantId) {
         if (utilisateurId.equals(appelantId)) {
-            throw new RegleMetierViolee("Vous ne pouvez pas désactiver votre propre compte.");
+            throw new RegleMetierViolee(CodeErreur.COMPTE_AUTO_DESACTIVATION_REFUSEE, "Vous ne pouvez pas désactiver votre propre compte.");
         }
 
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
         AffectationEtablissement affectation = affectationEtablissementRepository
                 .findByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         if (affectation.getRoles().contains(RoleCode.ADMIN)) {
             long autresAdminsActifs = affectationEtablissementRepository
                     .compterAutresAdminsActifs(etablissementId, affectation.getId());
             if (autresAdminsActifs == 0) {
-                throw new RegleMetierViolee("Impossible de désactiver le dernier administrateur actif de l'établissement.");
+                throw new RegleMetierViolee(CodeErreur.DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE, "Impossible de désactiver le dernier administrateur actif de l'établissement.");
             }
         }
 
@@ -402,11 +403,11 @@ public class UtilisateurService {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
         AffectationEtablissement affectation = affectationEtablissementRepository
                 .findByUtilisateurIdAndEtablissementId(utilisateurId, etablissementId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         Utilisateur utilisateur = affectation.getUtilisateur();
         if (!utilisateur.isActif() && utilisateurRepository.existsByEmailAndActifTrue(utilisateur.getEmail())) {
-            throw new ConflitException(
+            throw new ConflitException(CodeErreur.UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION,
                     "Un autre compte actif porte désormais cet email : réactivation impossible.");
         }
 
@@ -458,11 +459,11 @@ public class UtilisateurService {
         boolean affecteAilleursActif = affectationEtablissementRepository
                 .existsByUtilisateurIdAndActifTrueAndEtablissementIdNot(utilisateurId, etablissementId);
         if (!affecte || affecteAilleursActif) {
-            throw new RessourceIntrouvableException("Utilisateur introuvable.");
+            throw new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable.");
         }
 
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         invaliderJetonsActivationActifs(utilisateurId);
 
@@ -490,10 +491,10 @@ public class UtilisateurService {
     @Transactional
     public void changerMotDePasseSoiMeme(UUID utilisateurId, String ancienMotDePasse, String nouveauMotDePasse) {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         if (!passwordEncoder.matches(ancienMotDePasse, utilisateur.getMotDePasseHache())) {
-            throw new IdentifiantsInvalidesException("Ancien mot de passe incorrect.");
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Ancien mot de passe incorrect.");
         }
 
         // Ne jamais évaluer avant la vérification ci-dessus (voir la Javadoc
@@ -522,7 +523,7 @@ public class UtilisateurService {
     @Transactional
     public void desactiverCompte(UUID utilisateurId) {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         utilisateur.desactiver();
         utilisateurRepository.save(utilisateur);
@@ -551,10 +552,10 @@ public class UtilisateurService {
      */
     private void validerRolesAttribuables(Set<RoleCode> roles) {
         if (roles == null || roles.isEmpty()) {
-            throw new RegleMetierViolee("Au moins un rôle doit être attribué.");
+            throw new RegleMetierViolee(CodeErreur.ROLE_OBLIGATOIRE, "Au moins un rôle doit être attribué.");
         }
         if (roles.contains(RoleCode.SUPER_ADMIN)) {
-            throw new RegleMetierViolee("SUPER_ADMIN est un rôle de plateforme, non attribuable depuis un établissement.");
+            throw new RegleMetierViolee(CodeErreur.ROLE_SUPER_ADMIN_NON_ATTRIBUABLE, "SUPER_ADMIN est un rôle de plateforme, non attribuable depuis un établissement.");
         }
     }
 

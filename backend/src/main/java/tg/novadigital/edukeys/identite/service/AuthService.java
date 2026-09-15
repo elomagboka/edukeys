@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import tg.novadigital.edukeys.common.exception.AccesInterditException;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.IdentifiantsInvalidesException;
 import tg.novadigital.edukeys.common.exception.MotDePasseTemporaireExpireException;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
@@ -88,13 +89,13 @@ public class AuthService {
             // réponse (correction T-04, lot 2 n°6).
             passwordEncoder.matches(motDePasseEnClair, HACHE_FACTICE);
             JournalSecurite.echecAuthentificationCompteInconnu(email, adresseIp);
-            throw new IdentifiantsInvalidesException("Email ou mot de passe incorrect.");
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Email ou mot de passe incorrect.");
         }
 
         if (!passwordEncoder.matches(motDePasseEnClair, utilisateur.getMotDePasseHache())) {
             JournalSecurite.echecAuthentificationCompteExistant(
                     utilisateur.getId(), adresseIp, "mot_de_passe_incorrect");
-            throw new IdentifiantsInvalidesException("Email ou mot de passe incorrect.");
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Email ou mot de passe incorrect.");
         }
 
         // Vérifié seulement après un mot de passe reconnu correct (voir la
@@ -115,22 +116,22 @@ public class AuthService {
     public JetonsReponseDto rafraichir(String refreshTokenEnClair) {
         String hache = jetonHacheur.hacher(refreshTokenEnClair);
         JetonRafraichissement jeton = jetonRafraichissementRepository.findByJetonHache(hache)
-                .orElseThrow(() -> new IdentifiantsInvalidesException("Jeton de rafraîchissement invalide."));
+                .orElseThrow(() -> new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Jeton de rafraîchissement invalide."));
 
         if (!jeton.isActif()) {
             // Rejeu d'un jeton déjà tourné (ou déjà révoqué) : signal classique d'un
             // vol de jeton. On coupe toute la chaîne, pas seulement celui-ci.
             revoquerFamille(jeton.getFamilleId());
-            throw new IdentifiantsInvalidesException("Jeton de rafraîchissement invalide.");
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Jeton de rafraîchissement invalide.");
         }
 
         if (jeton.estExpire()) {
-            throw new IdentifiantsInvalidesException("Jeton de rafraîchissement expiré ou révoqué.");
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Jeton de rafraîchissement expiré ou révoqué.");
         }
 
         Utilisateur utilisateur = jeton.getUtilisateur();
         if (!utilisateur.isActif()) {
-            throw new AccesInterditException("Compte désactivé.");
+            throw new AccesInterditException(CodeErreur.COMPTE_DESACTIVE, "Compte désactivé.");
         }
 
         // Rotation : le jeton présenté est révoqué, un nouveau est émis dans la
@@ -151,17 +152,17 @@ public class AuthService {
     @Transactional
     public JetonsReponseDto basculerEtablissement(UUID utilisateurId, UUID etablissementCibleId) {
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur introuvable."));
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         if (!utilisateur.isActif()) {
-            throw new AccesInterditException("Compte désactivé.");
+            throw new AccesInterditException(CodeErreur.COMPTE_DESACTIVE, "Compte désactivé.");
         }
 
         boolean autorise = utilisateur.isSuperAdmin()
                 || affectationEtablissementRepository.existsByUtilisateurIdAndEtablissementIdAndActifTrue(
                         utilisateurId, etablissementCibleId);
         if (!autorise) {
-            throw new AccesInterditException("Aucune affectation active sur cet établissement.");
+            throw new AccesInterditException(CodeErreur.AFFECTATION_ABSENTE, "Aucune affectation active sur cet établissement.");
         }
 
         return emettreJetons(utilisateur, UUID.randomUUID(), etablissementCibleId);

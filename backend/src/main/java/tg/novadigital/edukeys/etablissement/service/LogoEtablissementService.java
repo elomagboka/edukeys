@@ -14,6 +14,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.persistence.EntityManager;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.FichierTropVolumineuxException;
 import tg.novadigital.edukeys.common.exception.FormatFichierNonSupporteException;
 import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
@@ -67,14 +68,14 @@ public class LogoEtablissementService {
 
         byte[] contenu = lireContenu(fichier);
         if (contenu.length == 0) {
-            throw new RegleMetierViolee("Le logo ne peut pas être vide.");
+            throw new RegleMetierViolee(CodeErreur.LOGO_VIDE, "Le logo ne peut pas être vide.");
         }
         if (contenu.length > tailleMaxOctets) {
-            throw new FichierTropVolumineuxException(
+            throw new FichierTropVolumineuxException(CodeErreur.FICHIER_TROP_VOLUMINEUX,
                     "Le logo doit peser au plus " + (tailleMaxOctets / (1024 * 1024)) + " Mo.");
         }
         String typeMime = detecterTypeMime(contenu)
-                .orElseThrow(() -> new FormatFichierNonSupporteException(
+                .orElseThrow(() -> new FormatFichierNonSupporteException(CodeErreur.FORMAT_FICHIER_NON_SUPPORTE,
                         "Format de fichier non pris en charge : seuls image/png, image/jpeg et image/webp sont acceptés."));
         String empreinte = calculerEmpreinteSha256(contenu);
         String nomFichier = nomFichierOriginal(fichier);
@@ -95,7 +96,7 @@ public class LogoEtablissementService {
     public LogoEtablissement obtenir(UUID etablissementId) {
         try (PorteeEtablissement portee = ContexteEtablissement.ouvrir(etablissementId)) {
             return logoEtablissementRepository.findByEtablissementIdAndActifTrue(etablissementId)
-                    .orElseThrow(() -> new RessourceIntrouvableException("Aucun logo pour cet établissement."));
+                    .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.LOGO_INTROUVABLE, "Aucun logo pour cet établissement."));
         }
     }
 
@@ -103,7 +104,7 @@ public class LogoEtablissementService {
     public void supprimer(UUID etablissementId) {
         try (PorteeEtablissement portee = ContexteEtablissement.ouvrir(etablissementId)) {
             LogoEtablissement logo = logoEtablissementRepository.findByEtablissementIdAndActifTrue(etablissementId)
-                    .orElseThrow(() -> new RessourceIntrouvableException("Aucun logo pour cet établissement."));
+                    .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.LOGO_INTROUVABLE, "Aucun logo pour cet établissement."));
             logo.desactiver();
             logoEtablissementRepository.save(logo);
             entityManager.flush();
@@ -112,7 +113,7 @@ public class LogoEtablissementService {
 
     private void verifierEtablissementExiste(UUID etablissementId) {
         if (!etablissementRepository.existsById(etablissementId)) {
-            throw new RessourceIntrouvableException("Établissement introuvable.");
+            throw new RessourceIntrouvableException(CodeErreur.ETABLISSEMENT_INTROUVABLE, "Établissement introuvable.");
         }
     }
 
@@ -120,7 +121,7 @@ public class LogoEtablissementService {
         try {
             return fichier.getBytes();
         } catch (IOException e) {
-            throw new RegleMetierViolee("Fichier illisible.");
+            throw new RegleMetierViolee(CodeErreur.LOGO_ILLISIBLE, "Fichier illisible.");
         }
     }
 

@@ -189,6 +189,7 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         corpsProblemDetail.put("detail", MESSAGE_INDIFFERENCIE);
         corpsProblemDetail.put("instance", request.getRequestURI());
         corpsProblemDetail.put("correlationId", request.getAttribute(CorrelationIdFilter.ATTRIBUT_REQUETE));
+        corpsProblemDetail.put("code", "TROP_DE_REQUETES");
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setHeader("Retry-After", String.valueOf(secondesAttente));
