@@ -34,6 +34,10 @@ public final class FabriquesEntitesTest {
         FABRIQUES.add(new FabriqueSite());
         FABRIQUES.add(new FabriqueLogoEtablissement());
         FABRIQUES.add(new FabriqueAnneeScolaire());
+        FABRIQUES.add(new FabriqueCycle());
+        FABRIQUES.add(new FabriqueNiveau());
+        FABRIQUES.add(new FabriqueFiliere());
+        FABRIQUES.add(new FabriqueClasse());
     }
 
     private FabriquesEntitesTest() {

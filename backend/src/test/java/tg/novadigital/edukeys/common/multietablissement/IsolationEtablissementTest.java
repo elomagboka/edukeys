@@ -132,6 +132,10 @@ class IsolationEtablissementTest {
      */
     @BeforeEach
     void creerLesEtablissementsDeTestSiAbsents() {
+        // FabriqueNiveau/FabriqueClasse (US-02) persistent elles-mêmes leurs
+        // relations obligatoires (Cycle, AnneeScolaire, Site) via l'EntityManager
+        // du test : voir FabriqueSupport.
+        tg.novadigital.edukeys.testsupport.FabriqueSupport.definir(entityManager);
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now()) on conflict (id) do nothing",

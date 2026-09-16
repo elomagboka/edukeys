@@ -13,6 +13,7 @@ import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 import tg.novadigital.edukeys.common.multietablissement.PorteeEtablissement;
+import tg.novadigital.edukeys.etablissement.SiteQuery;
 import tg.novadigital.edukeys.etablissement.domain.Etablissement;
 import tg.novadigital.edukeys.etablissement.domain.Site;
 import tg.novadigital.edukeys.etablissement.repository.EtablissementRepository;
@@ -40,7 +41,7 @@ import static tg.novadigital.edukeys.etablissement.service.UtilitairesEtablissem
  * du message attendu « Établissement introuvable ».</p>
  */
 @Service
-public class SiteService {
+public class SiteService implements SiteQuery {
 
     private final SiteRepository siteRepository;
     private final EtablissementRepository etablissementRepository;
@@ -133,6 +134,33 @@ public class SiteService {
             etablissementRepository.save(etablissement);
             entityManager.flush();
         }
+    }
+
+    // ------------------------------------------------------------------
+    // SiteQuery (D3, US-02) : seul point d'entrée pour le module academique
+    // ------------------------------------------------------------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existeDansEtablissementCourant(UUID siteId) {
+        if (siteId == null) {
+            return false;
+        }
+        UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
+        return siteRepository.findById(siteId)
+                .filter(Site::isActif)
+                .filter(site -> site.getEtablissementId().equals(etablissementId))
+                .isPresent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UUID idSitePrincipal() {
+        UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
+        return siteRepository.findByEtablissementIdAndPrincipalTrueAndActifTrue(etablissementId)
+                .map(Site::getId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.SITE_INTROUVABLE, "Aucun site principal actif pour cet établissement."));
     }
 
     private Site obtenirSiteActif(UUID siteId) {
