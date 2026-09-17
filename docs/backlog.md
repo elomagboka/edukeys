@@ -332,6 +332,8 @@
 | **Story Points** | À estimer |
 | **Critères d'acceptation** | - Génération PDF avec logo de l'établissement<br>- Intégration des notes, moyennes, appréciations<br>- Intégration des observations pédagogiques<br>- Téléchargement et impression |
 
+> **Note technique (US-03)** : les affectations matière/niveau/filière (`affectations_matieres`) sont permanentes, non versionnées par année scolaire. Modifier un coefficient modifie donc rétroactivement ce que verraient d'anciens bulletins recalculés après coup. Cette US doit figer les coefficients et moyennes au moment de la publication du bulletin plutôt que de les recalculer depuis l'état courant de `affectations_matieres`. Voir la javadoc de `AffectationMatiere`.
+
 ---
 
 # 💰 EPIC 4 : GESTION FINANCIÈRE (CAISSE & FACTURATION)

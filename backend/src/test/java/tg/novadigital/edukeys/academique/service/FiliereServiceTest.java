@@ -18,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.academique.domain.Cycle;
 import tg.novadigital.edukeys.academique.domain.Filiere;
+import tg.novadigital.edukeys.academique.repository.AffectationMatiereRepository;
 import tg.novadigital.edukeys.academique.repository.ClasseRepository;
 import tg.novadigital.edukeys.academique.repository.CycleRepository;
 import tg.novadigital.edukeys.academique.repository.FiliereRepository;
@@ -38,6 +39,7 @@ class FiliereServiceTest {
     private FiliereRepository filiereRepository;
     private CycleRepository cycleRepository;
     private ClasseRepository classeRepository;
+    private AffectationMatiereRepository affectationMatiereRepository;
     private EntityManager entityManager;
     private FiliereService service;
     private UUID etablissementId;
@@ -48,8 +50,9 @@ class FiliereServiceTest {
         filiereRepository = mock(FiliereRepository.class);
         cycleRepository = mock(CycleRepository.class);
         classeRepository = mock(ClasseRepository.class);
+        affectationMatiereRepository = mock(AffectationMatiereRepository.class);
         entityManager = mock(EntityManager.class);
-        service = new FiliereService(filiereRepository, cycleRepository, classeRepository, entityManager);
+        service = new FiliereService(filiereRepository, cycleRepository, classeRepository, affectationMatiereRepository, entityManager);
         etablissementId = UUID.randomUUID();
         portee = ContexteEtablissement.ouvrir(etablissementId);
 
@@ -178,10 +181,31 @@ class FiliereServiceTest {
         ReflectionTestUtils.setField(filiere, "id", id);
         when(filiereRepository.findById(id)).thenReturn(Optional.of(filiere));
         when(classeRepository.countByEtablissementIdAndFiliereIdAndActifTrue(etablissementId, id)).thenReturn(0L);
+        when(affectationMatiereRepository.countByEtablissementIdAndFiliereIdAndActifTrue(etablissementId, id)).thenReturn(0L);
 
         service.desactiver(id);
 
         assertThat(filiere.isActif()).isFalse();
+    }
+
+    // ------------------------------------------------------------------
+    // R9 (US-03) : refus de désactivation quand une affectation de matière
+    // active référence encore cette filière.
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitRejeterDesactivation_quandFiliereEncoreReferenceeParUneAffectationDeMatiereActive() {
+        UUID id = UUID.randomUUID();
+        Filiere filiere = new Filiere(etablissementId, "Scientifique", "D", null);
+        ReflectionTestUtils.setField(filiere, "id", id);
+        when(filiereRepository.findById(id)).thenReturn(Optional.of(filiere));
+        when(classeRepository.countByEtablissementIdAndFiliereIdAndActifTrue(etablissementId, id)).thenReturn(0L);
+        when(affectationMatiereRepository.countByEtablissementIdAndFiliereIdAndActifTrue(etablissementId, id)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.desactiver(id))
+                .isInstanceOf(RegleMetierViolee.class)
+                .extracting(e -> ((RegleMetierViolee) e).getCode())
+                .isEqualTo(CodeErreur.FILIERE_NON_DESACTIVABLE);
     }
 
     // ------------------------------------------------------------------

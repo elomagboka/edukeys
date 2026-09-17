@@ -18,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.academique.domain.Cycle;
 import tg.novadigital.edukeys.academique.domain.Niveau;
+import tg.novadigital.edukeys.academique.repository.AffectationMatiereRepository;
 import tg.novadigital.edukeys.academique.repository.ClasseRepository;
 import tg.novadigital.edukeys.academique.repository.CycleRepository;
 import tg.novadigital.edukeys.academique.repository.NiveauRepository;
@@ -39,6 +40,7 @@ class NiveauServiceTest {
     private NiveauRepository niveauRepository;
     private CycleRepository cycleRepository;
     private ClasseRepository classeRepository;
+    private AffectationMatiereRepository affectationMatiereRepository;
     private EntityManager entityManager;
     private NiveauService service;
     private UUID etablissementId;
@@ -49,8 +51,9 @@ class NiveauServiceTest {
         niveauRepository = mock(NiveauRepository.class);
         cycleRepository = mock(CycleRepository.class);
         classeRepository = mock(ClasseRepository.class);
+        affectationMatiereRepository = mock(AffectationMatiereRepository.class);
         entityManager = mock(EntityManager.class);
-        service = new NiveauService(niveauRepository, cycleRepository, classeRepository, entityManager);
+        service = new NiveauService(niveauRepository, cycleRepository, classeRepository, affectationMatiereRepository, entityManager);
         etablissementId = UUID.randomUUID();
         portee = ContexteEtablissement.ouvrir(etablissementId);
 
@@ -201,10 +204,32 @@ class NiveauServiceTest {
         ReflectionTestUtils.setField(niveau, "id", id);
         when(niveauRepository.findById(id)).thenReturn(Optional.of(niveau));
         when(classeRepository.countByEtablissementIdAndNiveauIdAndActifTrue(etablissementId, id)).thenReturn(0L);
+        when(affectationMatiereRepository.countByEtablissementIdAndNiveauIdAndActifTrue(etablissementId, id)).thenReturn(0L);
 
         service.desactiver(id);
 
         assertThat(niveau.isActif()).isFalse();
+    }
+
+    // ------------------------------------------------------------------
+    // R9 (US-03) : refus de désactivation quand une affectation de matière
+    // active référence encore ce niveau.
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitRejeterDesactivation_quandNiveauEncoreReferenceParUneAffectationDeMatiereActive() {
+        UUID id = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        Niveau niveau = new Niveau(etablissementId, "6ème", null, 1, cycleActif(cycleId));
+        ReflectionTestUtils.setField(niveau, "id", id);
+        when(niveauRepository.findById(id)).thenReturn(Optional.of(niveau));
+        when(classeRepository.countByEtablissementIdAndNiveauIdAndActifTrue(etablissementId, id)).thenReturn(0L);
+        when(affectationMatiereRepository.countByEtablissementIdAndNiveauIdAndActifTrue(etablissementId, id)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.desactiver(id))
+                .isInstanceOf(RegleMetierViolee.class)
+                .extracting(e -> ((RegleMetierViolee) e).getCode())
+                .isEqualTo(CodeErreur.NIVEAU_NON_DESACTIVABLE);
     }
 
     // ------------------------------------------------------------------

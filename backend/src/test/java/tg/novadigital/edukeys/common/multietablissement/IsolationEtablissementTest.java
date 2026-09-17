@@ -542,8 +542,8 @@ class IsolationEtablissementTest {
             entityManager.clear();
 
             String tableName = nomTable(fabrique.typeEntite());
-            Field champMutable = premierChampStringDeclare(fabrique.typeEntite());
-            String colonneMutee = nomColonne(champMutable);
+            ChampMutable champMutable = premierChampMutableDeclare(fabrique.typeEntite());
+            String colonneMutee = nomColonne(champMutable.champ());
 
             try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
                 // Chargement direct par identifiant (angle mort A1, cf. C3) : seul
@@ -555,8 +555,8 @@ class IsolationEtablissementTest {
                 assertThat(copie).isNotNull();
                 entityManager.detach(copie);
 
-                champMutable.setAccessible(true);
-                champMutable.set(copie, "MUTEE-DEPUIS-CONTEXTE-A");
+                champMutable.champ().setAccessible(true);
+                champMutable.champ().set(copie, champMutable.valeurMutee());
 
                 BaseRepository<Object> repository = castGeneriqueObjet(repositoryPour(fabrique.typeEntite()));
                 // save() sur une entité déjà identifiée route vers merge(), qui ne
@@ -575,7 +575,7 @@ class IsolationEtablissementTest {
             entityManager.clear();
             Integer nombreDeLignesMutees = jdbcTemplate.queryForObject(
                     "select count(*) from " + tableName + " where id = ? and " + colonneMutee + " = ?",
-                    Integer.class, id, "MUTEE-DEPUIS-CONTEXTE-A");
+                    Integer.class, id, champMutable.valeurMutee());
             assertThat(nombreDeLignesMutees)
                     .withFailMessage("La modification tentee depuis le contexte A ne doit laisser aucune trace "
                             + "en base sur la ligne de B (R4.4).")
@@ -684,13 +684,29 @@ class IsolationEtablissementTest {
         return champ.getName();
     }
 
-    private static Field premierChampStringDeclare(Class<?> typeEntite) {
+    private record ChampMutable(Field champ, Object valeurMutee) {
+    }
+
+    /**
+     * Un champ mutable déclaré directement sur l'entité, avec sa valeur de
+     * mutation pour C8. Préfère un champ {@code String} (cas le plus courant),
+     * mais retombe sur un champ {@code Boolean} déclaré directement quand
+     * l'entité n'en porte aucun — {@link tg.novadigital.edukeys.academique.domain.AffectationMatiere}
+     * (US-03) n'a par conception aucun champ texte, seulement des relations et
+     * des attributs numériques/booléens.
+     */
+    private static ChampMutable premierChampMutableDeclare(Class<?> typeEntite) {
         for (Field champ : typeEntite.getDeclaredFields()) {
             if (champ.getType().equals(String.class)) {
-                return champ;
+                return new ChampMutable(champ, "MUTEE-DEPUIS-CONTEXTE-A");
             }
         }
-        throw new IllegalStateException("Aucun champ String declare directement sur " + typeEntite
+        for (Field champ : typeEntite.getDeclaredFields()) {
+            if (champ.getType().equals(Boolean.class) || champ.getType().equals(boolean.class)) {
+                return new ChampMutable(champ, Boolean.TRUE);
+            }
+        }
+        throw new IllegalStateException("Aucun champ String ni Boolean declare directement sur " + typeEntite
                 + " : adapter c8_modificationDUneEntiteDeBDepuisLeContexteAEstRefusee pour cette entite.");
     }
 

@@ -38,6 +38,8 @@ public final class FabriquesEntitesTest {
         FABRIQUES.add(new FabriqueNiveau());
         FABRIQUES.add(new FabriqueFiliere());
         FABRIQUES.add(new FabriqueClasse());
+        FABRIQUES.add(new FabriqueMatiere());
+        FABRIQUES.add(new FabriqueAffectationMatiere());
     }
 
     private FabriquesEntitesTest() {
