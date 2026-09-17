@@ -107,6 +107,8 @@ Chaque module suit la même arborescence interne :
   et le frontend casse) ; endpoint public : `@SecurityRequirements` vide. Swagger UI en
   `local` seul. Contrat versionné `docs/api/openapi.json` (écrit par `OpenApiExportTest`) :
   **une US qui touche un DTO ou un endpoint régénère contrat ET types frontend, même commit.**
+  Le hook `.githooks/pre-commit` s'en charge (`git config core.hooksPath .githooks`,
+  une fois par clone) : il régénère les types dès que le contrat entre dans un commit.
 
 ## Environnement de développement
 
