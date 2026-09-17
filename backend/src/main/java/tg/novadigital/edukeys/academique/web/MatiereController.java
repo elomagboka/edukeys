@@ -48,6 +48,9 @@ public class MatiereController {
 
     @Operation(operationId = "listerMatieres",
             summary = "Liste des matières de l'établissement courant, triée par libellé",
+            description = "Filtres facultatifs par niveau et/ou filière. Une matière affectée à un niveau "
+                    + "sans filière (« ce niveau, toutes filières ») remonte pour toute filière de ce niveau : "
+                    + "le tronc commun apparaît donc dans le filtre d'une série.",
             responses = @ApiResponse(responseCode = "200", description = "Matières"))
     @GetMapping
     @PreAuthorize("hasAuthority('MATIERE_CONSULTER')")

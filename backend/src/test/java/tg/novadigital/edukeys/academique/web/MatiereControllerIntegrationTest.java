@@ -124,6 +124,154 @@ class MatiereControllerIntegrationTest {
     }
 
     // ------------------------------------------------------------------
+    // Filtres GET /matieres : tronc commun (affectation « niveau seul »)
+    // ------------------------------------------------------------------
+
+    @Test
+    void filtreParFiliereSeule_incluLeTroncCommunDuNiveau_maisPasUneAutreFiliere() throws Exception {
+        String etablissementId = creerEtablissement("FIL1");
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+
+        String cycleId = creerCycle(jetonAdmin, "Lycée", "FIL1L", 2);
+        String niveauTerminaleId = creerNiveau(jetonAdmin, "Terminale", "FIL1T", 3, cycleId);
+        String filiereAId = creerFiliere(jetonAdmin, "Littéraire", "FIL1A", cycleId);
+        String filiereDId = creerFiliere(jetonAdmin, "Scientifique", "FIL1D", cycleId);
+
+        String francaisId = creerMatiere(jetonAdmin, "Français");
+        definirAffectationSimple(jetonAdmin, francaisId, niveauTerminaleId); // niveau seul : tronc commun
+
+        String philosophieId = creerMatiere(jetonAdmin, "Philosophie");
+        definirAffectationNiveauEtFiliere(jetonAdmin, philosophieId, niveauTerminaleId, filiereAId);
+
+        String svtId = creerMatiere(jetonAdmin, "SVT");
+        definirAffectationNiveauEtFiliere(jetonAdmin, svtId, niveauTerminaleId, filiereDId);
+
+        String reponse = mockMvc.perform(get("/api/v1/matieres")
+                        .param("filiereId", filiereAId)
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        java.util.List<String> libelles = JsonPath.read(reponse, "$[*].libelle");
+        assertThat(libelles).contains("Français", "Philosophie");
+        assertThat(libelles).doesNotContain("SVT");
+    }
+
+    @Test
+    void filtreParFiliere_excluLeTroncCommunDunAutreCycle() throws Exception {
+        String etablissementId = creerEtablissement("FIL2");
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+
+        String cycleCollegeId = creerCycle(jetonAdmin, "Collège", "FIL2C", 1);
+        String cycleLyceeId = creerCycle(jetonAdmin, "Lycée", "FIL2L", 2);
+        String niveauSixiemeId = creerNiveau(jetonAdmin, "6ème", "FIL2N", 1, cycleCollegeId);
+        String filiereLyceeId = creerFiliere(jetonAdmin, "Scientifique", "FIL2A", cycleLyceeId);
+
+        String histoireId = creerMatiere(jetonAdmin, "Histoire-Géographie");
+        definirAffectationSimple(jetonAdmin, histoireId, niveauSixiemeId); // 6ème, collège, niveau seul
+
+        String reponse = mockMvc.perform(get("/api/v1/matieres")
+                        .param("filiereId", filiereLyceeId)
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        java.util.List<String> libelles = JsonPath.read(reponse, "$[*].libelle");
+        assertThat(libelles).doesNotContain("Histoire-Géographie");
+    }
+
+    @Test
+    void filtreParFiliereSansCycle_nExcluAucunNiveau() throws Exception {
+        String etablissementId = creerEtablissement("FIL3");
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+
+        String cycleId = creerCycle(jetonAdmin, "Collège", "FIL3C", 1);
+        String niveauSixiemeId = creerNiveau(jetonAdmin, "6ème", "FIL3N", 1, cycleId);
+        String filiereSansCycleId = creerFiliereSansCycle(jetonAdmin, "Générale", "FIL3G");
+
+        String anglaisId = creerMatiere(jetonAdmin, "Anglais");
+        definirAffectationSimple(jetonAdmin, anglaisId, niveauSixiemeId); // niveau seul, tout cycle
+
+        String reponse = mockMvc.perform(get("/api/v1/matieres")
+                        .param("filiereId", filiereSansCycleId)
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        java.util.List<String> libelles = JsonPath.read(reponse, "$[*].libelle");
+        assertThat(libelles).contains("Anglais");
+    }
+
+    @Test
+    void filtreNiveauEtFiliereCombines_renvoieTroncCommunEtFiliereCiblee_maisPasUneAutreFiliereNiUnAutreNiveau() throws Exception {
+        String etablissementId = creerEtablissement("FIL4");
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+
+        String cycleId = creerCycle(jetonAdmin, "Lycée", "FIL4L", 2);
+        String niveauPremiereId = creerNiveau(jetonAdmin, "Première", "FIL4P", 2, cycleId);
+        String niveauTerminaleId = creerNiveau(jetonAdmin, "Terminale", "FIL4T", 3, cycleId);
+        String filiereAId = creerFiliere(jetonAdmin, "Littéraire", "FIL4A", cycleId);
+        String filiereDId = creerFiliere(jetonAdmin, "Scientifique", "FIL4D", cycleId);
+
+        String francaisId = creerMatiere(jetonAdmin, "Français");
+        definirAffectationSimple(jetonAdmin, francaisId, niveauTerminaleId); // tronc commun Terminale
+
+        String philosophieId = creerMatiere(jetonAdmin, "Philosophie");
+        definirAffectationNiveauEtFiliere(jetonAdmin, philosophieId, niveauTerminaleId, filiereAId);
+
+        String svtId = creerMatiere(jetonAdmin, "SVT");
+        definirAffectationNiveauEtFiliere(jetonAdmin, svtId, niveauTerminaleId, filiereDId);
+
+        String reponseTerminaleA = mockMvc.perform(get("/api/v1/matieres")
+                        .param("niveauId", niveauTerminaleId)
+                        .param("filiereId", filiereAId)
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        java.util.List<String> libellesTerminaleA = JsonPath.read(reponseTerminaleA, "$[*].libelle");
+        assertThat(libellesTerminaleA).contains("Français", "Philosophie");
+        assertThat(libellesTerminaleA).doesNotContain("SVT");
+
+        String reponsePremiereA = mockMvc.perform(get("/api/v1/matieres")
+                        .param("niveauId", niveauPremiereId)
+                        .param("filiereId", filiereAId)
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        java.util.List<String> libellesPremiereA = JsonPath.read(reponsePremiereA, "$[*].libelle");
+        assertThat(libellesPremiereA).doesNotContain("Français", "Philosophie", "SVT");
+    }
+
+    @Test
+    void filtreParNiveauSeul_renvoieToutesLesFilieresConfondues() throws Exception {
+        String etablissementId = creerEtablissement("FIL5");
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+
+        String cycleId = creerCycle(jetonAdmin, "Lycée", "FIL5L", 2);
+        String niveauTerminaleId = creerNiveau(jetonAdmin, "Terminale", "FIL5T", 3, cycleId);
+        String filiereAId = creerFiliere(jetonAdmin, "Littéraire", "FIL5A", cycleId);
+        String filiereDId = creerFiliere(jetonAdmin, "Scientifique", "FIL5D", cycleId);
+
+        String francaisId = creerMatiere(jetonAdmin, "Français");
+        definirAffectationSimple(jetonAdmin, francaisId, niveauTerminaleId);
+
+        String philosophieId = creerMatiere(jetonAdmin, "Philosophie");
+        definirAffectationNiveauEtFiliere(jetonAdmin, philosophieId, niveauTerminaleId, filiereAId);
+
+        String svtId = creerMatiere(jetonAdmin, "SVT");
+        definirAffectationNiveauEtFiliere(jetonAdmin, svtId, niveauTerminaleId, filiereDId);
+
+        String reponse = mockMvc.perform(get("/api/v1/matieres")
+                        .param("niveauId", niveauTerminaleId)
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        java.util.List<String> libelles = JsonPath.read(reponse, "$[*].libelle");
+        assertThat(libelles).contains("Français", "Philosophie", "SVT");
+    }
+
+    // ------------------------------------------------------------------
     // Permissions
     // ------------------------------------------------------------------
 
@@ -358,6 +506,29 @@ class MatiereControllerIntegrationTest {
                                 {"affectations":[{"niveauId":"%s"}]}
                                 """.formatted(niveauId)))
                 .andExpect(status().isOk());
+    }
+
+    private void definirAffectationNiveauEtFiliere(String jetonAdmin, String matiereId, String niveauId, String filiereId)
+            throws Exception {
+        mockMvc.perform(put("/api/v1/matieres/" + matiereId + "/affectations")
+                        .header("Authorization", "Bearer " + jetonAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"affectations":[{"niveauId":"%s","filiereId":"%s"}]}
+                                """.formatted(niveauId, filiereId)))
+                .andExpect(status().isOk());
+    }
+
+    private String creerFiliereSansCycle(String jetonAdmin, String libelle, String code) throws Exception {
+        String reponse = mockMvc.perform(post("/api/v1/filieres")
+                        .header("Authorization", "Bearer " + jetonAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"libelle":"%s","code":"%s"}
+                                """.formatted(libelle, code)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(reponse, "$.id");
     }
 
     private String creerCycle(String jetonAdmin, String libelle, String code, int rang) throws Exception {

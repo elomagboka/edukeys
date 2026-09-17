@@ -67,6 +67,9 @@ public class MatiereService {
     @Transactional(readOnly = true)
     public List<Matiere> lister(UUID niveauId, UUID filiereId, boolean inclureInactives) {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
+        if (niveauId != null && filiereId != null) {
+            return matiereRepository.findAffecteesAuNiveauEtALaFiliere(etablissementId, niveauId, filiereId, inclureInactives);
+        }
         if (niveauId != null) {
             return matiereRepository.findAffecteesAuNiveau(etablissementId, niveauId, inclureInactives);
         }

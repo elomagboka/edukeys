@@ -3906,6 +3906,7 @@
     },
     "/api/v1/matieres" : {
       "get" : {
+        "description" : "Filtres facultatifs par niveau et/ou filière. Une matière affectée à un niveau sans filière (« ce niveau, toutes filières ») remonte pour toute filière de ce niveau : le tronc commun apparaît donc dans le filtre d'une série.",
         "operationId" : "listerMatieres",
         "parameters" : [
           {
