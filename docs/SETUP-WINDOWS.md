@@ -138,6 +138,12 @@ Il ne bloque pas : il fait le travail. Inutile de le contourner avec
 et de `npm ci` déjà lancé dans `frontend/` ; sinon il interrompt le commit avec
 la marche à suivre.
 
+**Le hook accélère la boucle locale ; l'autorité reste la CI.** Si tu oublies
+cette commande, rien ne te le dira sur ton poste : c'est la CI qui refusera la
+PR, en régénérant contrat et types puis en comparant. Un clone sans hook est
+donc détecté, jamais silencieux — mais tu l'apprends après le `push` plutôt
+qu'avant le commit.
+
 ## 7. Claude Code
 
 ```powershell
