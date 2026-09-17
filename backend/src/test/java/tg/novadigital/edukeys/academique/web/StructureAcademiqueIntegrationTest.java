@@ -274,9 +274,13 @@ class StructureAcademiqueIntegrationTest {
     void listerNiveaux_emetLeMemeNombreDeRequetesSql_quelQueSoitLeNombreDeNiveaux() throws Exception {
         String etablissementId = creerEtablissement("NPN");
         String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
-        String cycleId = creerCycle(jetonAdmin, "Collège", "NPNC", 1);
 
+        // Un cycle DISTINCT par niveau (et non un cycle partagé) : sans
+        // @EntityGraph sur NiveauRepository, un cycle unique serait chargé
+        // une seule fois puis servi par le cache de premier niveau, et le
+        // comptage resterait constant même en présence d'un N+1 réel.
         for (int i = 0; i < 3; i++) {
+            String cycleId = creerCycle(jetonAdmin, "Cycle " + i, "NPNC" + i, i + 1);
             creerNiveau(jetonAdmin, "Niveau " + i, "NPN" + i, i + 1, cycleId);
         }
 
@@ -290,6 +294,7 @@ class StructureAcademiqueIntegrationTest {
         long requetesAvecTroisNiveaux = stats.getPrepareStatementCount();
 
         for (int i = 3; i < 10; i++) {
+            String cycleId = creerCycle(jetonAdmin, "Cycle " + i, "NPNC" + i, i + 1);
             creerNiveau(jetonAdmin, "Niveau " + i, "NPN" + i, i + 1, cycleId);
         }
 
@@ -302,6 +307,98 @@ class StructureAcademiqueIntegrationTest {
         long requetesAvecDixNiveaux = stats.getPrepareStatementCount();
 
         assertThat(requetesAvecDixNiveaux).isEqualTo(requetesAvecTroisNiveaux);
+    }
+
+    @Test
+    void listerFilieres_emetLeMemeNombreDeRequetesSql_quelQueSoitLeNombreDeFilieres() throws Exception {
+        String etablissementId = creerEtablissement("NPF");
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+
+        // Un cycle DISTINCT par filière, même raison que pour les niveaux :
+        // un cycle partagé serait mis en cache dès le premier accès LAZY et
+        // masquerait un N+1 réel.
+        for (int i = 0; i < 3; i++) {
+            String cycleId = creerCycle(jetonAdmin, "Cycle " + i, "NPFC" + i, i + 1);
+            creerFiliere(jetonAdmin, "Filière " + i, "NPF" + i, cycleId);
+        }
+
+        Statistics stats = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        entityManager.clear();
+        stats.clear();
+        mockMvc.perform(get("/api/v1/filieres")
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3));
+        long requetesAvecTroisFilieres = stats.getPrepareStatementCount();
+
+        for (int i = 3; i < 10; i++) {
+            String cycleId = creerCycle(jetonAdmin, "Cycle " + i, "NPFC" + i, i + 1);
+            creerFiliere(jetonAdmin, "Filière " + i, "NPF" + i, cycleId);
+        }
+
+        entityManager.clear();
+        stats.clear();
+        mockMvc.perform(get("/api/v1/filieres")
+                        .header("Authorization", "Bearer " + jetonAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(10));
+        long requetesAvecDixFilieres = stats.getPrepareStatementCount();
+
+        assertThat(requetesAvecDixFilieres)
+                .withFailMessage(
+                        "Le nombre de requêtes SQL doit être identique quel que soit le nombre de filières "
+                                + "(%d avec 3 filières, %d avec 10 filières) : un écart révèle un N+1 sur la relation "
+                                + "LAZY cycle.",
+                        requetesAvecTroisFilieres, requetesAvecDixFilieres)
+                .isEqualTo(requetesAvecTroisFilieres);
+    }
+
+    // ------------------------------------------------------------------
+    // Isolation par site_id (R11) sur la MODIFICATION d'une classe
+    // ------------------------------------------------------------------
+
+    /**
+     * Même arbitrage que pour la création (R11), sur le second chemin
+     * d'écriture : {@code PUT /api/v1/classes/{id}}. C'est exactement le
+     * scénario qui a laissé passer la faille d'US-04 (un second chemin
+     * d'écriture non testé).
+     */
+    @Test
+    void refuseModificationDeClasse_quandSiteIdAppartientAUnAutreEtablissement() throws Exception {
+        String etablissementA = creerEtablissement("MSITA");
+        String etablissementB = creerEtablissement("MSITB");
+        String jetonAdminA = creerAdminEtObtenirToken(etablissementA);
+        String jetonAdminB = creerAdminEtObtenirToken(etablissementB);
+
+        String siteDeA = idSitePrincipal(jetonAdminA, etablissementA);
+        String siteDeB = idSitePrincipal(jetonAdminB, etablissementB);
+
+        creerEtActiverAnneeScolaire(jetonAdminA);
+        String cycleId = creerCycle(jetonAdminA, "Collège", "MSITC", 1);
+        String niveauId = creerNiveau(jetonAdminA, "6ème", "MSITN", 1, cycleId);
+
+        String reponseClasse = mockMvc.perform(post("/api/v1/classes")
+                        .header("Authorization", "Bearer " + jetonAdminA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"libelle":"6ème A","niveauId":"%s","siteId":"%s","effectifMax":40}
+                                """.formatted(niveauId, siteDeA)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String classeId = JsonPath.read(reponseClasse, "$.id");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/v1/classes/" + classeId)
+                        .header("Authorization", "Bearer " + jetonAdminA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"libelle":"6ème A","niveauId":"%s","siteId":"%s","effectifMax":40}
+                                """.formatted(niveauId, siteDeB)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("CLASSE_SITE_INVALIDE"));
+
+        String siteEnBase = jdbcTemplate.queryForObject(
+                "select site_id from classes where id = ?::uuid", String.class, classeId);
+        assertThat(siteEnBase).isEqualTo(siteDeA);
     }
 
     // ------------------------------------------------------------------

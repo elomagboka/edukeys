@@ -391,6 +391,38 @@ class ClasseServiceTest {
         assertThat(modifiee.getEffectifMax()).isEqualTo(45);
     }
 
+    /**
+     * R11 sur le second chemin d'écriture (modification) : le code appelle
+     * bien {@link ClasseService#resoudreSite} pour {@code modifier}, pas
+     * seulement pour {@code creer} — c'est précisément le scénario qui a
+     * laissé passer la faille d'US-04 (un second chemin d'écriture sur la
+     * même ressource non testé).
+     *
+     * <p>Contre-épreuve manuelle effectuée : en remplaçant, sur le seul
+     * chemin de modification, {@code resoudreSite(requete.siteId())} par
+     * {@code requete.siteId()} brut, ce test échoue (le site étranger est
+     * accepté tel quel).</p>
+     */
+    @Test
+    void doitRejeterModification_quandSiteIdAppartientAUnAutreEtablissement() {
+        UUID niveauId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        UUID classeId = UUID.randomUUID();
+        UUID siteDunAutreEtablissement = UUID.randomUUID();
+        Niveau niveau = niveauActif(niveauId, cycle(cycleId));
+        Classe classe = classeAvecId(classeId, niveau, null, anneeActive(), sitePrincipalId);
+        when(classeRepository.findWithGraphById(classeId)).thenReturn(Optional.of(classe));
+        when(niveauRepository.findById(niveauId)).thenReturn(Optional.of(niveau));
+        when(siteQuery.existeDansEtablissementCourant(siteDunAutreEtablissement)).thenReturn(false);
+        ModifierClasseRequestDto requete =
+                new ModifierClasseRequestDto("6ème B", "B", niveauId, null, siteDunAutreEtablissement, 45);
+
+        assertThatThrownBy(() -> service.modifier(classeId, requete))
+                .isInstanceOf(RegleMetierViolee.class)
+                .extracting(e -> ((RegleMetierViolee) e).getCode())
+                .isEqualTo(CodeErreur.CLASSE_SITE_INVALIDE);
+    }
+
     // ------------------------------------------------------------------
     // D5 : libellé de classe libre (fourni tel quel) ou composé si absent
     // ------------------------------------------------------------------
