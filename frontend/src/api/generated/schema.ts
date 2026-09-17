@@ -585,7 +585,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Liste des matières de l'établissement courant, triée par libellé */
+        /**
+         * Liste des matières de l'établissement courant, triée par libellé
+         * @description Filtres facultatifs par niveau et/ou filière. Une matière affectée à un niveau sans filière (« ce niveau, toutes filières ») remonte pour toute filière de ce niveau : le tronc commun apparaît donc dans le filtre d'une série.
+         */
         get: operations["listerMatieres"];
         put?: never;
         /** Crée une matière pour l'établissement courant, avec ses affectations initiales éventuelles */
