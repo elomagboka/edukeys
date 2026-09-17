@@ -248,8 +248,29 @@ public class ClasseService {
         }
     }
 
-    private ConflitException traduireViolation(DataIntegrityViolationException e) {
-        return new ConflitException(CodeErreur.CLASSE_LIBELLE_DUPLIQUE,
-                "Une classe active porte déjà ce libellé pour cette année scolaire.");
+    /**
+     * Discrimine sur le nom de la contrainte violée (point IMPORTANT n°3 de la
+     * revue US-02) : {@code classes} porte un index unique (libellé) et une
+     * contrainte {@code CHECK} distincte sur l'effectif maximum
+     * ({@code ck_classes_effectif_max}) — cette dernière ne peut normalement
+     * pas être atteinte tant que la validation applicative ({@code @Positive}
+     * sur le DTO) tranche en amont, mais elle reste le filet de sécurité en
+     * cas d'écriture hors de ce chemin (point MINEUR n°5 de la revue :
+     * {@code CLASSE_EFFECTIF_MAX_INVALIDE} doit être réellement atteignable
+     * pour justifier sa présence au contrat). Contrainte inconnue ou absente :
+     * l'exception d'origine remonte telle quelle, sans deviner de code.
+     */
+    private RuntimeException traduireViolation(DataIntegrityViolationException e) {
+        String contrainte = UtilitairesAcademique.nomContrainteViolee(e);
+        if (contrainte == null) {
+            return e;
+        }
+        return switch (contrainte) {
+            case "uk_classes_libelle_actif" -> new ConflitException(CodeErreur.CLASSE_LIBELLE_DUPLIQUE,
+                    "Une classe active porte déjà ce libellé pour cette année scolaire.");
+            case "ck_classes_effectif_max" -> new RegleMetierViolee(CodeErreur.CLASSE_EFFECTIF_MAX_INVALIDE,
+                    "L'effectif maximum doit être strictement positif.");
+            default -> e;
+        };
     }
 }

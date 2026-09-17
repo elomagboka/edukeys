@@ -13,6 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.academique.domain.Cycle;
 import tg.novadigital.edukeys.academique.repository.CycleRepository;
@@ -61,6 +63,12 @@ class CycleServiceTest {
         Cycle cycle = new Cycle(etablissementId, libelle, code, rang);
         ReflectionTestUtils.setField(cycle, "id", id);
         return cycle;
+    }
+
+    /** Simule la {@code DataIntegrityViolationException} levée au flush lors d'une course de concurrence. */
+    private static DataIntegrityViolationException violationSur(String nomContrainte) {
+        return new DataIntegrityViolationException("violation",
+                new org.hibernate.exception.ConstraintViolationException("violation", null, nomContrainte));
     }
 
     // ------------------------------------------------------------------
@@ -205,5 +213,54 @@ class CycleServiceTest {
         assertThat(modifie.getLibelle()).isEqualTo("Collège");
         assertThat(modifie.getCode()).isEqualTo("COL");
         assertThat(modifie.getRang()).isEqualTo(1);
+    }
+
+    // ------------------------------------------------------------------
+    // Point IMPORTANT n°3 (revue US-02) : discrimination de la contrainte
+    // violée en concurrence réelle (la vérification applicative ne l'a pas
+    // vue, seul le filet base de données tranche).
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitTraduireEnRangDuplique_quandLaContrainteRangEstViolee() {
+        when(cycleRepository.save(any(Cycle.class))).thenThrow(violationSur("uk_cycles_rang_actif"));
+        CreerCycleRequestDto requete = new CreerCycleRequestDto("Collège", null, 1);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.CYCLE_RANG_DUPLIQUE);
+    }
+
+    @Test
+    void doitTraduireEnCodeDuplique_quandLaContrainteCodeEstViolee() {
+        when(cycleRepository.save(any(Cycle.class))).thenThrow(violationSur("uk_cycles_code_actif"));
+        CreerCycleRequestDto requete = new CreerCycleRequestDto("Collège", "col", 1);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.CYCLE_CODE_DUPLIQUE);
+    }
+
+    @Test
+    void doitTraduireEnLibelleDuplique_quandLaContrainteLibelleEstViolee() {
+        when(cycleRepository.save(any(Cycle.class))).thenThrow(violationSur("uk_cycles_libelle_actif"));
+        CreerCycleRequestDto requete = new CreerCycleRequestDto("Collège", null, 1);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.CYCLE_LIBELLE_DUPLIQUE);
+    }
+
+    @Test
+    void neDoitPasDeviner_quandLaContrainteVioleeEstInconnue() {
+        DataIntegrityViolationException violation = violationSur("uk_inconnue");
+        when(cycleRepository.save(any(Cycle.class))).thenThrow(violation);
+        CreerCycleRequestDto requete = new CreerCycleRequestDto("Collège", null, 1);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isSameAs(violation);
     }
 }

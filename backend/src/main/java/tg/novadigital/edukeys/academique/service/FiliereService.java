@@ -146,7 +146,23 @@ public class FiliereService {
         }
     }
 
-    private ConflitException traduireViolation(DataIntegrityViolationException e) {
-        return new ConflitException(CodeErreur.FILIERE_LIBELLE_DUPLIQUE, "Une filière active porte déjà ce libellé ou ce code.");
+    /**
+     * Discrimine sur le nom de la contrainte violée (point IMPORTANT n°3 de la
+     * revue US-02), sur le même principe que {@code CycleService}. Contrainte
+     * inconnue ou absente : l'exception d'origine remonte telle quelle, sans
+     * deviner de code.
+     */
+    private RuntimeException traduireViolation(DataIntegrityViolationException e) {
+        String contrainte = UtilitairesAcademique.nomContrainteViolee(e);
+        if (contrainte == null) {
+            return e;
+        }
+        return switch (contrainte) {
+            case "uk_filieres_libelle_actif" -> new ConflitException(
+                    CodeErreur.FILIERE_LIBELLE_DUPLIQUE, "Une filière active porte déjà ce libellé.");
+            case "uk_filieres_code_actif" -> new ConflitException(
+                    CodeErreur.FILIERE_CODE_DUPLIQUE, "Une filière active porte déjà ce code.");
+            default -> e;
+        };
     }
 }

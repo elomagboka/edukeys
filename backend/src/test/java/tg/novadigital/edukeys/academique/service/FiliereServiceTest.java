@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import jakarta.persistence.EntityManager;
@@ -64,6 +65,12 @@ class FiliereServiceTest {
         Cycle cycle = new Cycle(etablissementId, "Lycée", null, 2);
         ReflectionTestUtils.setField(cycle, "id", id);
         return cycle;
+    }
+
+    /** Simule la {@code DataIntegrityViolationException} levée au flush lors d'une course de concurrence. */
+    private static DataIntegrityViolationException violationSur(String nomContrainte) {
+        return new DataIntegrityViolationException("violation",
+                new org.hibernate.exception.ConstraintViolationException("violation", null, nomContrainte));
     }
 
     // ------------------------------------------------------------------
@@ -190,5 +197,41 @@ class FiliereServiceTest {
                 .isInstanceOf(RessourceIntrouvableException.class)
                 .extracting(e -> ((RessourceIntrouvableException) e).getCode())
                 .isEqualTo(CodeErreur.FILIERE_INTROUVABLE);
+    }
+
+    // ------------------------------------------------------------------
+    // Point IMPORTANT n°3 (revue US-02) : discrimination de la contrainte
+    // violée en concurrence réelle.
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitTraduireEnCodeDuplique_quandLaContrainteCodeEstViolee() {
+        when(filiereRepository.save(any(Filiere.class))).thenThrow(violationSur("uk_filieres_code_actif"));
+        CreerFiliereRequestDto requete = new CreerFiliereRequestDto("Scientifique", "d", null);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.FILIERE_CODE_DUPLIQUE);
+    }
+
+    @Test
+    void doitTraduireEnLibelleDuplique_quandLaContrainteLibelleEstViolee() {
+        when(filiereRepository.save(any(Filiere.class))).thenThrow(violationSur("uk_filieres_libelle_actif"));
+        CreerFiliereRequestDto requete = new CreerFiliereRequestDto("Scientifique", null, null);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.FILIERE_LIBELLE_DUPLIQUE);
+    }
+
+    @Test
+    void neDoitPasDeviner_quandLaContrainteVioleeEstInconnue() {
+        DataIntegrityViolationException violation = violationSur("uk_inconnue");
+        when(filiereRepository.save(any(Filiere.class))).thenThrow(violation);
+        CreerFiliereRequestDto requete = new CreerFiliereRequestDto("Scientifique", null, null);
+
+        assertThatThrownBy(() -> service.creer(requete)).isSameAs(violation);
     }
 }

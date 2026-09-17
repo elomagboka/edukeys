@@ -158,7 +158,25 @@ public class NiveauService {
         }
     }
 
-    private ConflitException traduireViolation(DataIntegrityViolationException e) {
-        return new ConflitException(CodeErreur.NIVEAU_LIBELLE_DUPLIQUE, "Un niveau actif porte déjà ce libellé, ce rang ou ce code.");
+    /**
+     * Discrimine sur le nom de la contrainte violée (point IMPORTANT n°3 de la
+     * revue US-02), sur le même principe que {@code CycleService}. Contrainte
+     * inconnue ou absente : l'exception d'origine remonte telle quelle, sans
+     * deviner de code.
+     */
+    private RuntimeException traduireViolation(DataIntegrityViolationException e) {
+        String contrainte = UtilitairesAcademique.nomContrainteViolee(e);
+        if (contrainte == null) {
+            return e;
+        }
+        return switch (contrainte) {
+            case "uk_niveaux_libelle_actif" -> new ConflitException(
+                    CodeErreur.NIVEAU_LIBELLE_DUPLIQUE, "Un niveau actif porte déjà ce libellé.");
+            case "uk_niveaux_rang_actif" -> new ConflitException(
+                    CodeErreur.NIVEAU_RANG_DUPLIQUE, "Un niveau actif porte déjà ce rang.");
+            case "uk_niveaux_code_actif" -> new ConflitException(
+                    CodeErreur.NIVEAU_CODE_DUPLIQUE, "Un niveau actif porte déjà ce code.");
+            default -> e;
+        };
     }
 }

@@ -13,6 +13,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import jakarta.persistence.EntityManager;
@@ -126,6 +127,12 @@ class ClasseServiceTest {
         Classe classe = new Classe(etablissementId, "6ème A", "A", niveau, filiere, annee, siteId, 40);
         ReflectionTestUtils.setField(classe, "id", id);
         return classe;
+    }
+
+    /** Simule la {@code DataIntegrityViolationException} levée au flush lors d'une course de concurrence. */
+    private static DataIntegrityViolationException violationSur(String nomContrainte) {
+        return new DataIntegrityViolationException("violation",
+                new org.hibernate.exception.ConstraintViolationException("violation", null, nomContrainte));
     }
 
     // ------------------------------------------------------------------
@@ -471,5 +478,52 @@ class ClasseServiceTest {
                 .isInstanceOf(RessourceIntrouvableException.class)
                 .extracting(e -> ((RessourceIntrouvableException) e).getCode())
                 .isEqualTo(CodeErreur.CLASSE_INTROUVABLE);
+    }
+
+    // ------------------------------------------------------------------
+    // Point IMPORTANT n°3 (revue US-02) : discrimination de la contrainte
+    // violée en concurrence réelle. Point MINEUR n°5 : CLASSE_EFFECTIF_MAX_INVALIDE
+    // doit être réellement atteignable (filet ck_classes_effectif_max), pas
+    // un code mort.
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitTraduireEnLibelleDuplique_quandLaContrainteLibelleEstViolee() {
+        UUID niveauId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        when(niveauRepository.findById(niveauId)).thenReturn(Optional.of(niveauActif(niveauId, cycle(cycleId))));
+        when(classeRepository.save(any(Classe.class))).thenThrow(violationSur("uk_classes_libelle_actif"));
+        CreerClasseRequestDto requete = new CreerClasseRequestDto("6ème A", "A", niveauId, null, null, null, 40);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.CLASSE_LIBELLE_DUPLIQUE);
+    }
+
+    @Test
+    void doitTraduireEnEffectifMaxInvalide_quandLaContrainteCheckEstViolee() {
+        UUID niveauId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        when(niveauRepository.findById(niveauId)).thenReturn(Optional.of(niveauActif(niveauId, cycle(cycleId))));
+        when(classeRepository.save(any(Classe.class))).thenThrow(violationSur("ck_classes_effectif_max"));
+        CreerClasseRequestDto requete = new CreerClasseRequestDto("6ème A", "A", niveauId, null, null, null, 40);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(RegleMetierViolee.class)
+                .extracting(e -> ((RegleMetierViolee) e).getCode())
+                .isEqualTo(CodeErreur.CLASSE_EFFECTIF_MAX_INVALIDE);
+    }
+
+    @Test
+    void neDoitPasDeviner_quandLaContrainteVioleeEstInconnue() {
+        UUID niveauId = UUID.randomUUID();
+        UUID cycleId = UUID.randomUUID();
+        when(niveauRepository.findById(niveauId)).thenReturn(Optional.of(niveauActif(niveauId, cycle(cycleId))));
+        DataIntegrityViolationException violation = violationSur("uk_inconnue");
+        when(classeRepository.save(any(Classe.class))).thenThrow(violation);
+        CreerClasseRequestDto requete = new CreerClasseRequestDto("6ème A", "A", niveauId, null, null, null, 40);
+
+        assertThatThrownBy(() -> service.creer(requete)).isSameAs(violation);
     }
 }

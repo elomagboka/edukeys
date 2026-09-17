@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import jakarta.persistence.EntityManager;
@@ -71,6 +72,12 @@ class NiveauServiceTest {
         Cycle cycle = cycleActif(id);
         cycle.desactiver();
         return cycle;
+    }
+
+    /** Simule la {@code DataIntegrityViolationException} levée au flush lors d'une course de concurrence. */
+    private static DataIntegrityViolationException violationSur(String nomContrainte) {
+        return new DataIntegrityViolationException("violation",
+                new org.hibernate.exception.ConstraintViolationException("violation", null, nomContrainte));
     }
 
     // ------------------------------------------------------------------
@@ -213,5 +220,60 @@ class NiveauServiceTest {
                 .isInstanceOf(RessourceIntrouvableException.class)
                 .extracting(e -> ((RessourceIntrouvableException) e).getCode())
                 .isEqualTo(CodeErreur.NIVEAU_INTROUVABLE);
+    }
+
+    // ------------------------------------------------------------------
+    // Point IMPORTANT n°3 (revue US-02) : discrimination de la contrainte
+    // violée en concurrence réelle.
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitTraduireEnRangDuplique_quandLaContrainteRangEstViolee() {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleRepository.findById(cycleId)).thenReturn(Optional.of(cycleActif(cycleId)));
+        when(niveauRepository.save(any(Niveau.class))).thenThrow(violationSur("uk_niveaux_rang_actif"));
+        CreerNiveauRequestDto requete = new CreerNiveauRequestDto("6ème", null, 1, cycleId);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.NIVEAU_RANG_DUPLIQUE);
+    }
+
+    @Test
+    void doitTraduireEnCodeDuplique_quandLaContrainteCodeEstViolee() {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleRepository.findById(cycleId)).thenReturn(Optional.of(cycleActif(cycleId)));
+        when(niveauRepository.save(any(Niveau.class))).thenThrow(violationSur("uk_niveaux_code_actif"));
+        CreerNiveauRequestDto requete = new CreerNiveauRequestDto("6ème", "6e", 1, cycleId);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.NIVEAU_CODE_DUPLIQUE);
+    }
+
+    @Test
+    void doitTraduireEnLibelleDuplique_quandLaContrainteLibelleEstViolee() {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleRepository.findById(cycleId)).thenReturn(Optional.of(cycleActif(cycleId)));
+        when(niveauRepository.save(any(Niveau.class))).thenThrow(violationSur("uk_niveaux_libelle_actif"));
+        CreerNiveauRequestDto requete = new CreerNiveauRequestDto("6ème", null, 1, cycleId);
+
+        assertThatThrownBy(() -> service.creer(requete))
+                .isInstanceOf(ConflitException.class)
+                .extracting(e -> ((ConflitException) e).getCode())
+                .isEqualTo(CodeErreur.NIVEAU_LIBELLE_DUPLIQUE);
+    }
+
+    @Test
+    void neDoitPasDeviner_quandLaContrainteVioleeEstInconnue() {
+        UUID cycleId = UUID.randomUUID();
+        when(cycleRepository.findById(cycleId)).thenReturn(Optional.of(cycleActif(cycleId)));
+        DataIntegrityViolationException violation = violationSur("uk_inconnue");
+        when(niveauRepository.save(any(Niveau.class))).thenThrow(violation);
+        CreerNiveauRequestDto requete = new CreerNiveauRequestDto("6ème", null, 1, cycleId);
+
+        assertThatThrownBy(() -> service.creer(requete)).isSameAs(violation);
     }
 }

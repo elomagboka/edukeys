@@ -150,7 +150,28 @@ public class CycleService {
         }
     }
 
-    private ConflitException traduireViolation(DataIntegrityViolationException e) {
-        return new ConflitException(CodeErreur.CYCLE_LIBELLE_DUPLIQUE, "Un cycle actif porte déjà ce libellé, ce rang ou ce code.");
+    /**
+     * Discrimine sur le nom de la contrainte violée (point IMPORTANT n°3 de la
+     * revue US-02) : {@code cycles} porte trois index uniques partiels
+     * distincts (libellé, rang, code), rabattre systématiquement sur
+     * {@code CYCLE_LIBELLE_DUPLIQUE} désignerait le mauvais champ au frontend
+     * en cas de conflit sur le rang ou le code. Contrainte inconnue ou absente
+     * (pilote muet) : on ne devine pas, l'exception d'origine remonte telle
+     * quelle vers le gestionnaire générique plutôt que de mentir sur la cause.
+     */
+    private RuntimeException traduireViolation(DataIntegrityViolationException e) {
+        String contrainte = UtilitairesAcademique.nomContrainteViolee(e);
+        if (contrainte == null) {
+            return e;
+        }
+        return switch (contrainte) {
+            case "uk_cycles_libelle_actif" -> new ConflitException(
+                    CodeErreur.CYCLE_LIBELLE_DUPLIQUE, "Un cycle actif porte déjà ce libellé.");
+            case "uk_cycles_rang_actif" -> new ConflitException(
+                    CodeErreur.CYCLE_RANG_DUPLIQUE, "Un cycle actif porte déjà ce rang.");
+            case "uk_cycles_code_actif" -> new ConflitException(
+                    CodeErreur.CYCLE_CODE_DUPLIQUE, "Un cycle actif porte déjà ce code.");
+            default -> e;
+        };
     }
 }
