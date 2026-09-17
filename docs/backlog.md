@@ -60,7 +60,15 @@
 | :--- | :--- |
 | **Priorité** | 🔴 Must Have |
 | **Story Points** | À estimer |
-| **Critères d'acceptation** | - Création de niveaux (6ème, 5ème, etc.)<br>- Création de cycles (Collège, Lycée)<br>- Création de filières (Scientifique, Littéraire, etc.)<br>- Création de classes avec numérotation (6ème A, 6ème B)<br>- Hiérarchie respectée (Niveau > Cycle > Classe) |
+| **Critères d'acceptation** | - Création de niveaux (6ème, 5ème, etc.)<br>- Création de cycles (Collège, Lycée)<br>- Création de filières (Scientifique, Littéraire, etc.)<br>- Création de classes avec numérotation (6ème A, 6ème B)<br>- Hiérarchie respectée (**Cycle > Niveau > Classe**) |
+
+> **Note (US-02, corrigé) — la hiérarchie était écrite à l'envers.** L'énoncé
+> initial disait « Niveau > Cycle > Classe », alors que ses propres exemples
+> disent le contraire : le Collège et le Lycée sont des **cycles**, et ils
+> *contiennent* la 6ème et la 5ème, qui sont des **niveaux**. Le sens retenu à
+> l'implémentation est donc `Cycle 1—N Niveau 1—N Classe`, conforme au système
+> éducatif togolais et francophone. **Ne pas rétablir l'ancien libellé** : il
+> inverserait le modèle de données livré.
 
 ---
 

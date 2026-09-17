@@ -176,6 +176,146 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste des classes de l'établissement courant, triée par rang de niveau puis libellé */
+        get: operations["listerClasses"];
+        put?: never;
+        /** Crée une classe pour l'établissement courant */
+        post: operations["creerClasse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/classes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une classe */
+        get: operations["obtenirClasse"];
+        /** Modifie une classe (jamais son année scolaire) */
+        put: operations["modifierClasse"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/classes/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive une classe dont l'année n'est pas clôturée */
+        post: operations["desactiverClasse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/classes/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'une classe */
+        get: operations["obtenirHistoriqueClasse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cycles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste des cycles de l'établissement courant, triée par rang */
+        get: operations["listerCycles"];
+        put?: never;
+        /** Crée un cycle pour l'établissement courant */
+        post: operations["creerCycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cycles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'un cycle */
+        get: operations["obtenirCycle"];
+        /** Modifie un cycle */
+        put: operations["modifierCycle"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cycles/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive un cycle sans niveau actif */
+        post: operations["desactiverCycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/cycles/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'un cycle */
+        get: operations["obtenirHistoriqueCycle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/etablissements": {
         parameters: {
             query?: never;
@@ -362,6 +502,146 @@ export interface paths {
         put?: never;
         /** Réactive un établissement, si son code et son email restent disponibles */
         post: operations["reactiverEtablissement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/filieres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste des filières de l'établissement courant, triée par libellé */
+        get: operations["listerFilieres"];
+        put?: never;
+        /** Crée une filière pour l'établissement courant */
+        post: operations["creerFiliere"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/filieres/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une filière */
+        get: operations["obtenirFiliere"];
+        /** Modifie une filière */
+        put: operations["modifierFiliere"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/filieres/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive une filière non référencée par des classes actives */
+        post: operations["desactiverFiliere"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/filieres/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'une filière */
+        get: operations["obtenirHistoriqueFiliere"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/niveaux": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste des niveaux de l'établissement courant, triée par cycle puis rang */
+        get: operations["listerNiveaux"];
+        put?: never;
+        /** Crée un niveau rattaché à un cycle de l'établissement courant */
+        post: operations["creerNiveau"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/niveaux/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'un niveau */
+        get: operations["obtenirNiveau"];
+        /** Modifie un niveau */
+        put: operations["modifierNiveau"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/niveaux/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive un niveau sans classe active */
+        post: operations["desactiverNiveau"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/niveaux/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'un niveau */
+        get: operations["obtenirHistoriqueNiveau"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -571,6 +851,56 @@ export interface components {
             ancienMotDePasse?: string;
             nouveauMotDePasse?: string;
         };
+        ClasseDto: {
+            actif?: boolean;
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            anneeScolaireLibelle?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            cycleLibelle?: string;
+            /** Format: date-time */
+            dateCreation?: string;
+            /** Format: date-time */
+            dateModification?: string;
+            /** Format: int32 */
+            effectifMax?: number;
+            /** Format: uuid */
+            filiereId?: string;
+            filiereLibelle?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: uuid */
+            niveauId?: string;
+            niveauLibelle?: string;
+            /** Format: uuid */
+            siteId?: string;
+            suffixe?: string;
+        };
+        ClasseHistoriqueDto: {
+            actif?: boolean;
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            auteur?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: int32 */
+            effectifMax?: number;
+            /** Format: uuid */
+            filiereId?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: uuid */
+            niveauId?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            /** Format: uuid */
+            siteId?: string;
+            suffixe?: string;
+            typeRevision?: string;
+        };
         CompteCreeDto: {
             compte?: components["schemas"]["UtilisateurCompteDto"];
             motDePasseTemporaire?: string;
@@ -581,6 +911,26 @@ export interface components {
             /** Format: date */
             dateFin: string;
             libelle?: string;
+        };
+        CreerClasseRequestDto: {
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            /** Format: int32 */
+            effectifMax?: number;
+            /** Format: uuid */
+            filiereId?: string;
+            libelle?: string;
+            /** Format: uuid */
+            niveauId: string;
+            /** Format: uuid */
+            siteId?: string;
+            suffixe?: string;
+        };
+        CreerCycleRequestDto: {
+            code?: string;
+            libelle?: string;
+            /** Format: int32 */
+            rang: number;
         };
         CreerEtablissementRequestDto: {
             adresseLigne?: string;
@@ -598,6 +948,20 @@ export interface components {
             typeEtablissement: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
             ville?: string;
         };
+        CreerFiliereRequestDto: {
+            code?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            libelle?: string;
+        };
+        CreerNiveauRequestDto: {
+            code?: string;
+            /** Format: uuid */
+            cycleId: string;
+            libelle?: string;
+            /** Format: int32 */
+            rang: number;
+        };
         CreerSiteRequestDto: {
             adresseLigne?: string;
             code?: string;
@@ -612,6 +976,34 @@ export interface components {
             roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
             /** Format: uuid */
             siteId?: string;
+        };
+        CycleDto: {
+            actif?: boolean;
+            code?: string;
+            /** Format: date-time */
+            dateCreation?: string;
+            /** Format: date-time */
+            dateModification?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int32 */
+            rang?: number;
+        };
+        CycleHistoriqueDto: {
+            actif?: boolean;
+            auteur?: string;
+            code?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            /** Format: int32 */
+            rang?: number;
+            typeRevision?: string;
         };
         EtablissementCreeDto: {
             etablissement?: components["schemas"]["EtablissementDto"];
@@ -671,6 +1063,35 @@ export interface components {
             typeEtablissement?: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
             ville?: string;
         };
+        FiliereDto: {
+            actif?: boolean;
+            code?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            cycleLibelle?: string;
+            /** Format: date-time */
+            dateCreation?: string;
+            /** Format: date-time */
+            dateModification?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+        };
+        FiliereHistoriqueDto: {
+            actif?: boolean;
+            auteur?: string;
+            code?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            typeRevision?: string;
+        };
         JetonsReponseDto: {
             accessToken?: string;
             /** Format: uuid */
@@ -700,6 +1121,24 @@ export interface components {
             dateFin: string;
             libelle?: string;
         };
+        ModifierClasseRequestDto: {
+            /** Format: int32 */
+            effectifMax?: number;
+            /** Format: uuid */
+            filiereId?: string;
+            libelle?: string;
+            /** Format: uuid */
+            niveauId: string;
+            /** Format: uuid */
+            siteId?: string;
+            suffixe?: string;
+        };
+        ModifierCycleRequestDto: {
+            code?: string;
+            libelle?: string;
+            /** Format: int32 */
+            rang: number;
+        };
         ModifierEtablissementRequestDto: {
             adresseLigne?: string;
             boitePostale?: string;
@@ -716,6 +1155,20 @@ export interface components {
             typeEtablissement: "PRESCOLAIRE" | "PRIMAIRE" | "COLLEGE" | "LYCEE" | "COMPLEXE";
             ville?: string;
         };
+        ModifierFiliereRequestDto: {
+            code?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            libelle?: string;
+        };
+        ModifierNiveauRequestDto: {
+            code?: string;
+            /** Format: uuid */
+            cycleId: string;
+            libelle?: string;
+            /** Format: int32 */
+            rang: number;
+        };
         ModifierRolesRequestDto: {
             roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
         };
@@ -728,6 +1181,39 @@ export interface components {
         };
         MotDePasseTemporaireDto: {
             motDePasseTemporaire?: string;
+        };
+        NiveauDto: {
+            actif?: boolean;
+            code?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            cycleLibelle?: string;
+            /** Format: date-time */
+            dateCreation?: string;
+            /** Format: date-time */
+            dateModification?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int32 */
+            rang?: number;
+        };
+        NiveauHistoriqueDto: {
+            actif?: boolean;
+            auteur?: string;
+            code?: string;
+            /** Format: uuid */
+            cycleId?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            /** Format: int32 */
+            rang?: number;
+            typeRevision?: string;
         };
         PageReponseEtablissementResumeDto: {
             contenu?: components["schemas"]["EtablissementResumeDto"][];
@@ -764,7 +1250,7 @@ export interface components {
         };
         ProblemDetailEdukeys: {
             /** @enum {string} */
-            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
+            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
             correlationId?: string;
             detail?: string;
             instance?: string;
@@ -1266,6 +1752,453 @@ export interface operations {
             };
         };
     };
+    listerClasses: {
+        parameters: {
+            query?: {
+                anneeScolaireId?: string;
+                niveauId?: string;
+                filiereId?: string;
+                siteId?: string;
+                inclureInactives?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"][];
+                };
+            };
+        };
+    };
+    creerClasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerClasseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Classe créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Niveau, filière ou année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Libellé déjà utilisé pour cette année scolaire */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Requête invalide, référentiel inactif, site invalide ou année clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+        };
+    };
+    obtenirClasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classe trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Classe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+        };
+    };
+    modifierClasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierClasseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Classe modifiée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Classe, niveau ou filière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Libellé déjà utilisé pour cette année scolaire */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+            /** @description Requête invalide, référentiel inactif, site invalide ou année clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseDto"];
+                };
+            };
+        };
+    };
+    desactiverClasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classe désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Classe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+            /** @description Année scolaire clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    obtenirHistoriqueClasse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions de la classe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseHistoriqueDto"][];
+                };
+            };
+            /** @description Classe introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ClasseHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    listerCycles: {
+        parameters: {
+            query?: {
+                inclureInactifs?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cycles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"][];
+                };
+            };
+        };
+    };
+    creerCycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerCycleRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Cycle créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+            /** @description Libellé, rang ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+        };
+    };
+    obtenirCycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cycle trouvé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+            /** @description Cycle introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+        };
+    };
+    modifierCycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierCycleRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Cycle modifié */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+            /** @description Cycle introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+            /** @description Libellé, rang ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleDto"];
+                };
+            };
+        };
+    };
+    desactiverCycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cycle désactivé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Cycle introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+            /** @description Le cycle porte encore des niveaux actifs */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    obtenirHistoriqueCycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions du cycle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleHistoriqueDto"][];
+                };
+            };
+            /** @description Cycle introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CycleHistoriqueDto"][];
+                };
+            };
+        };
+    };
     listerEtablissements: {
         parameters: {
             query?: {
@@ -1737,6 +2670,460 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    listerFilieres: {
+        parameters: {
+            query?: {
+                cycleId?: string;
+                inclureInactives?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Filières */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"][];
+                };
+            };
+        };
+    };
+    creerFiliere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerFiliereRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Filière créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Cycle introuvable ou inactif */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Libellé ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+        };
+    };
+    obtenirFiliere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Filière trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Filière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+        };
+    };
+    modifierFiliere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierFiliereRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Filière modifiée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Filière ou cycle introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Libellé ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereDto"];
+                };
+            };
+        };
+    };
+    desactiverFiliere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Filière désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Filière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+            /** @description La filière est encore référencée par des classes actives */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    obtenirHistoriqueFiliere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions de la filière */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereHistoriqueDto"][];
+                };
+            };
+            /** @description Filière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FiliereHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    listerNiveaux: {
+        parameters: {
+            query?: {
+                cycleId?: string;
+                inclureInactifs?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Niveaux */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"][];
+                };
+            };
+        };
+    };
+    creerNiveau: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerNiveauRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Niveau créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Cycle introuvable ou inactif */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Libellé, rang ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+        };
+    };
+    obtenirNiveau: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Niveau trouvé */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Niveau introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+        };
+    };
+    modifierNiveau: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierNiveauRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Niveau modifié */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Niveau ou cycle introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Libellé, rang ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauDto"];
+                };
+            };
+        };
+    };
+    desactiverNiveau: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Niveau désactivé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Niveau introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+            /** @description Le niveau porte encore des classes actives */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    obtenirHistoriqueNiveau: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions du niveau */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauHistoriqueDto"][];
+                };
+            };
+            /** @description Niveau introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["NiveauHistoriqueDto"][];
                 };
             };
         };

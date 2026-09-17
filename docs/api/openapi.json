@@ -114,6 +114,120 @@
         },
         "type" : "object"
       },
+      "ClasseDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "anneeScolaireId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "anneeScolaireLibelle" : {
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "cycleLibelle" : {
+            "type" : "string"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateModification" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "effectifMax" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "filiereId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "filiereLibelle" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "niveauId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "niveauLibelle" : {
+            "type" : "string"
+          },
+          "siteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "suffixe" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ClasseHistoriqueDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "anneeScolaireId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "effectifMax" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "filiereId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "niveauId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "numeroRevision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "siteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "suffixe" : {
+            "type" : "string"
+          },
+          "typeRevision" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "CompteCreeDto" : {
         "properties" : {
           "compte" : {
@@ -144,6 +258,66 @@
         "required" : [
           "dateDebut",
           "dateFin"
+        ],
+        "type" : "object"
+      },
+      "CreerClasseRequestDto" : {
+        "properties" : {
+          "anneeScolaireId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "effectifMax" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "filiereId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "niveauId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "siteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "suffixe" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "niveauId"
+        ],
+        "type" : "object"
+      },
+      "CreerCycleRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [
+          "rang"
         ],
         "type" : "object"
       },
@@ -225,6 +399,52 @@
         ],
         "type" : "object"
       },
+      "CreerFiliereRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 80,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CreerNiveauRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [
+          "cycleId",
+          "rang"
+        ],
+        "type" : "object"
+      },
       "CreerSiteRequestDto" : {
         "properties" : {
           "adresseLigne" : {
@@ -291,6 +511,72 @@
           },
           "siteId" : {
             "format" : "uuid",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CycleDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateModification" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CycleHistoriqueDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "numeroRevision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "typeRevision" : {
             "type" : "string"
           }
         },
@@ -458,6 +744,75 @@
         },
         "type" : "object"
       },
+      "FiliereDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "cycleLibelle" : {
+            "type" : "string"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateModification" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FiliereHistoriqueDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "numeroRevision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "typeRevision" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "JetonsReponseDto" : {
         "properties" : {
           "accessToken" : {
@@ -540,6 +895,62 @@
         ],
         "type" : "object"
       },
+      "ModifierClasseRequestDto" : {
+        "properties" : {
+          "effectifMax" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "filiereId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "niveauId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "siteId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "suffixe" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [
+          "niveauId"
+        ],
+        "type" : "object"
+      },
+      "ModifierCycleRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [
+          "rang"
+        ],
+        "type" : "object"
+      },
       "ModifierEtablissementRequestDto" : {
         "properties" : {
           "adresseLigne" : {
@@ -618,6 +1029,52 @@
         ],
         "type" : "object"
       },
+      "ModifierFiliereRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 80,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ModifierNiveauRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [
+          "cycleId",
+          "rang"
+        ],
+        "type" : "object"
+      },
       "ModifierRolesRequestDto" : {
         "properties" : {
           "roles" : {
@@ -673,6 +1130,83 @@
       "MotDePasseTemporaireDto" : {
         "properties" : {
           "motDePasseTemporaire" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "NiveauDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "cycleLibelle" : {
+            "type" : "string"
+          },
+          "dateCreation" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dateModification" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "NiveauHistoriqueDto" : {
+        "properties" : {
+          "actif" : {
+            "type" : "boolean"
+          },
+          "auteur" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "cycleId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "date" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          },
+          "numeroRevision" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "rang" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "typeRevision" : {
             "type" : "string"
           }
         },
@@ -800,6 +1334,28 @@
               "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE",
               "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE",
               "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE",
+              "CYCLE_INTROUVABLE",
+              "CYCLE_LIBELLE_DUPLIQUE",
+              "CYCLE_RANG_DUPLIQUE",
+              "CYCLE_CODE_DUPLIQUE",
+              "CYCLE_NON_DESACTIVABLE",
+              "NIVEAU_INTROUVABLE",
+              "NIVEAU_LIBELLE_DUPLIQUE",
+              "NIVEAU_RANG_DUPLIQUE",
+              "NIVEAU_CODE_DUPLIQUE",
+              "NIVEAU_NON_DESACTIVABLE",
+              "FILIERE_INTROUVABLE",
+              "FILIERE_LIBELLE_DUPLIQUE",
+              "FILIERE_CODE_DUPLIQUE",
+              "FILIERE_NON_DESACTIVABLE",
+              "FILIERE_CYCLE_INCOHERENT",
+              "CLASSE_INTROUVABLE",
+              "CLASSE_LIBELLE_DUPLIQUE",
+              "CLASSE_LIBELLE_VIDE",
+              "CLASSE_EFFECTIF_MAX_INVALIDE",
+              "CLASSE_ANNEE_CLOTUREE",
+              "CLASSE_SITE_INVALIDE",
+              "CLASSE_REFERENTIEL_INACTIF",
               "ECRITURE_INTER_ETABLISSEMENT_REFUSEE",
               "ACCES_REFUSE",
               "REQUETE_INVALIDE",
@@ -1544,6 +2100,630 @@
         ]
       }
     },
+    "/api/v1/classes" : {
+      "get" : {
+        "operationId" : "listerClasses",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "anneeScolaireId",
+            "required" : false,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "niveauId",
+            "required" : false,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "filiereId",
+            "required" : false,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "siteId",
+            "required" : false,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "inclureInactives",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClasseDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Classes"
+          }
+        },
+        "summary" : "Liste des classes de l'établissement courant, triée par rang de niveau puis libellé",
+        "tags" : [
+          "Classes"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerClasse",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerClasseRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Classe créée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Niveau, filière ou année scolaire introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Libellé déjà utilisé pour cette année scolaire"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Requête invalide, référentiel inactif, site invalide ou année clôturée"
+          }
+        },
+        "summary" : "Crée une classe pour l'établissement courant",
+        "tags" : [
+          "Classes"
+        ]
+      }
+    },
+    "/api/v1/classes/{id}" : {
+      "get" : {
+        "operationId" : "obtenirClasse",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Classe trouvée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Classe introuvable"
+          }
+        },
+        "summary" : "Détail d'une classe",
+        "tags" : [
+          "Classes"
+        ]
+      },
+      "put" : {
+        "operationId" : "modifierClasse",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierClasseRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Classe modifiée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Classe, niveau ou filière introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Libellé déjà utilisé pour cette année scolaire"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClasseDto"
+                }
+              }
+            },
+            "description" : "Requête invalide, référentiel inactif, site invalide ou année clôturée"
+          }
+        },
+        "summary" : "Modifie une classe (jamais son année scolaire)",
+        "tags" : [
+          "Classes"
+        ]
+      }
+    },
+    "/api/v1/classes/{id}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverClasse",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Classe désactivée"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Classe introuvable"
+          },
+          "422" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Année scolaire clôturée"
+          }
+        },
+        "summary" : "Désactive une classe dont l'année n'est pas clôturée",
+        "tags" : [
+          "Classes"
+        ]
+      }
+    },
+    "/api/v1/classes/{id}/historique" : {
+      "get" : {
+        "operationId" : "obtenirHistoriqueClasse",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClasseHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Révisions de la classe"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/ClasseHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Classe introuvable"
+          }
+        },
+        "summary" : "Historique des révisions d'une classe",
+        "tags" : [
+          "Classes"
+        ]
+      }
+    },
+    "/api/v1/cycles" : {
+      "get" : {
+        "operationId" : "listerCycles",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "inclureInactifs",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CycleDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Cycles"
+          }
+        },
+        "summary" : "Liste des cycles de l'établissement courant, triée par rang",
+        "tags" : [
+          "Cycles"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerCycle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerCycleRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Cycle créé"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Libellé, rang ou code déjà utilisé"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          }
+        },
+        "summary" : "Crée un cycle pour l'établissement courant",
+        "tags" : [
+          "Cycles"
+        ]
+      }
+    },
+    "/api/v1/cycles/{id}" : {
+      "get" : {
+        "operationId" : "obtenirCycle",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Cycle trouvé"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Cycle introuvable"
+          }
+        },
+        "summary" : "Détail d'un cycle",
+        "tags" : [
+          "Cycles"
+        ]
+      },
+      "put" : {
+        "operationId" : "modifierCycle",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierCycleRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Cycle modifié"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Cycle introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Libellé, rang ou code déjà utilisé"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CycleDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          }
+        },
+        "summary" : "Modifie un cycle",
+        "tags" : [
+          "Cycles"
+        ]
+      }
+    },
+    "/api/v1/cycles/{id}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverCycle",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Cycle désactivé"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Cycle introuvable"
+          },
+          "422" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Le cycle porte encore des niveaux actifs"
+          }
+        },
+        "summary" : "Désactive un cycle sans niveau actif",
+        "tags" : [
+          "Cycles"
+        ]
+      }
+    },
+    "/api/v1/cycles/{id}/historique" : {
+      "get" : {
+        "operationId" : "obtenirHistoriqueCycle",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CycleHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Révisions du cycle"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CycleHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Cycle introuvable"
+          }
+        },
+        "summary" : "Historique des révisions d'un cycle",
+        "tags" : [
+          "Cycles"
+        ]
+      }
+    },
     "/api/v1/etablissements" : {
       "get" : {
         "operationId" : "listerEtablissements",
@@ -2218,6 +3398,622 @@
         "summary" : "Réactive un établissement, si son code et son email restent disponibles",
         "tags" : [
           "Établissements"
+        ]
+      }
+    },
+    "/api/v1/filieres" : {
+      "get" : {
+        "operationId" : "listerFilieres",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "cycleId",
+            "required" : false,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "inclureInactives",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FiliereDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Filières"
+          }
+        },
+        "summary" : "Liste des filières de l'établissement courant, triée par libellé",
+        "tags" : [
+          "Filières"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerFiliere",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerFiliereRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Filière créée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Cycle introuvable ou inactif"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Libellé ou code déjà utilisé"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          }
+        },
+        "summary" : "Crée une filière pour l'établissement courant",
+        "tags" : [
+          "Filières"
+        ]
+      }
+    },
+    "/api/v1/filieres/{id}" : {
+      "get" : {
+        "operationId" : "obtenirFiliere",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Filière trouvée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Filière introuvable"
+          }
+        },
+        "summary" : "Détail d'une filière",
+        "tags" : [
+          "Filières"
+        ]
+      },
+      "put" : {
+        "operationId" : "modifierFiliere",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierFiliereRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Filière modifiée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Filière ou cycle introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Libellé ou code déjà utilisé"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FiliereDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          }
+        },
+        "summary" : "Modifie une filière",
+        "tags" : [
+          "Filières"
+        ]
+      }
+    },
+    "/api/v1/filieres/{id}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverFiliere",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Filière désactivée"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Filière introuvable"
+          },
+          "422" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "La filière est encore référencée par des classes actives"
+          }
+        },
+        "summary" : "Désactive une filière non référencée par des classes actives",
+        "tags" : [
+          "Filières"
+        ]
+      }
+    },
+    "/api/v1/filieres/{id}/historique" : {
+      "get" : {
+        "operationId" : "obtenirHistoriqueFiliere",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FiliereHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Révisions de la filière"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/FiliereHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Filière introuvable"
+          }
+        },
+        "summary" : "Historique des révisions d'une filière",
+        "tags" : [
+          "Filières"
+        ]
+      }
+    },
+    "/api/v1/niveaux" : {
+      "get" : {
+        "operationId" : "listerNiveaux",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "cycleId",
+            "required" : false,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "inclureInactifs",
+            "required" : false,
+            "schema" : {
+              "default" : false,
+              "type" : "boolean"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NiveauDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Niveaux"
+          }
+        },
+        "summary" : "Liste des niveaux de l'établissement courant, triée par cycle puis rang",
+        "tags" : [
+          "Niveaux"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerNiveau",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreerNiveauRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Niveau créé"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Cycle introuvable ou inactif"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Libellé, rang ou code déjà utilisé"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          }
+        },
+        "summary" : "Crée un niveau rattaché à un cycle de l'établissement courant",
+        "tags" : [
+          "Niveaux"
+        ]
+      }
+    },
+    "/api/v1/niveaux/{id}" : {
+      "get" : {
+        "operationId" : "obtenirNiveau",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Niveau trouvé"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Niveau introuvable"
+          }
+        },
+        "summary" : "Détail d'un niveau",
+        "tags" : [
+          "Niveaux"
+        ]
+      },
+      "put" : {
+        "operationId" : "modifierNiveau",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ModifierNiveauRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Niveau modifié"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Niveau ou cycle introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Libellé, rang ou code déjà utilisé"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NiveauDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          }
+        },
+        "summary" : "Modifie un niveau",
+        "tags" : [
+          "Niveaux"
+        ]
+      }
+    },
+    "/api/v1/niveaux/{id}/desactivation" : {
+      "post" : {
+        "operationId" : "desactiverNiveau",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Niveau désactivé"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Niveau introuvable"
+          },
+          "422" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Le niveau porte encore des classes actives"
+          }
+        },
+        "summary" : "Désactive un niveau sans classe active",
+        "tags" : [
+          "Niveaux"
+        ]
+      }
+    },
+    "/api/v1/niveaux/{id}/historique" : {
+      "get" : {
+        "operationId" : "obtenirHistoriqueNiveau",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NiveauHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Révisions du niveau"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/NiveauHistoriqueDto"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "Niveau introuvable"
+          }
+        },
+        "summary" : "Historique des révisions d'un niveau",
+        "tags" : [
+          "Niveaux"
         ]
       }
     },

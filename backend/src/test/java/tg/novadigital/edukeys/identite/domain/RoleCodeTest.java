@@ -35,6 +35,7 @@ class RoleCodeTest {
     @Test
     void direction_nePorteQueUtilisateurConsulter_parmiLesPermissionsDeGestionDeComptes() {
         assertThat(RoleCode.DIRECTION.getPermissions())
-                .containsExactlyInAnyOrder(Permission.UTILISATEUR_CONSULTER, Permission.ANNEE_SCOLAIRE_CONSULTER);
+                .containsExactlyInAnyOrder(Permission.UTILISATEUR_CONSULTER, Permission.ANNEE_SCOLAIRE_CONSULTER,
+                        Permission.STRUCTURE_ACADEMIQUE_CONSULTER);
     }
 }

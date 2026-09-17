@@ -12,6 +12,8 @@ import static tg.novadigital.edukeys.identite.domain.Permission.ETABLISSEMENT_CR
 import static tg.novadigital.edukeys.identite.domain.Permission.ETABLISSEMENT_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.NOTE_SAISIR;
 import static tg.novadigital.edukeys.identite.domain.Permission.ROLE_ATTRIBUER;
+import static tg.novadigital.edukeys.identite.domain.Permission.STRUCTURE_ACADEMIQUE_CONSULTER;
+import static tg.novadigital.edukeys.identite.domain.Permission.STRUCTURE_ACADEMIQUE_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_CONSULTER;
 import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.UTILISATEUR_GERER_PLATEFORME;
@@ -45,12 +47,12 @@ public enum RoleCode {
     // des deux (ex. un rôle « support » qui gère les comptes sans jamais
     // pouvoir toucher aux rôles).
     ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER, UTILISATEUR_CONSULTER, ROLE_ATTRIBUER,
-            ANNEE_SCOLAIRE_GERER, ANNEE_SCOLAIRE_CONSULTER),
+            ANNEE_SCOLAIRE_GERER, ANNEE_SCOLAIRE_CONSULTER, STRUCTURE_ACADEMIQUE_GERER, STRUCTURE_ACADEMIQUE_CONSULTER),
     // DIRECTION lit le personnel de son établissement, mais ne crée ni
     // n'attribue rien (US-04).
-    DIRECTION(UTILISATEUR_CONSULTER, ANNEE_SCOLAIRE_CONSULTER),
-    GESTIONNAIRE(ANNEE_SCOLAIRE_CONSULTER),
-    ENSEIGNANT(NOTE_SAISIR, DEVOIR_CREER, ANNEE_SCOLAIRE_CONSULTER),
+    DIRECTION(UTILISATEUR_CONSULTER, ANNEE_SCOLAIRE_CONSULTER, STRUCTURE_ACADEMIQUE_CONSULTER),
+    GESTIONNAIRE(ANNEE_SCOLAIRE_CONSULTER, STRUCTURE_ACADEMIQUE_CONSULTER),
+    ENSEIGNANT(NOTE_SAISIR, DEVOIR_CREER, ANNEE_SCOLAIRE_CONSULTER, STRUCTURE_ACADEMIQUE_CONSULTER),
     PARENT(ENFANT_CONSULTER, BULLETIN_CONSULTER),
     ELEVE();
 

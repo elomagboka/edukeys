@@ -53,6 +53,16 @@ public enum Permission {
      * sur {@code SiteController}/{@code LogoController}).
      */
     ANNEE_SCOLAIRE_GERER("Gérer les années scolaires de son établissement"),
+    /** Consultation de la structure académique — cycles, niveaux, filières, classes (US-02). */
+    STRUCTURE_ACADEMIQUE_CONSULTER("Consulter la structure académique de son établissement"),
+    /**
+     * Gestion de la structure académique (US-02). Une seule permission pour
+     * les quatre objets (cycle, niveau, filière, classe) : ils forment un
+     * même référentiel administré par les mêmes personnes en même temps —
+     * démultiplier les permissions ici ne protège rien. Volontairement
+     * distincte d'{@link #ETABLISSEMENT_GERER} (CLAUDE.md, règle 11).
+     */
+    STRUCTURE_ACADEMIQUE_GERER("Gérer la structure académique de son établissement"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),
