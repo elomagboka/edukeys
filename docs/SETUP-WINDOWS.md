@@ -115,7 +115,36 @@ git commit -m "chore: scaffold initial"
 `C:\Users\Prénom Nom\Mes Documents\...` provoque des ennuis avec Maven et
 certains outils Node. `C:\dev\edukeys` est un choix plus sûr.
 
-## 6. Claude Code
+## 6. Activer les hooks Git du dépôt
+
+À faire **une fois par clone**, depuis la racine du projet :
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+Un hook n'arrive pas avec le clone : sans cette commande, les scripts de
+`.githooks/` ne s'exécutent jamais et rien ne le signale.
+
+Ce que ça apporte : `mvn verify` réécrit automatiquement le contrat
+`docs/api/openapi.json`, alors que les types TypeScript correspondants
+demandaient jusqu'ici une commande manuelle dans `frontend/`. Les deux
+finissaient donc par diverger, et la CI refusait la PR. Le hook de pré-commit
+régénère les types dès que le contrat entre dans un commit, et les ajoute au
+commit.
+
+Il ne bloque pas : il fait le travail. Inutile de le contourner avec
+`--no-verify`, la CI vérifie la même chose de toute façon. Il a besoin de Node
+et de `npm ci` déjà lancé dans `frontend/` ; sinon il interrompt le commit avec
+la marche à suivre.
+
+**Le hook accélère la boucle locale ; l'autorité reste la CI.** Si tu oublies
+cette commande, rien ne te le dira sur ton poste : c'est la CI qui refusera la
+PR, en régénérant contrat et types puis en comparant. Un clone sans hook est
+donc détecté, jamais silencieux — mais tu l'apprends après le `push` plutôt
+qu'avant le commit.
+
+## 7. Claude Code
 
 ```powershell
 irm https://claude.ai/install.ps1 | iex

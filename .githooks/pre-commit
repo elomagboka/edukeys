@@ -1,0 +1,58 @@
+#!/bin/sh
+# Régénère les types frontend quand le contrat OpenAPI est committé.
+#
+# Le contrat docs/api/openapi.json est réécrit automatiquement par `mvn verify`
+# (OpenApiExportTest), alors que les types frontend attendaient jusqu'ici une
+# commande manuelle dans un autre dossier : c'est cet écart qui les a laissés
+# dériver trois fois de suite jusqu'à la CI.
+#
+# Ce hook régénère et ajoute au commit au lieu de refuser : un hook qui bloque
+# se contourne avec --no-verify, un hook qui fait le travail n'a aucun intérêt
+# à être contourné (la CI refuserait la PR de toute façon).
+#
+# Génération à partir du contenu *indexé* du contrat, pas du fichier de travail :
+# un commit partiel (`git add -p`) doit produire les types du contrat committé.
+set -e
+
+RACINE=$(git rev-parse --show-toplevel)
+CONTRAT="docs/api/openapi.json"
+TYPES="frontend/src/api/generated"
+
+# Rien à faire si le contrat n'est pas dans ce commit.
+if ! git diff --cached --name-only --diff-filter=ACMR | grep -qx "$CONTRAT"; then
+    exit 0
+fi
+
+echo "pre-commit : $CONTRAT est committé, régénération de $TYPES…"
+
+if ! command -v npm >/dev/null 2>&1; then
+    echo "pre-commit : npm est introuvable, impossible de régénérer les types." >&2
+    echo "  Installe Node (voir docs/SETUP-WINDOWS.md), ou lance 'npm run api:generate'" >&2
+    echo "  dans frontend/ depuis un poste équipé avant de pousser — sinon la CI refusera la PR." >&2
+    exit 1
+fi
+
+if [ ! -d "$RACINE/frontend/node_modules" ]; then
+    echo "pre-commit : frontend/node_modules est absent, impossible de régénérer les types." >&2
+    echo "  Lance 'npm ci' dans frontend/." >&2
+    exit 1
+fi
+
+# Fichier temporaire placé dans frontend/ et passé en chemin relatif : un chemin
+# absolu de /tmp façon MSYS ne se résout pas côté Node sous Windows.
+CONTRAT_INDEXE="frontend/.openapi-indexe.tmp.json"
+trap 'rm -f "$RACINE/$CONTRAT_INDEXE"' EXIT
+git show ":$CONTRAT" > "$RACINE/$CONTRAT_INDEXE"
+
+if ! (cd "$RACINE/frontend" && npm run --silent api:generate -- --input "./.openapi-indexe.tmp.json"); then
+    echo "pre-commit : la génération des types a échoué, commit interrompu." >&2
+    exit 1
+fi
+
+git add -- "$RACINE/$TYPES"
+
+if git diff --cached --quiet -- "$TYPES"; then
+    echo "pre-commit : types déjà à jour."
+else
+    echo "pre-commit : types régénérés et ajoutés au commit."
+fi

@@ -23,3 +23,6 @@ backend/src/main/resources/application-local.yml
 # Divers
 .DS_Store
 *.log
+
+# Contrat indexé temporaire du hook de pré-commit (.githooks/pre-commit)
+frontend/.openapi-indexe.tmp.json

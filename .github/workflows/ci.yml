@@ -125,7 +125,10 @@ jobs:
       #
       # Un contrat versionné qui dérive est pire que pas de contrat : un
       # relecteur croit lire l'API et lit son passé. Même mécanisme que pour
-      # les types générés du frontend — régénérer, comparer, échouer.
+      # les types générés du frontend — régénérer, comparer, échouer. Cette
+      # vérification-là reste indispensable même sur un poste équipé du hook :
+      # le hook part du contrat committé, il ne sait pas si ce contrat
+      # correspond au code backend. C'est cette étape qui le dit.
       #
       # (Une étape `mvn -B -Pgenerate-openapi verify` se trouvait ici : le
       # profil n'a jamais existé dans le pom, Maven se contentait d'un
@@ -158,6 +161,15 @@ jobs:
       # Le contrat backend fait autorité. Si les types générés committés
       # divergent de ce que le backend expose réellement, la PR est refusée :
       # sans ce garde-fou, le frontend compile contre un contrat périmé.
+      #
+      # C'est ICI qu'est l'autorité, pas dans le hook .githooks/pre-commit.
+      # Le hook régénère les types au commit du contrat et raccourcit la boucle
+      # locale, mais il s'active par un `git config core.hooksPath .githooks`
+      # à faire une fois par clone (docs/SETUP-WINDOWS.md, étape 6). Un clone
+      # qui ne l'a pas fait n'a aucun hook et ne le signale pas : cette étape
+      # est le seul endroit où cet oubli devient visible. Ne jamais l'alléger
+      # sous prétexte que « le hook s'en occupe » — il ne s'en occupe que sur
+      # les postes qui l'ont activé.
       #
       # La source est le contrat versionné, plus un artefact téléchargé du job
       # backend : c'est le job backend qui garantit que ce fichier correspond
