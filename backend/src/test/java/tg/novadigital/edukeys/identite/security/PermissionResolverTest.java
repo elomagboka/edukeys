@@ -32,7 +32,7 @@ class PermissionResolverTest {
         // la contiendrait pas.
         assertThat(permissions).containsExactlyInAnyOrder(
                 "NOTE_SAISIR", "DEVOIR_CREER", "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER",
-                "MATIERE_CONSULTER", "ENFANT_CONSULTER", "BULLETIN_CONSULTER");
+                "MATIERE_CONSULTER", "PERIODE_CONSULTER", "ENFANT_CONSULTER", "BULLETIN_CONSULTER");
     }
 
     @Test
@@ -52,7 +52,8 @@ class PermissionResolverTest {
         assertThat(permissions).containsExactlyInAnyOrder(
                 "ETABLISSEMENT_CREER", "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME",
                 "UTILISATEUR_CONSULTER", "ROLE_ATTRIBUER", "ANNEE_SCOLAIRE_GERER", "ANNEE_SCOLAIRE_CONSULTER",
-                "STRUCTURE_ACADEMIQUE_GERER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_GERER", "MATIERE_CONSULTER");
+                "STRUCTURE_ACADEMIQUE_GERER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_GERER", "MATIERE_CONSULTER",
+                "PERIODE_GERER", "PERIODE_CONSULTER");
     }
 
     @Test
@@ -71,7 +72,7 @@ class PermissionResolverTest {
         Set<String> permissions = resolver.resoudrePermissions(Set.of("GESTIONNAIRE", "ELEVE"));
 
         assertThat(permissions).containsExactlyInAnyOrder(
-                "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER");
+                "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER", "PERIODE_CONSULTER");
     }
 
     @Test
@@ -83,7 +84,8 @@ class PermissionResolverTest {
         Set<String> permissions = resolver.resoudrePermissions(Set.of("DIRECTION"));
 
         assertThat(permissions).containsExactlyInAnyOrder(
-                "UTILISATEUR_CONSULTER", "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER");
+                "UTILISATEUR_CONSULTER", "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER",
+                "PERIODE_CONSULTER");
     }
 
     /**

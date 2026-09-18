@@ -73,6 +73,16 @@ public enum Permission {
      * règle 11 — ne pas élargir silencieusement une permission existante).
      */
     MATIERE_GERER("Gérer les matières de son établissement"),
+    /** Consultation des périodes académiques — trimestres/semestres (US-05). */
+    PERIODE_CONSULTER("Consulter les périodes académiques de son établissement"),
+    /**
+     * Gestion des périodes académiques (création, modification, désactivation
+     * — US-05). Distincte d'{@link #ANNEE_SCOLAIRE_GERER} : les périodes
+     * forment leur propre référentiel, avec ses propres règles de
+     * non-chevauchement (CLAUDE.md, règle 11 — ne pas élargir silencieusement
+     * une permission existante).
+     */
+    PERIODE_GERER("Gérer les périodes académiques de son établissement"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

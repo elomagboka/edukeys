@@ -65,3 +65,33 @@ ON CONFLICT (id) DO UPDATE SET
     volume_horaire     = EXCLUDED.volume_horaire,
     obligatoire        = EXCLUDED.obligatoire,
     date_modification  = now();
+
+-- Année scolaire de démonstration (US-01), ACTIVE, et ses trois trimestres
+-- (US-05). Dates calées sur CURRENT_DATE plutôt que figées : la migration
+-- répétable recalcule à chaque exécution une année qui englobe aujourd'hui,
+-- avec un trimestre "en cours" (T2) — utile pour démontrer
+-- GET /api/v1/periodes-academiques/en-cours sans dépendre de la date de
+-- chargement du jeu de données. Un écart de 10 jours sépare T1 et T2 (trous
+-- autorisés entre périodes, US-05).
+INSERT INTO annees_scolaires (id, etablissement_id, libelle, date_debut, date_fin, statut, date_activation, actif, date_creation, date_modification)
+VALUES
+    ('01977000-0000-7000-9007-000000000001', '01977000-0000-7000-9000-000000000001', 'Année démo',
+     CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE + INTERVAL '280 days', 'ACTIVE', now(), TRUE, now(), now())
+ON CONFLICT (id) DO UPDATE SET
+    date_debut         = EXCLUDED.date_debut,
+    date_fin           = EXCLUDED.date_fin,
+    statut             = EXCLUDED.statut,
+    date_modification  = now();
+
+INSERT INTO periodes_academiques (id, etablissement_id, annee_scolaire_id, libelle, type, ordre, date_debut, date_fin, actif, date_creation, date_modification)
+VALUES
+    ('01977000-0000-7000-9008-000000000001', '01977000-0000-7000-9000-000000000001', '01977000-0000-7000-9007-000000000001',
+     '1er trimestre', 'TRIMESTRE', 1, CURRENT_DATE - INTERVAL '60 days', CURRENT_DATE - INTERVAL '1 days', TRUE, now(), now()),
+    ('01977000-0000-7000-9008-000000000002', '01977000-0000-7000-9000-000000000001', '01977000-0000-7000-9007-000000000001',
+     '2e trimestre', 'TRIMESTRE', 2, CURRENT_DATE, CURRENT_DATE + INTERVAL '69 days', TRUE, now(), now()),
+    ('01977000-0000-7000-9008-000000000003', '01977000-0000-7000-9000-000000000001', '01977000-0000-7000-9007-000000000001',
+     '3e trimestre', 'TRIMESTRE', 3, CURRENT_DATE + INTERVAL '80 days', CURRENT_DATE + INTERVAL '260 days', TRUE, now(), now())
+ON CONFLICT (id) DO UPDATE SET
+    date_debut         = EXCLUDED.date_debut,
+    date_fin           = EXCLUDED.date_fin,
+    date_modification  = now();
