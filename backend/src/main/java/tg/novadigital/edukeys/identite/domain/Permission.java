@@ -63,6 +63,16 @@ public enum Permission {
      * distincte d'{@link #ETABLISSEMENT_GERER} (CLAUDE.md, règle 11).
      */
     STRUCTURE_ACADEMIQUE_GERER("Gérer la structure académique de son établissement"),
+    /** Consultation des matières et de leurs affectations (niveau/filière) — US-03. */
+    MATIERE_CONSULTER("Consulter les matières de son établissement"),
+    /**
+     * Gestion des matières (création, modification, affectations, désactivation
+     * — US-03). Distincte de {@link #STRUCTURE_ACADEMIQUE_GERER} : les matières
+     * forment un référentiel séparé de cycles/niveaux/filières/classes, avec
+     * son propre cycle de vie et ses propres règles de cohérence (CLAUDE.md,
+     * règle 11 — ne pas élargir silencieusement une permission existante).
+     */
+    MATIERE_GERER("Gérer les matières de son établissement"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

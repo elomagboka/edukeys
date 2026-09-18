@@ -578,6 +578,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/matieres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des matières de l'établissement courant, triée par libellé
+         * @description Filtres facultatifs par niveau et/ou filière. Une matière affectée à un niveau sans filière (« ce niveau, toutes filières ») remonte pour toute filière de ce niveau : le tronc commun apparaît donc dans le filtre d'une série.
+         */
+        get: operations["listerMatieres"];
+        put?: never;
+        /** Crée une matière pour l'établissement courant, avec ses affectations initiales éventuelles */
+        post: operations["creerMatiere"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matieres/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une matière et de ses affectations actives */
+        get: operations["obtenirMatiere"];
+        /** Modifie le libellé et le code d'une matière */
+        put: operations["modifierMatiere"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matieres/{id}/affectations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Remplace l'ensemble des affectations actives d'une matière par l'ensemble fourni */
+        put: operations["definirAffectationsMatiere"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matieres/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive une matière et ses affectations actives */
+        post: operations["desactiverMatiere"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matieres/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'une matière */
+        get: operations["obtenirHistoriqueMatiere"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/niveaux": {
         parameters: {
             query?: never;
@@ -806,6 +896,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AffectationMatiereDto: {
+            coefficient?: number;
+            filiere?: components["schemas"]["RefFiliereDto"];
+            /** Format: uuid */
+            id?: string;
+            niveau?: components["schemas"]["RefNiveauDto"];
+            obligatoire?: boolean;
+            volumeHoraire?: number;
+        };
+        AffectationMatiereRequestDto: {
+            coefficient?: number;
+            /** Format: uuid */
+            filiereId?: string;
+            /** Format: uuid */
+            niveauId: string;
+            obligatoire?: boolean;
+            volumeHoraire?: number;
+        };
         AnneeScolaireDto: {
             actif?: boolean;
             /** Format: date-time */
@@ -954,6 +1062,11 @@ export interface components {
             cycleId?: string;
             libelle?: string;
         };
+        CreerMatiereRequestDto: {
+            affectations?: components["schemas"]["AffectationMatiereRequestDto"][];
+            code?: string;
+            libelle?: string;
+        };
         CreerNiveauRequestDto: {
             code?: string;
             /** Format: uuid */
@@ -1004,6 +1117,9 @@ export interface components {
             /** Format: int32 */
             rang?: number;
             typeRevision?: string;
+        };
+        DefinirAffectationsMatiereRequestDto: {
+            affectations: components["schemas"]["AffectationMatiereRequestDto"][];
         };
         EtablissementCreeDto: {
             etablissement?: components["schemas"]["EtablissementDto"];
@@ -1114,6 +1230,29 @@ export interface components {
             tailleOctets?: number;
             typeMime?: string;
         };
+        MatiereDto: {
+            actif?: boolean;
+            affectations?: components["schemas"]["AffectationMatiereDto"][];
+            code?: string;
+            /** Format: date-time */
+            dateDesactivation?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+        };
+        MatiereHistoriqueDto: {
+            actif?: boolean;
+            auteur?: string;
+            code?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            typeRevision?: string;
+        };
         ModifierAnneeScolaireRequestDto: {
             /** Format: date */
             dateDebut: string;
@@ -1159,6 +1298,10 @@ export interface components {
             code?: string;
             /** Format: uuid */
             cycleId?: string;
+            libelle?: string;
+        };
+        ModifierMatiereRequestDto: {
+            code?: string;
             libelle?: string;
         };
         ModifierNiveauRequestDto: {
@@ -1250,7 +1393,7 @@ export interface components {
         };
         ProblemDetailEdukeys: {
             /** @enum {string} */
-            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
+            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
             correlationId?: string;
             detail?: string;
             instance?: string;
@@ -1259,6 +1402,18 @@ export interface components {
             title?: string;
             /** @example about:blank */
             type?: string;
+        };
+        RefFiliereDto: {
+            code?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+        };
+        RefNiveauDto: {
+            code?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
         };
         RefreshRequestDto: {
             refreshToken?: string;
@@ -2897,6 +3052,278 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["FiliereHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    listerMatieres: {
+        parameters: {
+            query?: {
+                niveauId?: string;
+                filiereId?: string;
+                inclureInactives?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matières */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"][];
+                };
+            };
+        };
+    };
+    creerMatiere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerMatiereRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Matière créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Niveau ou filière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Libellé ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Requête invalide ou affectations incohérentes */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+        };
+    };
+    obtenirMatiere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matière trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Matière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+        };
+    };
+    modifierMatiere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierMatiereRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Matière modifiée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Matière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Libellé ou code déjà utilisé */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Requête invalide */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+        };
+    };
+    definirAffectationsMatiere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DefinirAffectationsMatiereRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Affectations définies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Matière, niveau ou filière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Combinaison niveau/filière déjà affectée */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+            /** @description Requête invalide, matière inactive ou affectations incohérentes */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereDto"];
+                };
+            };
+        };
+    };
+    desactiverMatiere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matière désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Matière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    obtenirHistoriqueMatiere: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions de la matière */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereHistoriqueDto"][];
+                };
+            };
+            /** @description Matière introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatiereHistoriqueDto"][];
                 };
             };
         };

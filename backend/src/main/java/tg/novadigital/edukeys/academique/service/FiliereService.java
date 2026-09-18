@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.academique.domain.Cycle;
 import tg.novadigital.edukeys.academique.domain.Filiere;
+import tg.novadigital.edukeys.academique.repository.AffectationMatiereRepository;
 import tg.novadigital.edukeys.academique.repository.ClasseRepository;
 import tg.novadigital.edukeys.academique.repository.CycleRepository;
 import tg.novadigital.edukeys.academique.repository.FiliereRepository;
@@ -32,13 +33,16 @@ public class FiliereService {
     private final FiliereRepository filiereRepository;
     private final CycleRepository cycleRepository;
     private final ClasseRepository classeRepository;
+    private final AffectationMatiereRepository affectationMatiereRepository;
     private final EntityManager entityManager;
 
     public FiliereService(FiliereRepository filiereRepository, CycleRepository cycleRepository,
-                           ClasseRepository classeRepository, EntityManager entityManager) {
+                           ClasseRepository classeRepository, AffectationMatiereRepository affectationMatiereRepository,
+                           EntityManager entityManager) {
         this.filiereRepository = filiereRepository;
         this.cycleRepository = cycleRepository;
         this.classeRepository = classeRepository;
+        this.affectationMatiereRepository = affectationMatiereRepository;
         this.entityManager = entityManager;
     }
 
@@ -121,6 +125,13 @@ public class FiliereService {
             if (classesActives > 0) {
                 throw new RegleMetierViolee(CodeErreur.FILIERE_NON_DESACTIVABLE,
                         "Cette filière est encore référencée par des classes actives : désactivez-les d'abord.");
+            }
+            // R9 (US-03) : une filière encore référencée par une affectation de matière active ne peut pas être désactivée.
+            long affectationsMatieresActives = affectationMatiereRepository
+                    .countByEtablissementIdAndFiliereIdAndActifTrue(etablissementId, id);
+            if (affectationsMatieresActives > 0) {
+                throw new RegleMetierViolee(CodeErreur.FILIERE_NON_DESACTIVABLE,
+                        "Cette filière est encore référencée par des affectations de matières actives : désactivez-les d'abord.");
             }
             filiere.desactiver();
             filiereRepository.save(filiere);

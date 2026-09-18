@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.academique.domain.Cycle;
 import tg.novadigital.edukeys.academique.domain.Niveau;
+import tg.novadigital.edukeys.academique.repository.AffectationMatiereRepository;
 import tg.novadigital.edukeys.academique.repository.ClasseRepository;
 import tg.novadigital.edukeys.academique.repository.CycleRepository;
 import tg.novadigital.edukeys.academique.repository.NiveauRepository;
@@ -32,13 +33,16 @@ public class NiveauService {
     private final NiveauRepository niveauRepository;
     private final CycleRepository cycleRepository;
     private final ClasseRepository classeRepository;
+    private final AffectationMatiereRepository affectationMatiereRepository;
     private final EntityManager entityManager;
 
     public NiveauService(NiveauRepository niveauRepository, CycleRepository cycleRepository,
-                          ClasseRepository classeRepository, EntityManager entityManager) {
+                          ClasseRepository classeRepository, AffectationMatiereRepository affectationMatiereRepository,
+                          EntityManager entityManager) {
         this.niveauRepository = niveauRepository;
         this.cycleRepository = cycleRepository;
         this.classeRepository = classeRepository;
+        this.affectationMatiereRepository = affectationMatiereRepository;
         this.entityManager = entityManager;
     }
 
@@ -127,6 +131,13 @@ public class NiveauService {
             if (classesActives > 0) {
                 throw new RegleMetierViolee(CodeErreur.NIVEAU_NON_DESACTIVABLE,
                         "Ce niveau porte encore des classes actives : désactivez-les d'abord.");
+            }
+            // R9 (US-03) : un niveau encore référencé par une affectation de matière active ne peut pas être désactivé.
+            long affectationsMatieresActives = affectationMatiereRepository
+                    .countByEtablissementIdAndNiveauIdAndActifTrue(etablissementId, id);
+            if (affectationsMatieresActives > 0) {
+                throw new RegleMetierViolee(CodeErreur.NIVEAU_NON_DESACTIVABLE,
+                        "Ce niveau est encore référencé par des affectations de matières actives : désactivez-les d'abord.");
             }
             niveau.desactiver();
             niveauRepository.save(niveau);
