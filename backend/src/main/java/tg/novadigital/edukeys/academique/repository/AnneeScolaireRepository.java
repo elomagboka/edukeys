@@ -28,6 +28,13 @@ public interface AnneeScolaireRepository extends BaseRepository<AnneeScolaire> {
     boolean existsByEtablissementIdAndLibelleAndActifTrue(UUID etablissementId, String libelle);
 
     /**
+     * Anti N+1 (US-05) : résolution en lot des libellés d'années scolaires
+     * pour un listing de périodes académiques, en une seule requête quel que
+     * soit le nombre d'années distinctes.
+     */
+    List<AnneeScolaire> findByIdIn(List<UUID> ids);
+
+    /**
      * R5 (Vérification applicative, avant la contrainte d'exclusion
      * {@code ex_annees_scolaires_chevauchement} — DELTA 2). Requête JPQL, pas
      * native : elle passe par le filtre Hibernate multi-établissement comme

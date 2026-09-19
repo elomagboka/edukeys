@@ -738,6 +738,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/periodes-academiques": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liste des périodes académiques de l'établissement courant, triée par ordre
+         * @description Filtre facultatif par année scolaire.
+         */
+        get: operations["listerPeriodesAcademiques"];
+        put?: never;
+        /** Crée une période académique pour une année scolaire de l'établissement courant */
+        post: operations["creerPeriodeAcademique"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/periodes-academiques/en-cours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Période académique en cours de l'année scolaire active de l'établissement courant */
+        get: operations["obtenirPeriodeAcademiqueEnCours"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/periodes-academiques/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une période académique */
+        get: operations["obtenirPeriodeAcademique"];
+        /** Modifie le libellé, l'ordre et les dates d'une période académique */
+        put: operations["modifierPeriodeAcademique"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/periodes-academiques/{id}/desactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Désactive une période académique */
+        post: operations["desactiverPeriodeAcademique"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/periodes-academiques/{id}/historique": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historique des révisions d'une période académique */
+        get: operations["obtenirHistoriquePeriodeAcademique"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/utilisateurs": {
         parameters: {
             query?: never;
@@ -1075,6 +1165,19 @@ export interface components {
             /** Format: int32 */
             rang: number;
         };
+        CreerPeriodeAcademiqueRequestDto: {
+            /** Format: uuid */
+            anneeScolaireId: string;
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin: string;
+            libelle?: string;
+            /** Format: int32 */
+            ordre?: number;
+            /** @enum {string} */
+            type: "TRIMESTRE" | "SEMESTRE";
+        };
         CreerSiteRequestDto: {
             adresseLigne?: string;
             code?: string;
@@ -1312,6 +1415,15 @@ export interface components {
             /** Format: int32 */
             rang: number;
         };
+        ModifierPeriodeAcademiqueRequestDto: {
+            /** Format: date */
+            dateDebut: string;
+            /** Format: date */
+            dateFin: string;
+            libelle?: string;
+            /** Format: int32 */
+            ordre?: number;
+        };
         ModifierRolesRequestDto: {
             roles?: ("SUPER_ADMIN" | "ADMIN" | "DIRECTION" | "GESTIONNAIRE" | "ENSEIGNANT" | "PARENT" | "ELEVE")[];
         };
@@ -1391,9 +1503,50 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
+        PeriodeAcademiqueDto: {
+            actif?: boolean;
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            anneeScolaireLibelle?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date-time */
+            dateDesactivation?: string;
+            /** Format: date */
+            dateFin?: string;
+            enCours?: boolean;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int32 */
+            ordre?: number;
+            /** @enum {string} */
+            type?: "TRIMESTRE" | "SEMESTRE";
+        };
+        PeriodeAcademiqueHistoriqueDto: {
+            actif?: boolean;
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            auteur?: string;
+            /** Format: date-time */
+            date?: string;
+            /** Format: date */
+            dateDebut?: string;
+            /** Format: date */
+            dateFin?: string;
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+            /** Format: int64 */
+            numeroRevision?: number;
+            /** Format: int32 */
+            ordre?: number;
+            type?: string;
+            typeRevision?: string;
+        };
         ProblemDetailEdukeys: {
             /** @enum {string} */
-            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
+            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "PERIODE_ACADEMIQUE_INTROUVABLE" | "PERIODE_ACADEMIQUE_EN_COURS_ABSENTE" | "PERIODE_ACADEMIQUE_ANNEE_SCOLAIRE_INTROUVABLE" | "PERIODE_ACADEMIQUE_DATES_INCOHERENTES" | "PERIODE_ACADEMIQUE_DUREE_INVALIDE" | "PERIODE_ACADEMIQUE_HORS_BORNES_ANNEE" | "PERIODE_ACADEMIQUE_LIBELLE_DUPLIQUE" | "PERIODE_ACADEMIQUE_ORDRE_DUPLIQUE" | "PERIODE_ACADEMIQUE_PERIODE_CHEVAUCHANTE" | "PERIODE_ACADEMIQUE_ANNEE_CLOTUREE" | "PERIODE_ACADEMIQUE_IMMUABLE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
             correlationId?: string;
             detail?: string;
             instance?: string;
@@ -3551,6 +3704,262 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["NiveauHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    listerPeriodesAcademiques: {
+        parameters: {
+            query?: {
+                anneeScolaireId?: string;
+                inclureInactives?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Périodes académiques */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"][];
+                };
+            };
+        };
+    };
+    creerPeriodeAcademique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreerPeriodeAcademiqueRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Période académique créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Année scolaire introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Libellé, ordre déjà utilisé ou période chevauchante */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Requête invalide, dates hors bornes ou année clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+        };
+    };
+    obtenirPeriodeAcademiqueEnCours: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Période en cours */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Aucune période en cours */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+        };
+    };
+    obtenirPeriodeAcademique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Période académique trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Période académique introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+        };
+    };
+    modifierPeriodeAcademique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierPeriodeAcademiqueRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Période académique modifiée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Période académique introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Libellé, ordre déjà utilisé ou période chevauchante */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+            /** @description Requête invalide, dates hors bornes ou année clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueDto"];
+                };
+            };
+        };
+    };
+    desactiverPeriodeAcademique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Période académique désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Période académique introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+            /** @description Désactivation refusée : année scolaire clôturée */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+        };
+    };
+    obtenirHistoriquePeriodeAcademique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Révisions de la période académique */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueHistoriqueDto"][];
+                };
+            };
+            /** @description Période académique introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PeriodeAcademiqueHistoriqueDto"][];
                 };
             };
         };
