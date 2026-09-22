@@ -69,6 +69,11 @@ public class SecurityConfig {
                             // authentification (correction T-04, lot 2 n°8), le filtre la refuse
                             // en 401 avant même d'atteindre le @PreAuthorize du contrôleur.
                             .requestMatchers("/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
+                            // US-06 : pré-inscription en ligne. Deux routes nommées explicitement,
+                            // jamais "/public/**" entier (CLAUDE.md, règle 11) — chacune protégée par
+                            // FiltreLimitationDebit (double compteur IP + établissement/téléphone).
+                            .requestMatchers("/api/v1/public/etablissements/*/offre-admission").permitAll()
+                            .requestMatchers("/api/v1/public/etablissements/*/demandes-admission").permitAll()
                             .requestMatchers("/actuator/health").permitAll();
                     // Surface de démonstration/test de T-03 (voir DemoEntiteController,
                     // déjà @Profile({"local","test"})) : la règle elle-même n'existe qu'en

@@ -1,6 +1,17 @@
 {
   "components" : {
     "schemas" : {
+      "AccuseReceptionAdmissionDto" : {
+        "properties" : {
+          "message" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AffectationMatiereDto" : {
         "properties" : {
           "coefficient" : {
@@ -272,6 +283,18 @@
             "type" : "string"
           },
           "typeRevision" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ClasseOffreDto" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
             "type" : "string"
           }
         },
@@ -705,6 +728,117 @@
         "required" : [
           "affectations"
         ],
+        "type" : "object"
+      },
+      "DemandeAdmissionDto" : {
+        "properties" : {
+          "anneeScolaireId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "canal" : {
+            "type" : "string"
+          },
+          "classeId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "dateNaissance" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "dateSoumission" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "etablissementOrigine" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "lieuNaissance" : {
+            "type" : "string"
+          },
+          "nationalite" : {
+            "type" : "string"
+          },
+          "niveauId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "pieces" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PieceJointeAdmissionDto"
+            },
+            "type" : "array"
+          },
+          "prenoms" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "responsableEmail" : {
+            "type" : "string"
+          },
+          "responsableLien" : {
+            "type" : "string"
+          },
+          "responsableNom" : {
+            "type" : "string"
+          },
+          "responsablePrenoms" : {
+            "type" : "string"
+          },
+          "responsableTelephone" : {
+            "type" : "string"
+          },
+          "sexe" : {
+            "type" : "string"
+          },
+          "statut" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DemandeAdmissionResumeDto" : {
+        "properties" : {
+          "canal" : {
+            "type" : "string"
+          },
+          "classeLibelle" : {
+            "type" : "string"
+          },
+          "dateSoumission" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "niveauLibelle" : {
+            "type" : "string"
+          },
+          "nom" : {
+            "type" : "string"
+          },
+          "prenoms" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "statut" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "EtablissementCreeDto" : {
@@ -1440,6 +1574,97 @@
         },
         "type" : "object"
       },
+      "NiveauOffreDto" : {
+        "properties" : {
+          "classes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ClasseOffreDto"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "libelle" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OffreAdmissionDto" : {
+        "properties" : {
+          "admissionsOuvertes" : {
+            "type" : "boolean"
+          },
+          "anneeScolaireId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "anneeScolaireLibelle" : {
+            "type" : "string"
+          },
+          "etablissementLogoUrl" : {
+            "type" : "string"
+          },
+          "etablissementNom" : {
+            "type" : "string"
+          },
+          "niveaux" : {
+            "items" : {
+              "$ref" : "#/components/schemas/NiveauOffreDto"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PageDemandeAdmissionResumeDto" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DemandeAdmissionResumeDto"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PageReponseEtablissementResumeDto" : {
         "properties" : {
           "contenu" : {
@@ -1517,6 +1742,53 @@
           "totalPages" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "Pageable" : {
+        "properties" : {
+          "page" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "sort" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PageableObject" : {
+        "properties" : {
+          "offset" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pageNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "paged" : {
+            "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -1617,6 +1889,28 @@
         },
         "type" : "object"
       },
+      "PieceJointeAdmissionDto" : {
+        "properties" : {
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "nomOriginal" : {
+            "type" : "string"
+          },
+          "tailleOctets" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "typeMime" : {
+            "type" : "string"
+          },
+          "typePiece" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ProblemDetailEdukeys" : {
         "properties" : {
           "code" : {
@@ -1697,6 +1991,25 @@
               "PERIODE_ACADEMIQUE_PERIODE_CHEVAUCHANTE",
               "PERIODE_ACADEMIQUE_ANNEE_CLOTUREE",
               "PERIODE_ACADEMIQUE_IMMUABLE",
+              "ADMISSION_ETABLISSEMENT_INTROUVABLE",
+              "ADMISSION_FERMEE",
+              "ADMISSION_CAPTCHA_ECHEC",
+              "ADMISSION_CHOIX_NIVEAU_CLASSE_INVALIDE",
+              "ADMISSION_CONSENTEMENT_MANQUANT",
+              "ADMISSION_AGE_INVALIDE",
+              "ADMISSION_REFERENCE_CONFLIT",
+              "ADMISSION_INTROUVABLE",
+              "ADMISSION_PIECE_INTROUVABLE",
+              "ADMISSION_PIECE_TYPE_MANQUANT",
+              "ADMISSION_PIECE_FORMAT_NON_SUPPORTE",
+              "ADMISSION_PIECE_CONTENU_SUSPECT",
+              "ADMISSION_PIECE_VIDE",
+              "ADMISSION_PIECE_TROP_VOLUMINEUSE",
+              "ADMISSION_TROP_DE_PIECES",
+              "ADMISSION_TAILLE_TOTALE_PIECES_DEPASSEE",
+              "ADMISSION_ACTE_NAISSANCE_MANQUANT",
+              "ADMISSION_MODIFICATION_REFUSEE_HORS_ATTENTE",
+              "ADMISSION_TRANSITION_INVALIDE",
               "ECRITURE_INTER_ETABLISSEMENT_REFUSEE",
               "ACCES_REFUSE",
               "REQUETE_INVALIDE",
@@ -1801,6 +2114,53 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "SortObject" : {
+        "properties" : {
+          "empty" : {
+            "type" : "boolean"
+          },
+          "sorted" : {
+            "type" : "boolean"
+          },
+          "unsorted" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "SoumissionAdmissionMultipart" : {
+        "properties" : {
+          "demande" : {
+            "description" : "Partie JSON du dossier (voir le schéma DonneesDemandeAdmission / SoumissionPubliqueAdmission)",
+            "type" : "object"
+          },
+          "pieces" : {
+            "items" : {
+              "description" : "Pièce jointe (PDF, JPEG ou PNG)",
+              "format" : "binary",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "typesPieces" : {
+            "items" : {
+              "description" : "Type de chaque pièce, dans le même ordre que 'pieces'",
+              "enum" : [
+                "ACTE_NAISSANCE",
+                "BULLETIN",
+                "PHOTO",
+                "AUTRE"
+              ],
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [
+          "demande"
+        ],
         "type" : "object"
       },
       "UtilisateurCompteDto" : {
@@ -3092,6 +3452,346 @@
         "summary" : "Historique des révisions d'un cycle",
         "tags" : [
           "Cycles"
+        ]
+      }
+    },
+    "/api/v1/demandes-admission" : {
+      "get" : {
+        "operationId" : "listerDemandesAdmission",
+        "parameters" : [
+          {
+            "in" : "query",
+            "name" : "statut",
+            "required" : false,
+            "schema" : {
+              "enum" : [
+                "EN_ATTENTE",
+                "ACCEPTEE",
+                "REFUSEE",
+                "LISTE_ATTENTE",
+                "ANNULEE"
+              ],
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "pageable",
+            "required" : true,
+            "schema" : {
+              "$ref" : "#/components/schemas/Pageable"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageDemandeAdmissionResumeDto"
+                }
+              }
+            },
+            "description" : "Demandes d'admission"
+          }
+        },
+        "summary" : "Liste paginée des demandes d'admission de l'établissement courant",
+        "tags" : [
+          "Admission"
+        ]
+      },
+      "post" : {
+        "operationId" : "creerDemandeAdmission",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SoumissionAdmissionMultipart"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Dossier déjà existant (idempotence)"
+          },
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Dossier créé"
+          },
+          "415" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Pièce jointe dans un format non pris en charge"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Données ou choix niveau/classe invalides"
+          }
+        },
+        "summary" : "Crée un dossier d'admission depuis le back-office (canal ADMIN)",
+        "tags" : [
+          "Admission"
+        ]
+      }
+    },
+    "/api/v1/demandes-admission/{id}" : {
+      "get" : {
+        "operationId" : "lireDemandeAdmission",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Demande trouvée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Demande introuvable"
+          }
+        },
+        "summary" : "Détail d'une demande d'admission",
+        "tags" : [
+          "Admission"
+        ]
+      }
+    },
+    "/api/v1/demandes-admission/{id}/pieces" : {
+      "post" : {
+        "operationId" : "ajouterPieceAdmission",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "query",
+            "name" : "typePiece",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "fichier" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [
+                  "fichier"
+                ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PieceJointeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Pièce ajoutée"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PieceJointeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Demande introuvable"
+          },
+          "415" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PieceJointeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Format non pris en charge"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PieceJointeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Dossier non modifiable (hors statut EN_ATTENTE)"
+          }
+        },
+        "summary" : "Ajoute une pièce jointe à une demande d'admission en attente",
+        "tags" : [
+          "Admission"
+        ]
+      }
+    },
+    "/api/v1/demandes-admission/{id}/pieces/{pieceId}" : {
+      "delete" : {
+        "operationId" : "desactiverPieceAdmission",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "pieceId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "204" : {
+            "description" : "Pièce désactivée"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Demande ou pièce introuvable"
+          },
+          "422" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Dossier non modifiable (hors statut EN_ATTENTE)"
+          }
+        },
+        "summary" : "Désactive (logiquement) une pièce jointe d'une demande d'admission en attente",
+        "tags" : [
+          "Admission"
+        ]
+      },
+      "get" : {
+        "operationId" : "telechargerPieceAdmission",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          },
+          {
+            "in" : "path",
+            "name" : "pieceId",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Flux binaire de la pièce"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "Demande ou pièce introuvable"
+          }
+        },
+        "summary" : "Télécharge une pièce jointe d'une demande d'admission",
+        "tags" : [
+          "Admission"
         ]
       }
     },
@@ -5105,6 +5805,147 @@
         "summary" : "Historique des révisions d'une période académique",
         "tags" : [
           "Périodes académiques"
+        ]
+      }
+    },
+    "/api/v1/public/etablissements/{code}/demandes-admission" : {
+      "post" : {
+        "description" : "Le jeton Cloudflare Turnstile est requis dans l'en-tête CF-Turnstile-Response (vérifié avant toute analyse du corps multipart) — jamais dans le corps.",
+        "operationId" : "soumettreDemandeAdmissionPublique",
+        "parameters" : [
+          {
+            "description" : "Jeton Cloudflare Turnstile (règle 4 de la spec US-06)",
+            "in" : "header",
+            "name" : "CF-Turnstile-Response",
+            "required" : true
+          },
+          {
+            "in" : "path",
+            "name" : "code",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SoumissionAdmissionMultipart"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccuseReceptionAdmissionDto"
+                }
+              }
+            },
+            "description" : "Accusé de réception (I4 : réponse identique, dossier nouveau ou déjà existant)"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccuseReceptionAdmissionDto"
+                }
+              }
+            },
+            "description" : "Établissement introuvable"
+          },
+          "415" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccuseReceptionAdmissionDto"
+                }
+              }
+            },
+            "description" : "Pièce jointe dans un format non pris en charge"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccuseReceptionAdmissionDto"
+                }
+              }
+            },
+            "description" : "Vérification anti-robot échouée, admission fermée, ou données invalides"
+          },
+          "429" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccuseReceptionAdmissionDto"
+                }
+              }
+            },
+            "description" : "Trop de tentatives ; en-tête Retry-After"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Soumet une demande d'admission en ligne (dossier + pièces, un seul appel multipart)",
+        "tags" : [
+          "Admission publique"
+        ]
+      }
+    },
+    "/api/v1/public/etablissements/{code}/offre-admission" : {
+      "get" : {
+        "operationId" : "lireOffreAdmissionPublique",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "code",
+            "required" : true,
+            "schema" : {
+              "type" : "string"
+            }
+          }
+        ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OffreAdmissionDto"
+                }
+              }
+            },
+            "description" : "Offre d'admission"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OffreAdmissionDto"
+                }
+              }
+            },
+            "description" : "Établissement introuvable"
+          },
+          "429" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OffreAdmissionDto"
+                }
+              }
+            },
+            "description" : "Trop de tentatives ; en-tête Retry-After"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Offre d'admission publique d'un établissement (année, niveaux, classes ouverts)",
+        "tags" : [
+          "Admission publique"
         ]
       }
     },

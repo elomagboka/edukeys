@@ -11,6 +11,8 @@ public enum TypeNotification {
     ECHEANCE_PAIEMENT(true),
     CONVOCATION(true),
     FERMETURE_EXCEPTIONNELLE(true),
+    /** Accusé de réception d'une demande d'admission (US-06) : SMS et email, gabarit sans accents. */
+    ADMISSION_ACCUSE_RECEPTION(true),
     NOUVELLE_NOTE(false),
     DEVOIR_PUBLIE(false),
     MESSAGE_MESSAGERIE(false);

@@ -63,6 +63,16 @@ services:
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       - key: JWT_SECRET
         generateValue: true
+      # US-06 : clé HMAC du hachage des IP de la pré-inscription publique.
+      # Obligatoire hors local/test : VerificateurCleHachageIpAdmission
+      # refuse le démarrage si elle manque ou garde sa valeur par défaut.
+      - key: EDUKEYS_ADMISSION_SEL_HACHAGE_IP
+        generateValue: true
+      # US-06 : clé secrète Cloudflare Turnstile. Jamais versionnée : à
+      # saisir dans le tableau de bord (docs/RENDER-SETUP.md, section 2).
+      # Absente, l'application démarre mais refuse toute pré-inscription.
+      - key: EDUKEYS_TURNSTILE_CLE_SECRETE
+        sync: false
       - key: CORS_ORIGINS
         fromService:
           type: web

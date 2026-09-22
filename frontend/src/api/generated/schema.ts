@@ -316,6 +316,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/demandes-admission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liste paginée des demandes d'admission de l'établissement courant */
+        get: operations["listerDemandesAdmission"];
+        put?: never;
+        /** Crée un dossier d'admission depuis le back-office (canal ADMIN) */
+        post: operations["creerDemandeAdmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demandes-admission/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Détail d'une demande d'admission */
+        get: operations["lireDemandeAdmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demandes-admission/{id}/pieces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ajoute une pièce jointe à une demande d'admission en attente */
+        post: operations["ajouterPieceAdmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/demandes-admission/{id}/pieces/{pieceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Télécharge une pièce jointe d'une demande d'admission */
+        get: operations["telechargerPieceAdmission"];
+        put?: never;
+        post?: never;
+        /** Désactive (logiquement) une pièce jointe d'une demande d'admission en attente */
+        delete: operations["desactiverPieceAdmission"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/etablissements": {
         parameters: {
             query?: never;
@@ -828,6 +898,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/etablissements/{code}/demandes-admission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Soumet une demande d'admission en ligne (dossier + pièces, un seul appel multipart)
+         * @description Le jeton Cloudflare Turnstile est requis dans l'en-tête CF-Turnstile-Response (vérifié avant toute analyse du corps multipart) — jamais dans le corps.
+         */
+        post: operations["soumettreDemandeAdmissionPublique"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/etablissements/{code}/offre-admission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Offre d'admission publique d'un établissement (année, niveaux, classes ouverts) */
+        get: operations["lireOffreAdmissionPublique"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/utilisateurs": {
         parameters: {
             query?: never;
@@ -986,6 +1093,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccuseReceptionAdmissionDto: {
+            message?: string;
+            reference?: string;
+        };
         AffectationMatiereDto: {
             coefficient?: number;
             filiere?: components["schemas"]["RefFiliereDto"];
@@ -1098,6 +1209,11 @@ export interface components {
             siteId?: string;
             suffixe?: string;
             typeRevision?: string;
+        };
+        ClasseOffreDto: {
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
         };
         CompteCreeDto: {
             compte?: components["schemas"]["UtilisateurCompteDto"];
@@ -1223,6 +1339,48 @@ export interface components {
         };
         DefinirAffectationsMatiereRequestDto: {
             affectations: components["schemas"]["AffectationMatiereRequestDto"][];
+        };
+        DemandeAdmissionDto: {
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            canal?: string;
+            /** Format: uuid */
+            classeId?: string;
+            /** Format: date */
+            dateNaissance?: string;
+            /** Format: date-time */
+            dateSoumission?: string;
+            etablissementOrigine?: string;
+            /** Format: uuid */
+            id?: string;
+            lieuNaissance?: string;
+            nationalite?: string;
+            /** Format: uuid */
+            niveauId?: string;
+            nom?: string;
+            pieces?: components["schemas"]["PieceJointeAdmissionDto"][];
+            prenoms?: string;
+            reference?: string;
+            responsableEmail?: string;
+            responsableLien?: string;
+            responsableNom?: string;
+            responsablePrenoms?: string;
+            responsableTelephone?: string;
+            sexe?: string;
+            statut?: string;
+        };
+        DemandeAdmissionResumeDto: {
+            canal?: string;
+            classeLibelle?: string;
+            /** Format: date-time */
+            dateSoumission?: string;
+            /** Format: uuid */
+            id?: string;
+            niveauLibelle?: string;
+            nom?: string;
+            prenoms?: string;
+            reference?: string;
+            statut?: string;
         };
         EtablissementCreeDto: {
             etablissement?: components["schemas"]["EtablissementDto"];
@@ -1470,6 +1628,39 @@ export interface components {
             rang?: number;
             typeRevision?: string;
         };
+        NiveauOffreDto: {
+            classes?: components["schemas"]["ClasseOffreDto"][];
+            /** Format: uuid */
+            id?: string;
+            libelle?: string;
+        };
+        OffreAdmissionDto: {
+            admissionsOuvertes?: boolean;
+            /** Format: uuid */
+            anneeScolaireId?: string;
+            anneeScolaireLibelle?: string;
+            etablissementLogoUrl?: string;
+            etablissementNom?: string;
+            niveaux?: components["schemas"]["NiveauOffreDto"][];
+        };
+        PageDemandeAdmissionResumeDto: {
+            content?: components["schemas"]["DemandeAdmissionResumeDto"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
         PageReponseEtablissementResumeDto: {
             contenu?: components["schemas"]["EtablissementResumeDto"][];
             /** Format: int32 */
@@ -1502,6 +1693,24 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
+        };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
+        };
+        PageableObject: {
+            /** Format: int64 */
+            offset?: number;
+            /** Format: int32 */
+            pageNumber?: number;
+            /** Format: int32 */
+            pageSize?: number;
+            paged?: boolean;
+            sort?: components["schemas"]["SortObject"];
+            unpaged?: boolean;
         };
         PeriodeAcademiqueDto: {
             actif?: boolean;
@@ -1544,9 +1753,18 @@ export interface components {
             type?: string;
             typeRevision?: string;
         };
+        PieceJointeAdmissionDto: {
+            /** Format: uuid */
+            id?: string;
+            nomOriginal?: string;
+            /** Format: int64 */
+            tailleOctets?: number;
+            typeMime?: string;
+            typePiece?: string;
+        };
         ProblemDetailEdukeys: {
             /** @enum {string} */
-            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "PERIODE_ACADEMIQUE_INTROUVABLE" | "PERIODE_ACADEMIQUE_EN_COURS_ABSENTE" | "PERIODE_ACADEMIQUE_ANNEE_SCOLAIRE_INTROUVABLE" | "PERIODE_ACADEMIQUE_DATES_INCOHERENTES" | "PERIODE_ACADEMIQUE_DUREE_INVALIDE" | "PERIODE_ACADEMIQUE_HORS_BORNES_ANNEE" | "PERIODE_ACADEMIQUE_LIBELLE_DUPLIQUE" | "PERIODE_ACADEMIQUE_ORDRE_DUPLIQUE" | "PERIODE_ACADEMIQUE_PERIODE_CHEVAUCHANTE" | "PERIODE_ACADEMIQUE_ANNEE_CLOTUREE" | "PERIODE_ACADEMIQUE_IMMUABLE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
+            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "PERIODE_ACADEMIQUE_INTROUVABLE" | "PERIODE_ACADEMIQUE_EN_COURS_ABSENTE" | "PERIODE_ACADEMIQUE_ANNEE_SCOLAIRE_INTROUVABLE" | "PERIODE_ACADEMIQUE_DATES_INCOHERENTES" | "PERIODE_ACADEMIQUE_DUREE_INVALIDE" | "PERIODE_ACADEMIQUE_HORS_BORNES_ANNEE" | "PERIODE_ACADEMIQUE_LIBELLE_DUPLIQUE" | "PERIODE_ACADEMIQUE_ORDRE_DUPLIQUE" | "PERIODE_ACADEMIQUE_PERIODE_CHEVAUCHANTE" | "PERIODE_ACADEMIQUE_ANNEE_CLOTUREE" | "PERIODE_ACADEMIQUE_IMMUABLE" | "ADMISSION_ETABLISSEMENT_INTROUVABLE" | "ADMISSION_FERMEE" | "ADMISSION_CAPTCHA_ECHEC" | "ADMISSION_CHOIX_NIVEAU_CLASSE_INVALIDE" | "ADMISSION_CONSENTEMENT_MANQUANT" | "ADMISSION_AGE_INVALIDE" | "ADMISSION_REFERENCE_CONFLIT" | "ADMISSION_INTROUVABLE" | "ADMISSION_PIECE_INTROUVABLE" | "ADMISSION_PIECE_TYPE_MANQUANT" | "ADMISSION_PIECE_FORMAT_NON_SUPPORTE" | "ADMISSION_PIECE_CONTENU_SUSPECT" | "ADMISSION_PIECE_VIDE" | "ADMISSION_PIECE_TROP_VOLUMINEUSE" | "ADMISSION_TROP_DE_PIECES" | "ADMISSION_TAILLE_TOTALE_PIECES_DEPASSEE" | "ADMISSION_ACTE_NAISSANCE_MANQUANT" | "ADMISSION_MODIFICATION_REFUSEE_HORS_ATTENTE" | "ADMISSION_TRANSITION_INVALIDE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
             correlationId?: string;
             detail?: string;
             instance?: string;
@@ -1584,6 +1802,17 @@ export interface components {
             quartier?: string;
             telephone?: string;
             ville?: string;
+        };
+        SortObject: {
+            empty?: boolean;
+            sorted?: boolean;
+            unsorted?: boolean;
+        };
+        SoumissionAdmissionMultipart: {
+            /** @description Partie JSON du dossier (voir le schéma DonneesDemandeAdmission / SoumissionPubliqueAdmission) */
+            demande: Record<string, never>;
+            pieces?: string[];
+            typesPieces?: ("ACTE_NAISSANCE" | "BULLETIN" | "PHOTO" | "AUTRE")[];
         };
         UtilisateurCompteDto: {
             actif?: boolean;
@@ -2503,6 +2732,240 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["CycleHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    listerDemandesAdmission: {
+        parameters: {
+            query: {
+                statut?: "EN_ATTENTE" | "ACCEPTEE" | "REFUSEE" | "LISTE_ATTENTE" | "ANNULEE";
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Demandes d'admission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PageDemandeAdmissionResumeDto"];
+                };
+            };
+        };
+    };
+    creerDemandeAdmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SoumissionAdmissionMultipart"];
+            };
+        };
+        responses: {
+            /** @description Dossier déjà existant (idempotence) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Dossier créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Pièce jointe dans un format non pris en charge */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Données ou choix niveau/classe invalides */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+        };
+    };
+    lireDemandeAdmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Demande trouvée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Demande introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+        };
+    };
+    ajouterPieceAdmission: {
+        parameters: {
+            query: {
+                typePiece: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    fichier: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Pièce ajoutée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PieceJointeAdmissionDto"];
+                };
+            };
+            /** @description Demande introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PieceJointeAdmissionDto"];
+                };
+            };
+            /** @description Format non pris en charge */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PieceJointeAdmissionDto"];
+                };
+            };
+            /** @description Dossier non modifiable (hors statut EN_ATTENTE) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PieceJointeAdmissionDto"];
+                };
+            };
+        };
+    };
+    telechargerPieceAdmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                pieceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flux binaire de la pièce */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+            /** @description Demande ou pièce introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": string;
+                };
+            };
+        };
+    };
+    desactiverPieceAdmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                pieceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pièce désactivée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Demande ou pièce introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
+                };
+            };
+            /** @description Dossier non modifiable (hors statut EN_ATTENTE) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailEdukeys"];
                 };
             };
         };
@@ -3960,6 +4423,111 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PeriodeAcademiqueHistoriqueDto"][];
+                };
+            };
+        };
+    };
+    soumettreDemandeAdmissionPublique: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Jeton Cloudflare Turnstile (règle 4 de la spec US-06) */
+                "CF-Turnstile-Response": string;
+            };
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SoumissionAdmissionMultipart"];
+            };
+        };
+        responses: {
+            /** @description Accusé de réception (I4 : réponse identique, dossier nouveau ou déjà existant) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AccuseReceptionAdmissionDto"];
+                };
+            };
+            /** @description Établissement introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AccuseReceptionAdmissionDto"];
+                };
+            };
+            /** @description Pièce jointe dans un format non pris en charge */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AccuseReceptionAdmissionDto"];
+                };
+            };
+            /** @description Vérification anti-robot échouée, admission fermée, ou données invalides */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AccuseReceptionAdmissionDto"];
+                };
+            };
+            /** @description Trop de tentatives ; en-tête Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AccuseReceptionAdmissionDto"];
+                };
+            };
+        };
+    };
+    lireOffreAdmissionPublique: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Offre d'admission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OffreAdmissionDto"];
+                };
+            };
+            /** @description Établissement introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OffreAdmissionDto"];
+                };
+            };
+            /** @description Trop de tentatives ; en-tête Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OffreAdmissionDto"];
                 };
             };
         };

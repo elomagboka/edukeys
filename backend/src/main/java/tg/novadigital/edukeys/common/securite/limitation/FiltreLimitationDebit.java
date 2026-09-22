@@ -10,6 +10,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -54,21 +55,32 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     private static final String MESSAGE_INDIFFERENCIE =
             "Trop de tentatives. Veuillez réessayer plus tard.";
 
+    private static final AntPathMatcher CHEMIN_MATCHER = new AntPathMatcher();
+
     private final LimitationDebitProperties proprietes;
     private final ObjectMapper objectMapper;
     private final CompteurAttenteCroissante compteurParCompte;
     private final CompteurAttenteCroissante compteurParIp;
+    private final CompteurAttenteCroissante compteurParIpAdmission;
 
     public FiltreLimitationDebit(LimitationDebitProperties proprietes, ObjectMapper objectMapper) {
         this.proprietes = proprietes;
         this.objectMapper = objectMapper;
         this.compteurParCompte = new CompteurAttenteCroissante(proprietes.getParCompte(), proprietes.getTailleMaxCache());
         this.compteurParIp = new CompteurAttenteCroissante(proprietes.getParIp(), proprietes.getTailleMaxCache());
+        this.compteurParIpAdmission = new CompteurAttenteCroissante(proprietes.getParIpAdmission(), proprietes.getTailleMaxCache());
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !proprietes.getCheminsProteges().contains(request.getRequestURI());
+        String uri = request.getRequestURI();
+        return proprietes.getCheminsProteges().stream().noneMatch(motif -> CHEMIN_MATCHER.match(motif, uri))
+                && proprietes.getCheminsAdmission().stream().noneMatch(motif -> CHEMIN_MATCHER.match(motif, uri));
+    }
+
+    /** {@code true} si l'URI appartient à la famille admission publique (US-06, I3) : compteur IP séparé, plus généreux, jamais de lecture de corps. */
+    private boolean estCheminAdmission(String uri) {
+        return proprietes.getCheminsAdmission().stream().anyMatch(motif -> CHEMIN_MATCHER.match(motif, uri));
     }
 
     @Override
@@ -76,8 +88,17 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String adresseIp = FiltreAdresseIpCliente.adresseIpDe(request);
-        RequeteAvecCorpsMisEnCache requeteMiseEnCache =
-                new RequeteAvecCorpsMisEnCache(request, proprietes.getTailleMaxCorpsOctets());
+
+        // I3 : famille "admission publique" — jamais de lecture du corps (multipart ou
+        // non), un compteur IP dédié et volontairement plus généreux (B1 : le flux d'une
+        // requête multipart ne doit JAMAIS être consommé par ce filtre, Tomcat doit rester
+        // seul à l'analyser pour que getParts()/getParameter() fonctionnent en aval).
+        if (estCheminAdmission(request.getRequestURI())) {
+            doFiltrerAdmission(request, response, filterChain, adresseIp);
+            return;
+        }
+
+        RequeteAvecCorpsMisEnCache requeteMiseEnCache = new RequeteAvecCorpsMisEnCache(request, proprietes.getTailleMaxCorpsOctets());
         String cleCompte = extraireCleCompte(requeteMiseEnCache);
 
         var attenteCompte = cleCompte != null ? compteurParCompte.dureeAttenteRestante(cleCompte) : Duration.ZERO;
@@ -113,7 +134,33 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     }
 
     /**
-     * Réservé aux tests : repart d'un état vierge pour les deux compteurs
+     * Second rideau, famille "admission publique" (I3) : uniquement le
+     * compteur IP dédié {@link #compteurParIpAdmission}, jamais de lecture du
+     * corps — ni JSON ni multipart. C'est ce qui garantit à Tomcat un flux
+     * d'entrée intact pour analyser le multipart (B1) et permet au filtre
+     * Turnstile placé avant celui-ci de refuser sans qu'aucun octet du corps
+     * n'ait été consommé.
+     */
+    private void doFiltrerAdmission(
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain, String adresseIp)
+            throws ServletException, IOException {
+        var attenteIp = compteurParIpAdmission.dureeAttenteRestante(adresseIp);
+        if (attenteIp.compareTo(Duration.ZERO) > 0) {
+            JournalSecurite.echecLimitationDebit("ip_seule", adresseIp);
+            repondre429(request, response, attenteIp);
+            return;
+        }
+
+        filterChain.doFilter(request, response);
+
+        if (response.getStatus() != HttpStatus.TOO_MANY_REQUESTS.value()
+                && !(response.getStatus() >= 200 && response.getStatus() < 300)) {
+            compteurParIpAdmission.enregistrerEchec(adresseIp);
+        }
+    }
+
+    /**
+     * Réservé aux tests : repart d'un état vierge pour les trois compteurs
      * sans redémarrer le contexte Spring — indispensable puisque ce bean est
      * un singleton partagé entre toutes les méthodes de test d'un même
      * contexte ({@code AuthControllerIntegrationTest} et consorts).
@@ -121,6 +168,7 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     public void reinitialiserPourLesTests() {
         compteurParCompte.reinitialiserTout();
         compteurParIp.reinitialiserTout();
+        compteurParIpAdmission.reinitialiserTout();
     }
 
     /**

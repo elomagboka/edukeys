@@ -36,10 +36,14 @@ import tg.novadigital.edukeys.etablissement.repository.LogoEtablissementReposito
 public class LogoEtablissementService {
 
     /**
-     * Lue depuis {@code spring.servlet.multipart.max-file-size}
+     * Lue depuis {@code edukeys.etablissement.taille-max-logo}
      * (application.yml), jamais dupliquée en dur : les deux valeurs
      * couplées à la main dans deux fichiers indépendants finissaient par
-     * diverger silencieusement (durcissement post-revue T-10). Sans la
+     * diverger silencieusement (durcissement post-revue T-10). Propriété
+     * <b>dédiée</b> depuis l'US-06 : ce service lisait auparavant
+     * {@code spring.servlet.multipart.max-file-size}, que l'admission en
+     * ligne a dû relever de 1 à 5 Mo — le plafond du logo suivait alors le
+     * besoin d'un autre module sans que personne ne le décide. Sans la
      * borne Tomcat côté serveur, un dépassement renvoie de toute façon une
      * 500 brute avant d'atteindre ce service — cette constante reste donc le
      * second filet, appliqué une fois le fichier effectivement reçu.
@@ -54,7 +58,7 @@ public class LogoEtablissementService {
             LogoEtablissementRepository logoEtablissementRepository,
             EtablissementRepository etablissementRepository,
             EntityManager entityManager,
-            @Value("${spring.servlet.multipart.max-file-size}") DataSize tailleMaxFichier) {
+            @Value("${edukeys.etablissement.taille-max-logo}") DataSize tailleMaxFichier) {
         this.logoEtablissementRepository = logoEtablissementRepository;
         this.etablissementRepository = etablissementRepository;
         this.entityManager = entityManager;

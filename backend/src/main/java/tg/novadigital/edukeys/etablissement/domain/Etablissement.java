@@ -114,6 +114,10 @@ public class Etablissement extends BaseEntity {
     @Column(name = "nombre_sites_actifs", nullable = false)
     private int nombreSitesActifs = 0;
 
+    /** Bascule de la pré-inscription publique (US-06) : fermée par défaut, ouverte explicitement par la direction. */
+    @Column(name = "admissions_ouvertes", nullable = false)
+    private boolean admissionsOuvertes = false;
+
     protected Etablissement() {
     }
 
@@ -244,5 +248,14 @@ public class Etablissement extends BaseEntity {
 
     public int getNombreSitesActifs() {
         return nombreSitesActifs;
+    }
+
+    public boolean isAdmissionsOuvertes() {
+        return admissionsOuvertes;
+    }
+
+    /** US-06 : ouverture/fermeture de la pré-inscription publique, décidée par la direction. */
+    public void definirAdmissionsOuvertes(boolean admissionsOuvertes) {
+        this.admissionsOuvertes = admissionsOuvertes;
     }
 }

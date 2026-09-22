@@ -31,13 +31,31 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "edukeys.securite.limitation-debit")
 public class LimitationDebitProperties {
 
-    /** Chemins protégés, comparés à {@code HttpServletRequest.getRequestURI()} (correspondance exacte). */
+    /** Chemins protégés (famille authentification), comparés via {@code AntPathMatcher}. */
     private List<String> cheminsProteges = List.of("/api/v1/auth/login", "/api/v1/auth/refresh");
+
+    /**
+     * Chemins protégés de la famille "admission publique" (US-06, issue I3) :
+     * compteur IP {@link #parIpAdmission} dédié, totalement indépendant de
+     * {@link #parIp} — jamais de lecture du corps de la requête pour cette
+     * famille (B1 : ni JSON ni multipart, aucun compteur par compte).
+     */
+    private List<String> cheminsAdmission = List.of(
+            "/api/v1/public/etablissements/*/offre-admission",
+            "/api/v1/public/etablissements/*/demandes-admission");
 
     private final Compteur parCompte = new Compteur(3, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
 
     // Seuil large : voir la javadoc de la classe pour la justification du contexte togolais.
     private final Compteur parIp = new Compteur(150, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
+
+    /**
+     * Compteur IP dédié à la famille admission (I3) : seuil encore plus
+     * généreux que {@link #parIp} — la pré-inscription publique est appelée
+     * par des IP mobiles mutualisées togolaises, sans même le filet d'un
+     * compteur par compte (B1 supprime toute lecture du corps multipart).
+     */
+    private final Compteur parIpAdmission = new Compteur(500, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
 
     /** Taille maximale du corps de requête mis en cache pour en extraire l'identifiant (voir {@code RequeteAvecCorpsMisEnCache}). */
     private int tailleMaxCorpsOctets = 4096;
@@ -59,6 +77,18 @@ public class LimitationDebitProperties {
 
     public Compteur getParIp() {
         return parIp;
+    }
+
+    public Compteur getParIpAdmission() {
+        return parIpAdmission;
+    }
+
+    public List<String> getCheminsAdmission() {
+        return cheminsAdmission;
+    }
+
+    public void setCheminsAdmission(List<String> cheminsAdmission) {
+        this.cheminsAdmission = cheminsAdmission;
     }
 
     public int getTailleMaxCorpsOctets() {

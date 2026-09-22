@@ -37,6 +37,24 @@ openssl rand -base64 48
 
 En recette, Render le génère automatiquement — aucune action.
 
+### Pré-inscription en ligne (US-06)
+
+Deux secrets de plus, sur **edukeys-api-recette** comme sur **edukeys-api-prod** :
+
+| Variable | Recette | Production | Si elle manque |
+|---|---|---|---|
+| `EDUKEYS_ADMISSION_SEL_HACHAGE_IP` | générée par le blueprint | `openssl rand -base64 48`, saisie à la main | **le démarrage échoue** (`VerificateurCleHachageIpAdmission`) |
+| `EDUKEYS_TURNSTILE_CLE_SECRETE` | saisie à la main | saisie à la main | l'application démarre, mais **toute pré-inscription est refusée** (422) |
+
+La clé Turnstile se crée dans le tableau de bord Cloudflare (*Turnstile → Add
+site*), un site par environnement, avec le domaine du frontend. La clé
+**secrète** va dans cette variable, la clé **publique** (site key) dans le
+formulaire frontend.
+
+Ne jamais changer `EDUKEYS_ADMISSION_SEL_HACHAGE_IP` en production sans
+raison : les empreintes d'IP déjà enregistrées ne seraient plus comparables
+aux nouvelles.
+
 ## 3. Récupérer les crochets de déploiement
 
 Pour chaque service de **production** : *Settings → Deploy Hook*. Copie les
