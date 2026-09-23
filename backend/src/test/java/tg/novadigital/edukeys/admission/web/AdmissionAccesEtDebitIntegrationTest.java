@@ -79,7 +79,12 @@ class AdmissionAccesEtDebitIntegrationTest {
     @org.springframework.test.context.DynamicPropertySource
     static void abaisserLeSeuilParIp(org.springframework.test.context.DynamicPropertyRegistry registry) {
         registry.add("edukeys.securite.limitation-debit.par-ip-admission.seuil-tolerance", () -> "3");
+        // I4 (3e revue) : plancher de temps de réponse réactivé pour ce test,
+        // court pour ne pas alourdir la classe. Le profil test le met à 0.
+        registry.add("edukeys.admission.plancher-temps-reponse", () -> PLANCHER_TEST.toMillis() + "ms");
     }
+
+    private static final java.time.Duration PLANCHER_TEST = java.time.Duration.ofMillis(400);
 
     @BeforeEach
     void reinitialiserLeDouble() {
@@ -231,6 +236,38 @@ class AdmissionAccesEtDebitIntegrationTest {
     // ------------------------------------------------------------------
 
     private record Contexte(String etablissementId, String code, String jetonAdmin, String niveauId) {
+    }
+
+    /**
+     * I4 (3e revue) : la réponse est déjà identique, mais son délai ne l'était
+     * pas — un dossier existant revient sans insertion, donc plus vite. Un
+     * tiers connaissant nom, prénoms et date de naissance pouvait chronométrer
+     * la réponse pour savoir si un enfant a déjà postulé. Le plancher égalise
+     * les deux chemins : retirer {@code PlancherTempsReponseAdmission} du
+     * contrôleur fait tomber ce test (l'écart redevient visible et la
+     * création repasse sous le plancher).
+     */
+    @Test
+    void repondEnUnTempsEgal_queLeDossierSoitNouveauOuDejaExistant() throws Exception {
+        Contexte ctx = preparerEtablissementEtOffre("TIMING");
+
+        long dureeCreation = chronometrerSoumission(ctx, "Kodjo", "Ama", "2015-05-12");
+        long dureeDoublon = chronometrerSoumission(ctx, "Kodjo", "Ama", "2015-05-12");
+
+        // Les deux chemins partent au plus tôt au bout du plancher : la création
+        // (insertion du dossier et de la pièce) comme le doublon (simple relecture).
+        assertThat(dureeCreation).isGreaterThanOrEqualTo(PLANCHER_TEST.toMillis());
+        assertThat(dureeDoublon).isGreaterThanOrEqualTo(PLANCHER_TEST.toMillis());
+        // Un seul dossier, malgré les deux envois (idempotence).
+        Long dossiers = jdbcTemplate.queryForObject(
+                "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, ctx.etablissementId());
+        assertThat(dossiers).isEqualTo(1L);
+    }
+
+    private long chronometrerSoumission(Contexte ctx, String nom, String prenoms, String dateNaissance) throws Exception {
+        long debut = System.nanoTime();
+        soumettreAvecIdentite(ctx, nom, prenoms, dateNaissance).andExpect(status().isCreated());
+        return java.time.Duration.ofNanos(System.nanoTime() - debut).toMillis();
     }
 
     private org.springframework.test.web.servlet.ResultActions soumettre(Contexte ctx) throws Exception {

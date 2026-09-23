@@ -38,10 +38,13 @@ public class AdmissionPublicController {
 
     private final DemandeAdmissionService demandeAdmissionService;
     private final DemandeAdmissionMapper demandeAdmissionMapper;
+    private final PlancherTempsReponseAdmission plancherTempsReponse;
 
-    public AdmissionPublicController(DemandeAdmissionService demandeAdmissionService, DemandeAdmissionMapper demandeAdmissionMapper) {
+    public AdmissionPublicController(DemandeAdmissionService demandeAdmissionService,
+            DemandeAdmissionMapper demandeAdmissionMapper, PlancherTempsReponseAdmission plancherTempsReponse) {
         this.demandeAdmissionService = demandeAdmissionService;
         this.demandeAdmissionMapper = demandeAdmissionMapper;
+        this.plancherTempsReponse = plancherTempsReponse;
     }
 
     @Operation(operationId = "lireOffreAdmissionPublique", summary = "Offre d'admission publique d'un établissement (année, niveaux, classes ouverts)",
@@ -105,9 +108,12 @@ public class AdmissionPublicController {
             @io.swagger.v3.oas.annotations.Parameter(hidden = true)
             @RequestParam(name = "typesPieces", required = false) List<String> typesPieces,
             HttpServletRequest request) {
-        DemandeAdmissionService.Accuse accuse = demandeAdmissionService.soumettrePublique(
-                code, demandeAdmissionMapper.versCommande(demande.demande()), demande.siteWeb(), pieces, typesPieces,
-                FiltreAdresseIpCliente.adresseIpDe(request));
+        // I4 (3e revue) : le plancher couvre le traitement ET les refus de
+        // validation, sinon le temps de réponse trahit ce que le corps tait.
+        DemandeAdmissionService.Accuse accuse = plancherTempsReponse.executerAvecPlancher(
+                () -> demandeAdmissionService.soumettrePublique(
+                        code, demandeAdmissionMapper.versCommande(demande.demande()), demande.siteWeb(), pieces,
+                        typesPieces, FiltreAdresseIpCliente.adresseIpDe(request)));
         // I4 : toujours 201, corps limité à la référence et à un message générique —
         // que le dossier soit nouveau ou déjà existant (idempotence).
         AccuseReceptionAdmissionDto dto = new AccuseReceptionAdmissionDto(

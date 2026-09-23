@@ -14,3 +14,10 @@ edukeys:
   securite:
     jwt:
       secret: edukeys-secret-test-fixe-jamais-reutilise-ailleurs-32-octets-min
+
+  # I4 : le plancher de temps de réponse de la soumission publique est ramené
+  # à 0 pour ne pas ajouter 1,2 s à chaque test qui soumet un dossier. Le
+  # test qui prouve la garantie (temps de réponse égal, dossier nouveau ou
+  # déjà existant) le remonte lui-même via @DynamicPropertySource.
+  admission:
+    plancher-temps-reponse: 0

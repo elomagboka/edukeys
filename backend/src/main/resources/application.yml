@@ -162,6 +162,10 @@ edukeys:
     nombre-max-pieces: 5
     # I2 : plafond d'accusés SMS par numéro et par jour, succès compris.
     max-accuses-par-telephone-par-jour: 3
+    # I4 : toute réponse de la soumission publique part au plus tôt au bout de
+    # ce délai, création ou dossier déjà existant — sinon le chronomètre dit
+    # ce que le corps de la réponse tait.
+    plancher-temps-reponse: 1200ms
     sel-hachage-ip: ${EDUKEYS_ADMISSION_SEL_HACHAGE_IP:changez-moi}
     turnstile:
       url-verification: https://challenges.cloudflare.com/turnstile/v0/siteverify

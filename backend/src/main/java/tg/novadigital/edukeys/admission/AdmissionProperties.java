@@ -83,6 +83,20 @@ public class AdmissionProperties {
         this.selHachageIp = selHachageIp;
     }
 
+    /**
+     * Plancher de temps de réponse de la soumission publique (I4, 3e revue) :
+     * égalise création, doublon et refus. 0 le désactive.
+     */
+    private Duration plancherTempsReponse = Duration.ofMillis(1200);
+
+    public Duration getPlancherTempsReponse() {
+        return plancherTempsReponse;
+    }
+
+    public void setPlancherTempsReponse(Duration plancherTempsReponse) {
+        this.plancherTempsReponse = plancherTempsReponse;
+    }
+
     /** Vérification serveur de Cloudflare Turnstile (règle 4 de la spec US-06) : le vrai garde-fou, avant tout traitement du formulaire. */
     public static class Turnstile {
 
