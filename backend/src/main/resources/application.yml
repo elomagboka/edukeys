@@ -18,11 +18,27 @@ spring:
     name: edukeys-backend
   servlet:
     multipart:
-      # US-00 : logo d'établissement plafonné à 1 Mo (LogoEtablissementService).
+      # Borne Tomcat, commune à tous les envois de fichiers : c'est le
+      # plafond du plus gros usage, jamais la limite métier d'un module.
+      # Dimensionnée pour l'admission en ligne (US-06, AdmissionProperties) :
+      # au plus 5 pièces de 5 Mo chacune, 15 Mo cumulés, en un seul appel.
+      # Chaque module applique ensuite SA propre borne, plus stricte, depuis
+      # sa propre propriété (logo : edukeys.etablissement.taille-max-logo,
+      # 1 Mo). Ne jamais rebrancher un module sur la valeur ci-dessous : le
+      # relèvement fait pour l'US-06 remonterait en silence le plafond de ce
+      # module.
       # Sans cette borne côté Tomcat, un dépassement renvoie une 500 brute
       # avant même d'atteindre le contrôleur.
-      max-file-size: 1MB
-      max-request-size: 2MB
+      max-file-size: 5MB
+      # 15 Mo de pièces (AdmissionProperties.tailleMaxTotalPieces) + la partie
+      # JSON `demande` : 16 Mo suffit, jamais 20 (B2+I1, revue US-06).
+      max-request-size: 16MB
+      # B2+I1 : l'analyse multipart par Tomcat doit être paresseuse pour que
+      # FiltreVerificationTurnstileAdmission puisse refuser une requête sans
+      # jeton Turnstile AVANT que Tomcat n'écrive les fichiers joints sur
+      # disque/en mémoire. Aucun filtre placé avant lui n'appelle
+      # getParameter()/getParts() sur une route multipart.
+      resolve-lazily: true
   # Aucun profil par défaut : SPRING_PROFILES_ACTIVE doit être défini
   # explicitement dans chaque environnement (VerificateurProfilActif fait
   # échouer le démarrage sinon). Un défaut implicite sur "local" a fait
@@ -108,6 +124,12 @@ edukeys:
       chemins-proteges:
         - /api/v1/auth/login
         - /api/v1/auth/refresh
+      # I3 : famille "admission publique" (US-06), compteur IP séparé et plus
+      # généreux — jamais de lecture du corps (B1), donc pas de compteur par
+      # compte ici. Motifs Ant, jamais un chemin exact : {code} est dynamique.
+      chemins-admission:
+        - /api/v1/public/etablissements/*/offre-admission
+        - /api/v1/public/etablissements/*/demandes-admission
       par-compte:
         seuil-tolerance: 3
         delai-initial: 1s
@@ -118,5 +140,42 @@ edukeys:
         delai-initial: 1s
         delai-plafond: 5m
         duree-expiration: 15m
+      par-ip-admission:
+        seuil-tolerance: 500
+        delai-initial: 1s
+        delai-plafond: 5m
+        duree-expiration: 15m
+      # 3e revue US-06 : budget de soumissions d'admission RÉUSSIES par IP et
+      # par jour. Large à dessein (IP mobiles mutualisées, cybercafés) — le
+      # garde-fou de cette route est Turnstile, ce budget ne borne que l'abus
+      # automatisé qui l'aurait franchi. Réglable sans nouvelle livraison.
+      budget-succes-admission-par-jour: ${EDUKEYS_ADMISSION_BUDGET_SUCCES_PAR_JOUR:100}
       taille-max-corps-octets: 4096
       taille-max-cache: 100000
+
+  # US-00 : plafond applicatif du logo d'établissement. Propriété dédiée,
+  # volontairement distincte de spring.servlet.multipart.max-file-size, qui
+  # suit le plus gros usage multipart de l'application.
+  etablissement:
+    taille-max-logo: 1MB
+
+  # US-06 : pré-inscription en ligne. Propriétés dédiées, elles aussi
+  # distinctes de la borne Tomcat (CLAUDE.md, point 8 de la spec US-06).
+  admission:
+    taille-max-piece: 5MB
+    taille-max-total-pieces: 15MB
+    nombre-max-pieces: 5
+    # I2 : plafond d'accusés SMS par numéro et par jour, succès compris.
+    max-accuses-par-telephone-par-jour: 3
+    # I4 : toute réponse de la soumission publique part au plus tôt au bout de
+    # ce délai, création ou dossier déjà existant — sinon le chronomètre dit
+    # ce que le corps de la réponse tait.
+    plancher-temps-reponse: 1200ms
+    sel-hachage-ip: ${EDUKEYS_ADMISSION_SEL_HACHAGE_IP:changez-moi}
+    turnstile:
+      url-verification: https://challenges.cloudflare.com/turnstile/v0/siteverify
+      cle-secrete: ${EDUKEYS_TURNSTILE_CLE_SECRETE:}
+      # Délai dépassé = refus. Courts : chaque attente occupe un thread
+      # Tomcat partagé avec /auth et le back-office.
+      delai-connexion: 2s
+      delai-lecture: 3s

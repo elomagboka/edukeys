@@ -706,7 +706,19 @@ class IsolationEtablissementTest {
                 return new ChampMutable(champ, Boolean.TRUE);
             }
         }
-        throw new IllegalStateException("Aucun champ String ni Boolean declare directement sur " + typeEntite
+        // Repli numérique (US-06) : CompteurReferenceAdmission n'a par conception
+        // aucun champ texte ni booléen, seulement des compteurs entiers/longs.
+        for (Field champ : typeEntite.getDeclaredFields()) {
+            if (champ.getType().equals(Integer.class) || champ.getType().equals(int.class)) {
+                return new ChampMutable(champ, Integer.MAX_VALUE);
+            }
+        }
+        for (Field champ : typeEntite.getDeclaredFields()) {
+            if (champ.getType().equals(Long.class) || champ.getType().equals(long.class)) {
+                return new ChampMutable(champ, Long.MAX_VALUE);
+            }
+        }
+        throw new IllegalStateException("Aucun champ String, Boolean, int ni long declare directement sur " + typeEntite
                 + " : adapter c8_modificationDUneEntiteDeBDepuisLeContexteAEstRefusee pour cette entite.");
     }
 

@@ -83,6 +83,10 @@ public enum Permission {
      * une permission existante).
      */
     PERIODE_GERER("Gérer les périodes académiques de son établissement"),
+    /** Création de dossiers d'admission côté back-office et gestion des pièces jointes (US-06). */
+    ADMISSION_CREER("Créer une demande d'admission et gérer ses pièces jointes"),
+    /** Consultation des dossiers d'admission de son établissement (US-06). */
+    ADMISSION_CONSULTER("Consulter les demandes d'admission de son établissement"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

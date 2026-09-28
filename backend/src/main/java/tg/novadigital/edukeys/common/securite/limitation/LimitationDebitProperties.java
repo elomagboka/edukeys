@@ -31,13 +31,49 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "edukeys.securite.limitation-debit")
 public class LimitationDebitProperties {
 
-    /** Chemins protégés, comparés à {@code HttpServletRequest.getRequestURI()} (correspondance exacte). */
+    /** Chemins protégés (famille authentification), comparés via {@code AntPathMatcher}. */
     private List<String> cheminsProteges = List.of("/api/v1/auth/login", "/api/v1/auth/refresh");
+
+    /**
+     * Chemins protégés de la famille "admission publique" (US-06, issue I3) :
+     * compteur IP {@link #parIpAdmission} dédié, totalement indépendant de
+     * {@link #parIp} — jamais de lecture du corps de la requête pour cette
+     * famille (B1 : ni JSON ni multipart, aucun compteur par compte).
+     */
+    private List<String> cheminsAdmission = List.of(
+            "/api/v1/public/etablissements/*/offre-admission",
+            "/api/v1/public/etablissements/*/demandes-admission");
 
     private final Compteur parCompte = new Compteur(3, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
 
     // Seuil large : voir la javadoc de la classe pour la justification du contexte togolais.
     private final Compteur parIp = new Compteur(150, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
+
+    /**
+     * Compteur IP dédié à la famille admission (I3) : seuil encore plus
+     * généreux que {@link #parIp} — la pré-inscription publique est appelée
+     * par des IP mobiles mutualisées togolaises, sans même le filet d'un
+     * compteur par compte (B1 supprime toute lecture du corps multipart).
+     */
+    private final Compteur parIpAdmission = new Compteur(500, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
+
+    /**
+     * 3e revue, point 3 : budget de <strong>soumissions réussies</strong> par
+     * IP et par jour pour la famille admission — un jeton Turnstile valide ne
+     * suffit pas à borner un dépôt illimité de dossiers, chacun jusqu'à 15 Mo
+     * de pièces jointes.
+     *
+     * <p>Valeur volontairement large, au même titre que le seuil de 150 retenu
+     * sur {@code /auth/login} : les opérateurs mobiles togolais mutualisent
+     * leurs adresses, et un cybercafé où plusieurs familles déposent leur
+     * dossier le même après-midi sort sur une seule IP. Ce budget borne l'abus
+     * automatisé <em>qui aurait déjà franchi Turnstile</em> — le vrai garde-fou
+     * de cette route est le captcha, pas le comptage ; un attaquant capable
+     * d'obtenir 100 jetons valides en obtiendrait tout aussi bien 20. Réglable
+     * par propriété ({@code EDUKEYS_ADMISSION_BUDGET_SUCCES_PAR_JOUR}) pour
+     * s'ajuster sans nouvelle livraison si la réalité dément l'estimation.</p>
+     */
+    private int budgetSuccesAdmissionParJour = 100;
 
     /** Taille maximale du corps de requête mis en cache pour en extraire l'identifiant (voir {@code RequeteAvecCorpsMisEnCache}). */
     private int tailleMaxCorpsOctets = 4096;
@@ -59,6 +95,26 @@ public class LimitationDebitProperties {
 
     public Compteur getParIp() {
         return parIp;
+    }
+
+    public Compteur getParIpAdmission() {
+        return parIpAdmission;
+    }
+
+    public List<String> getCheminsAdmission() {
+        return cheminsAdmission;
+    }
+
+    public void setCheminsAdmission(List<String> cheminsAdmission) {
+        this.cheminsAdmission = cheminsAdmission;
+    }
+
+    public int getBudgetSuccesAdmissionParJour() {
+        return budgetSuccesAdmissionParJour;
+    }
+
+    public void setBudgetSuccesAdmissionParJour(int budgetSuccesAdmissionParJour) {
+        this.budgetSuccesAdmissionParJour = budgetSuccesAdmissionParJour;
     }
 
     public int getTailleMaxCorpsOctets() {

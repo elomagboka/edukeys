@@ -54,4 +54,9 @@ public interface ClasseRepository extends BaseRepository<Classe> {
 
     /** R13 : classes actives référençant une filière, toutes années confondues. */
     long countByEtablissementIdAndFiliereIdAndActifTrue(UUID etablissementId, UUID filiereId);
+
+    /** US-06 : résolution en lot des libellés de classes (CLAUDE.md, règle 10). */
+    List<Classe> findByIdIn(List<UUID> ids);
+
+    Optional<Classe> findByIdAndEtablissementIdAndActifTrue(UUID id, UUID etablissementId);
 }

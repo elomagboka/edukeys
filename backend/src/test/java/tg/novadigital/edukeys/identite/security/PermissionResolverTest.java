@@ -53,7 +53,7 @@ class PermissionResolverTest {
                 "ETABLISSEMENT_CREER", "ETABLISSEMENT_GERER", "UTILISATEUR_GERER", "UTILISATEUR_GERER_PLATEFORME",
                 "UTILISATEUR_CONSULTER", "ROLE_ATTRIBUER", "ANNEE_SCOLAIRE_GERER", "ANNEE_SCOLAIRE_CONSULTER",
                 "STRUCTURE_ACADEMIQUE_GERER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_GERER", "MATIERE_CONSULTER",
-                "PERIODE_GERER", "PERIODE_CONSULTER");
+                "PERIODE_GERER", "PERIODE_CONSULTER", "ADMISSION_CREER", "ADMISSION_CONSULTER");
     }
 
     @Test
@@ -68,11 +68,13 @@ class PermissionResolverTest {
         // GESTIONNAIRE porte désormais ANNEE_SCOLAIRE_CONSULTER (US-01) et
         // STRUCTURE_ACADEMIQUE_CONSULTER (US-02) : ce test ne prouve plus un
         // ensemble vide, mais l'absence de toute permission de gestion de
-        // comptes/établissement pour ces deux rôles.
+        // comptes/établissement pour ces deux rôles. GESTIONNAIRE saisit aussi
+        // les dossiers d'admission reçus hors ligne (US-06).
         Set<String> permissions = resolver.resoudrePermissions(Set.of("GESTIONNAIRE", "ELEVE"));
 
         assertThat(permissions).containsExactlyInAnyOrder(
-                "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER", "PERIODE_CONSULTER");
+                "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER", "PERIODE_CONSULTER",
+                "ADMISSION_CREER", "ADMISSION_CONSULTER");
     }
 
     @Test
@@ -81,11 +83,12 @@ class PermissionResolverTest {
         // personnel de son établissement), ANNEE_SCOLAIRE_CONSULTER depuis
         // US-01 et STRUCTURE_ACADEMIQUE_CONSULTER depuis US-02, mais ni
         // UTILISATEUR_GERER ni ROLE_ATTRIBUER : elle ne crée ni n'attribue rien.
+        // Elle consulte les demandes d'admission sans en saisir (US-06).
         Set<String> permissions = resolver.resoudrePermissions(Set.of("DIRECTION"));
 
         assertThat(permissions).containsExactlyInAnyOrder(
                 "UTILISATEUR_CONSULTER", "ANNEE_SCOLAIRE_CONSULTER", "STRUCTURE_ACADEMIQUE_CONSULTER", "MATIERE_CONSULTER",
-                "PERIODE_CONSULTER");
+                "PERIODE_CONSULTER", "ADMISSION_CONSULTER");
     }
 
     /**

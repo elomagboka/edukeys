@@ -10,6 +10,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -54,21 +55,36 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     private static final String MESSAGE_INDIFFERENCIE =
             "Trop de tentatives. Veuillez réessayer plus tard.";
 
+    private static final AntPathMatcher CHEMIN_MATCHER = new AntPathMatcher();
+
     private final LimitationDebitProperties proprietes;
     private final ObjectMapper objectMapper;
     private final CompteurAttenteCroissante compteurParCompte;
     private final CompteurAttenteCroissante compteurParIp;
+    private final CompteurAttenteCroissante compteurParIpAdmission;
+    /** 3e revue, point 3 : budget de soumissions RÉUSSIES par IP et par jour — {@link #compteurParIpAdmission} ne compte que les échecs. */
+    private final CompteurBudgetJournalier compteurBudgetSuccesAdmission;
 
     public FiltreLimitationDebit(LimitationDebitProperties proprietes, ObjectMapper objectMapper) {
         this.proprietes = proprietes;
         this.objectMapper = objectMapper;
         this.compteurParCompte = new CompteurAttenteCroissante(proprietes.getParCompte(), proprietes.getTailleMaxCache());
         this.compteurParIp = new CompteurAttenteCroissante(proprietes.getParIp(), proprietes.getTailleMaxCache());
+        this.compteurParIpAdmission = new CompteurAttenteCroissante(proprietes.getParIpAdmission(), proprietes.getTailleMaxCache());
+        this.compteurBudgetSuccesAdmission = new CompteurBudgetJournalier(
+                proprietes.getBudgetSuccesAdmissionParJour(), Duration.ofDays(1), proprietes.getTailleMaxCache());
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !proprietes.getCheminsProteges().contains(request.getRequestURI());
+        String uri = request.getRequestURI();
+        return proprietes.getCheminsProteges().stream().noneMatch(motif -> CHEMIN_MATCHER.match(motif, uri))
+                && proprietes.getCheminsAdmission().stream().noneMatch(motif -> CHEMIN_MATCHER.match(motif, uri));
+    }
+
+    /** {@code true} si l'URI appartient à la famille admission publique (US-06, I3) : compteur IP séparé, plus généreux, jamais de lecture de corps. */
+    private boolean estCheminAdmission(String uri) {
+        return proprietes.getCheminsAdmission().stream().anyMatch(motif -> CHEMIN_MATCHER.match(motif, uri));
     }
 
     @Override
@@ -76,8 +92,17 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String adresseIp = FiltreAdresseIpCliente.adresseIpDe(request);
-        RequeteAvecCorpsMisEnCache requeteMiseEnCache =
-                new RequeteAvecCorpsMisEnCache(request, proprietes.getTailleMaxCorpsOctets());
+
+        // I3 : famille "admission publique" — jamais de lecture du corps (multipart ou
+        // non), un compteur IP dédié et volontairement plus généreux (B1 : le flux d'une
+        // requête multipart ne doit JAMAIS être consommé par ce filtre, Tomcat doit rester
+        // seul à l'analyser pour que getParts()/getParameter() fonctionnent en aval).
+        if (estCheminAdmission(request.getRequestURI())) {
+            doFiltrerAdmission(request, response, filterChain, adresseIp);
+            return;
+        }
+
+        RequeteAvecCorpsMisEnCache requeteMiseEnCache = new RequeteAvecCorpsMisEnCache(request, proprietes.getTailleMaxCorpsOctets());
         String cleCompte = extraireCleCompte(requeteMiseEnCache);
 
         var attenteCompte = cleCompte != null ? compteurParCompte.dureeAttenteRestante(cleCompte) : Duration.ZERO;
@@ -113,7 +138,74 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     }
 
     /**
-     * Réservé aux tests : repart d'un état vierge pour les deux compteurs
+     * Second rideau, famille "admission publique" (I3) : uniquement le
+     * compteur IP dédié {@link #compteurParIpAdmission}, jamais de lecture du
+     * corps — ni JSON ni multipart. C'est ce qui garantit à Tomcat un flux
+     * d'entrée intact pour analyser le multipart (B1) et permet au filtre
+     * Turnstile placé avant celui-ci de refuser sans qu'aucun octet du corps
+     * n'ait été consommé.
+     *
+     * <p><strong>Asynchrone depuis la 3e revue (point 4)</strong> : la route
+     * de soumission renvoie désormais un {@code DeferredResult}, traité en
+     * deux passages de ce filtre ({@link #shouldNotFilterAsyncDispatch()}
+     * retourne {@code false}) — les vérifications préalables (attente, budget)
+     * ne s'exécutent que sur le dispatch {@code REQUEST} initial, jamais sur
+     * le redispatch {@code ASYNC}, sans quoi elles s'appliqueraient deux fois.
+     * La comptabilisation (échec/succès) est reportée au redispatch
+     * {@code ASYNC} pour une route encore en cours de traitement : avant cela,
+     * {@code response.getStatus()} ne porte pas encore le statut final.</p>
+     */
+    private void doFiltrerAdmission(
+            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain, String adresseIp)
+            throws ServletException, IOException {
+        boolean estRedispatchAsync = jakarta.servlet.DispatcherType.ASYNC.equals(request.getDispatcherType());
+        boolean estSoumission = "POST".equalsIgnoreCase(request.getMethod());
+
+        if (!estRedispatchAsync) {
+            var attenteIp = compteurParIpAdmission.dureeAttenteRestante(adresseIp);
+            if (attenteIp.compareTo(Duration.ZERO) > 0) {
+                JournalSecurite.echecLimitationDebit("ip_seule", adresseIp);
+                repondre429(request, response, attenteIp);
+                return;
+            }
+
+            // 3e revue, point 3 : budget de soumissions réussies, vérifié AVANT
+            // le traitement (pour refuser la N+1e tentative) — uniquement sur
+            // la route de dépôt (POST), jamais sur la simple consultation de
+            // l'offre (GET), pure lecture sans coût d'écriture.
+            if (estSoumission && !compteurBudgetSuccesAdmission.budgetDisponible(adresseIp)) {
+                JournalSecurite.echecLimitationDebit("ip_seule", adresseIp);
+                repondre429(request, response, Duration.ofDays(1));
+                return;
+            }
+        }
+
+        filterChain.doFilter(request, response);
+
+        if (request.isAsyncStarted()) {
+            // Traitement encore en cours (attente du plancher de temps de
+            // réponse, point 4) : le statut final n'est pas encore connu, la
+            // comptabilisation se fera au redispatch ASYNC.
+            return;
+        }
+
+        boolean succes = response.getStatus() >= 200 && response.getStatus() < 300;
+        if (response.getStatus() != HttpStatus.TOO_MANY_REQUESTS.value() && !succes) {
+            compteurParIpAdmission.enregistrerEchec(adresseIp);
+        }
+        if (estSoumission && succes) {
+            compteurBudgetSuccesAdmission.enregistrerSucces(adresseIp);
+        }
+    }
+
+    /** Indispensable pour que ce filtre soit ré-invoqué au redispatch ASYNC de la soumission publique (point 4, 3e revue). */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
+    /**
+     * Réservé aux tests : repart d'un état vierge pour les trois compteurs
      * sans redémarrer le contexte Spring — indispensable puisque ce bean est
      * un singleton partagé entre toutes les méthodes de test d'un même
      * contexte ({@code AuthControllerIntegrationTest} et consorts).
@@ -121,6 +213,13 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     public void reinitialiserPourLesTests() {
         compteurParCompte.reinitialiserTout();
         compteurParIp.reinitialiserTout();
+        compteurParIpAdmission.reinitialiserTout();
+        compteurBudgetSuccesAdmission.reinitialiserTout();
+    }
+
+    /** Réservé aux tests : nombre de soumissions réussies déjà comptées contre cette IP (point 3, 3e revue). */
+    public int nombreDeSuccesAdmissionPourLesTests(String adresseIp) {
+        return compteurBudgetSuccesAdmission.nombreDeSucces(adresseIp);
     }
 
     /**

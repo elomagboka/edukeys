@@ -29,4 +29,9 @@ public interface NiveauRepository extends BaseRepository<Niveau> {
     boolean existsByEtablissementIdAndRangAndActifTrue(UUID etablissementId, int rang);
 
     long countByEtablissementIdAndCycleIdAndActifTrue(UUID etablissementId, UUID cycleId);
+
+    /** US-06 : résolution en lot des libellés de niveaux (CLAUDE.md, règle 10). */
+    List<Niveau> findByIdIn(List<UUID> ids);
+
+    java.util.Optional<Niveau> findByIdAndEtablissementIdAndActifTrue(UUID id, UUID etablissementId);
 }

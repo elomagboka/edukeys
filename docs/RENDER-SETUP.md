@@ -24,7 +24,7 @@ API, deux frontends. Vérifie avant de valider :
 Le premier déploiement de la recette part tout seul. Il échouera probablement :
 c'est normal tant que T-01 n'est pas fait et qu'il n'y a rien à construire.
 
-## 2. Renseigner le secret de production
+## 2. Renseigner les secrets de recette et de production
 
 `JWT_SECRET` est marqué `sync: false` pour la production : il n'est
 volontairement pas dans le blueprint, pour ne pas se retrouver versionné.
@@ -36,6 +36,31 @@ openssl rand -base64 48
 ```
 
 En recette, Render le génère automatiquement — aucune action.
+
+### Pré-inscription en ligne (US-06)
+
+Deux secrets de plus, sur **edukeys-api-recette** comme sur **edukeys-api-prod** :
+
+| Variable | Recette | Production | Si elle manque |
+|---|---|---|---|
+| `EDUKEYS_ADMISSION_SEL_HACHAGE_IP` | générée par le blueprint | `openssl rand -base64 48`, saisie à la main | **le démarrage échoue** (`VerificateurCleHachageIpAdmission`) |
+| `EDUKEYS_TURNSTILE_CLE_SECRETE` | saisie à la main | saisie à la main | l'application démarre, mais **toute pré-inscription est refusée** (422) |
+
+La clé Turnstile se crée dans le tableau de bord Cloudflare (*Turnstile → Add
+site*), un site par environnement, avec le domaine du frontend. La clé
+**secrète** va dans cette variable, la clé **publique** (site key) dans le
+formulaire frontend.
+
+Variable facultative, utile pour ajuster sans nouvelle livraison :
+`EDUKEYS_ADMISSION_BUDGET_SUCCES_PAR_JOUR` (défaut **100**) borne le nombre de
+pré-inscriptions **réussies** par adresse IP et par jour. À relever si de
+vraies familles sont refusées — un cybercafé ou un opérateur mobile fait sortir
+plusieurs foyers sur une même adresse. Le garde-fou de cette route est
+Turnstile, pas ce comptage.
+
+Ne jamais changer `EDUKEYS_ADMISSION_SEL_HACHAGE_IP` en production sans
+raison : les empreintes d'IP déjà enregistrées ne seraient plus comparables
+aux nouvelles.
 
 ## 3. Récupérer les crochets de déploiement
 
@@ -93,6 +118,29 @@ gh pr create --fill
 Attendu : la CI se lance, la fusion est bloquée tant qu'elle tourne. Après
 fusion, Render déploie la recette automatiquement. La production, elle, ne
 bouge pas.
+
+### Vérifier la pré-inscription en ligne (US-06)
+
+À faire **sur chaque environnement**, recette comme production, après la
+première mise en place et après toute recréation des services.
+
+1. Ouvrir les admissions d'un établissement de test (colonne
+   `etablissements.admissions_ouvertes`).
+2. Déposer une pré-inscription depuis le formulaire public, avec une pièce
+   jointe, et vérifier qu'elle est **acceptée** (201, un code de suivi est
+   renvoyé).
+
+Ce contrôle existe pour une raison précise : une clé
+`EDUKEYS_TURNSTILE_CLE_SECRETE` oubliée laisse l'application démarrer
+normalement — rien dans les journaux de démarrage ne la signale — et fait
+refuser **toutes** les pré-inscriptions en 422. Sans cette vérification, le
+défaut se découvre au moment où un parent tente de déposer le dossier de son
+enfant, donc chez un vrai client. Si le dépôt est refusé en 422, la clé est
+absente ou fausse : revenir à l'étape 2.
+
+L'autre variable, `EDUKEYS_ADMISSION_SEL_HACHAGE_IP`, ne demande pas de
+contrôle : sans elle, l'API refuse de démarrer, l'oubli est donc immédiatement
+visible.
 
 ---
 
