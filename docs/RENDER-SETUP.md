@@ -24,7 +24,7 @@ API, deux frontends. Vérifie avant de valider :
 Le premier déploiement de la recette part tout seul. Il échouera probablement :
 c'est normal tant que T-01 n'est pas fait et qu'il n'y a rien à construire.
 
-## 2. Renseigner le secret de production
+## 2. Renseigner les secrets de recette et de production
 
 `JWT_SECRET` est marqué `sync: false` pour la production : il n'est
 volontairement pas dans le blueprint, pour ne pas se retrouver versionné.
@@ -118,6 +118,29 @@ gh pr create --fill
 Attendu : la CI se lance, la fusion est bloquée tant qu'elle tourne. Après
 fusion, Render déploie la recette automatiquement. La production, elle, ne
 bouge pas.
+
+### Vérifier la pré-inscription en ligne (US-06)
+
+À faire **sur chaque environnement**, recette comme production, après la
+première mise en place et après toute recréation des services.
+
+1. Ouvrir les admissions d'un établissement de test (colonne
+   `etablissements.admissions_ouvertes`).
+2. Déposer une pré-inscription depuis le formulaire public, avec une pièce
+   jointe, et vérifier qu'elle est **acceptée** (201, un code de suivi est
+   renvoyé).
+
+Ce contrôle existe pour une raison précise : une clé
+`EDUKEYS_TURNSTILE_CLE_SECRETE` oubliée laisse l'application démarrer
+normalement — rien dans les journaux de démarrage ne la signale — et fait
+refuser **toutes** les pré-inscriptions en 422. Sans cette vérification, le
+défaut se découvre au moment où un parent tente de déposer le dossier de son
+enfant, donc chez un vrai client. Si le dépôt est refusé en 422, la clé est
+absente ou fausse : revenir à l'étape 2.
+
+L'autre variable, `EDUKEYS_ADMISSION_SEL_HACHAGE_IP`, ne demande pas de
+contrôle : sans elle, l'API refuse de démarrer, l'oubli est donc immédiatement
+visible.
 
 ---
 
