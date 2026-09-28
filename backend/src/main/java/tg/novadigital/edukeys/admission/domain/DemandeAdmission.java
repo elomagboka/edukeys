@@ -35,14 +35,15 @@ public class DemandeAdmission extends EntiteEtablissement {
 
     /**
      * EN_ATTENTE -> {ACCEPTEE, REFUSEE, LISTE_ATTENTE} ; LISTE_ATTENTE ->
-     * {ACCEPTEE, REFUSEE} ; les autres sont finales (US-07).
+     * {ACCEPTEE, REFUSEE} ; REFUSEE -> {LISTE_ATTENTE, ACCEPTEE} (un refus est
+     * corrigible, ex. clic erroné) ; ACCEPTEE et ANNULEE sont finales (US-07).
      */
     private static final Map<StatutAdmission, Set<StatutAdmission>> TRANSITIONS_AUTORISEES = new EnumMap<>(Map.of(
             StatutAdmission.EN_ATTENTE,
             EnumSet.of(StatutAdmission.ACCEPTEE, StatutAdmission.REFUSEE, StatutAdmission.LISTE_ATTENTE),
             StatutAdmission.LISTE_ATTENTE, EnumSet.of(StatutAdmission.ACCEPTEE, StatutAdmission.REFUSEE),
+            StatutAdmission.REFUSEE, EnumSet.of(StatutAdmission.LISTE_ATTENTE, StatutAdmission.ACCEPTEE),
             StatutAdmission.ACCEPTEE, EnumSet.noneOf(StatutAdmission.class),
-            StatutAdmission.REFUSEE, EnumSet.noneOf(StatutAdmission.class),
             StatutAdmission.ANNULEE, EnumSet.noneOf(StatutAdmission.class)));
 
     @Column(nullable = false, length = 20)

@@ -351,6 +351,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/demandes-admission/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Décide du sort d'un dossier d'admission (accepter, refuser, liste d'attente) */
+        post: operations["deciderDemandeAdmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/demandes-admission/{id}/pieces": {
         parameters: {
             query?: never;
@@ -1337,6 +1354,26 @@ export interface components {
             rang?: number;
             typeRevision?: string;
         };
+        DecisionAdmissionDto: {
+            /** Format: date-time */
+            dateDecision?: string;
+            /** Format: uuid */
+            decideParId?: string;
+            /** Format: uuid */
+            id?: string;
+            /** @description Note interne, non transmise au parent. */
+            observation?: string;
+            statutNouveau?: string;
+            statutPrecedent?: string;
+        };
+        DecisionAdmissionRequeteDto: {
+            /** @description Note interne, non transmise au parent. */
+            observation?: string;
+            /** @enum {string} */
+            statut: "ACCEPTEE" | "REFUSEE" | "LISTE_ATTENTE";
+            /** Format: int64 */
+            version: number;
+        };
         DefinirAffectationsMatiereRequestDto: {
             affectations: components["schemas"]["AffectationMatiereRequestDto"][];
         };
@@ -1347,10 +1384,15 @@ export interface components {
             /** Format: uuid */
             classeId?: string;
             codeSuivi?: string;
+            /** Format: date-time */
+            dateDecision?: string;
             /** Format: date */
             dateNaissance?: string;
             /** Format: date-time */
             dateSoumission?: string;
+            /** Format: uuid */
+            decideParId?: string;
+            decisions?: components["schemas"]["DecisionAdmissionDto"][];
             etablissementOrigine?: string;
             /** Format: uuid */
             id?: string;
@@ -1359,6 +1401,8 @@ export interface components {
             /** Format: uuid */
             niveauId?: string;
             nom?: string;
+            /** @description Note interne, non transmise au parent. */
+            observationDecision?: string;
             pieces?: components["schemas"]["PieceJointeAdmissionDto"][];
             prenoms?: string;
             reference?: string;
@@ -1369,10 +1413,14 @@ export interface components {
             responsableTelephone?: string;
             sexe?: string;
             statut?: string;
+            /** Format: int64 */
+            version?: number;
         };
         DemandeAdmissionResumeDto: {
             canal?: string;
             classeLibelle?: string;
+            /** Format: date-time */
+            dateDecision?: string;
             /** Format: date-time */
             dateSoumission?: string;
             /** Format: uuid */
@@ -1765,7 +1813,7 @@ export interface components {
         };
         ProblemDetailEdukeys: {
             /** @enum {string} */
-            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "PERIODE_ACADEMIQUE_INTROUVABLE" | "PERIODE_ACADEMIQUE_EN_COURS_ABSENTE" | "PERIODE_ACADEMIQUE_ANNEE_SCOLAIRE_INTROUVABLE" | "PERIODE_ACADEMIQUE_DATES_INCOHERENTES" | "PERIODE_ACADEMIQUE_DUREE_INVALIDE" | "PERIODE_ACADEMIQUE_HORS_BORNES_ANNEE" | "PERIODE_ACADEMIQUE_LIBELLE_DUPLIQUE" | "PERIODE_ACADEMIQUE_ORDRE_DUPLIQUE" | "PERIODE_ACADEMIQUE_PERIODE_CHEVAUCHANTE" | "PERIODE_ACADEMIQUE_ANNEE_CLOTUREE" | "PERIODE_ACADEMIQUE_IMMUABLE" | "ADMISSION_ETABLISSEMENT_INTROUVABLE" | "ADMISSION_FERMEE" | "ADMISSION_CAPTCHA_ECHEC" | "ADMISSION_CHOIX_NIVEAU_CLASSE_INVALIDE" | "ADMISSION_CONSENTEMENT_MANQUANT" | "ADMISSION_AGE_INVALIDE" | "ADMISSION_REFERENCE_CONFLIT" | "ADMISSION_INTROUVABLE" | "ADMISSION_PIECE_INTROUVABLE" | "ADMISSION_PIECE_TYPE_MANQUANT" | "ADMISSION_PIECE_FORMAT_NON_SUPPORTE" | "ADMISSION_PIECE_CONTENU_SUSPECT" | "ADMISSION_PIECE_VIDE" | "ADMISSION_PIECE_TROP_VOLUMINEUSE" | "ADMISSION_TROP_DE_PIECES" | "ADMISSION_TAILLE_TOTALE_PIECES_DEPASSEE" | "ADMISSION_ACTE_NAISSANCE_MANQUANT" | "ADMISSION_MODIFICATION_REFUSEE_HORS_ATTENTE" | "ADMISSION_TRANSITION_INVALIDE" | "ADMISSION_PIECE_DUPLIQUEE" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "ERREUR_INATTENDUE";
+            code?: "ETABLISSEMENT_INTROUVABLE" | "ETABLISSEMENT_CODE_DUPLIQUE" | "ETABLISSEMENT_EMAIL_DUPLIQUE" | "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION" | "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "SITE_INTROUVABLE" | "SITE_CODE_DUPLIQUE" | "SITE_PRINCIPAL_NON_DESACTIVABLE" | "LOGO_INTROUVABLE" | "LOGO_VIDE" | "LOGO_ILLISIBLE" | "HISTORIQUE_INTROUVABLE" | "UTILISATEUR_INTROUVABLE" | "UTILISATEUR_EMAIL_DUPLIQUE" | "UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION" | "ROLES_AUTO_MODIFICATION_REFUSEE" | "COMPTE_AUTO_DESACTIVATION_REFUSEE" | "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE" | "ROLE_OBLIGATOIRE" | "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE" | "IDENTIFIANTS_INVALIDES" | "MOT_DE_PASSE_TEMPORAIRE_EXPIRE" | "COMPTE_DESACTIVE" | "AFFECTATION_ABSENTE" | "FORMAT_FICHIER_NON_SUPPORTE" | "FICHIER_TROP_VOLUMINEUX" | "ANNEE_SCOLAIRE_INTROUVABLE" | "ANNEE_SCOLAIRE_ACTIVE_ABSENTE" | "ANNEE_SCOLAIRE_LIBELLE_DUPLIQUE" | "ANNEE_SCOLAIRE_PERIODE_CHEVAUCHANTE" | "ANNEE_SCOLAIRE_DATES_INCOHERENTES" | "ANNEE_SCOLAIRE_DUREE_INVALIDE" | "ANNEE_SCOLAIRE_LIBELLE_VIDE" | "ANNEE_SCOLAIRE_TRANSITION_INVALIDE" | "ANNEE_SCOLAIRE_CLOTUREE_IMMUABLE" | "ANNEE_SCOLAIRE_DESACTIVATION_REFUSEE" | "ANNEE_SCOLAIRE_ACTIVATION_CONCURRENTE" | "CYCLE_INTROUVABLE" | "CYCLE_LIBELLE_DUPLIQUE" | "CYCLE_RANG_DUPLIQUE" | "CYCLE_CODE_DUPLIQUE" | "CYCLE_NON_DESACTIVABLE" | "NIVEAU_INTROUVABLE" | "NIVEAU_LIBELLE_DUPLIQUE" | "NIVEAU_RANG_DUPLIQUE" | "NIVEAU_CODE_DUPLIQUE" | "NIVEAU_NON_DESACTIVABLE" | "FILIERE_INTROUVABLE" | "FILIERE_LIBELLE_DUPLIQUE" | "FILIERE_CODE_DUPLIQUE" | "FILIERE_NON_DESACTIVABLE" | "FILIERE_CYCLE_INCOHERENT" | "CLASSE_INTROUVABLE" | "CLASSE_LIBELLE_DUPLIQUE" | "CLASSE_LIBELLE_VIDE" | "CLASSE_EFFECTIF_MAX_INVALIDE" | "CLASSE_ANNEE_CLOTUREE" | "CLASSE_SITE_INVALIDE" | "CLASSE_REFERENTIEL_INACTIF" | "MATIERE_INTROUVABLE" | "MATIERE_LIBELLE_DUPLIQUE" | "MATIERE_CODE_DUPLIQUE" | "MATIERE_INACTIVE" | "MATIERE_AFFECTATION_CLE_DUPLIQUEE" | "MATIERE_AFFECTATION_INCOHERENTE" | "PERIODE_ACADEMIQUE_INTROUVABLE" | "PERIODE_ACADEMIQUE_EN_COURS_ABSENTE" | "PERIODE_ACADEMIQUE_ANNEE_SCOLAIRE_INTROUVABLE" | "PERIODE_ACADEMIQUE_DATES_INCOHERENTES" | "PERIODE_ACADEMIQUE_DUREE_INVALIDE" | "PERIODE_ACADEMIQUE_HORS_BORNES_ANNEE" | "PERIODE_ACADEMIQUE_LIBELLE_DUPLIQUE" | "PERIODE_ACADEMIQUE_ORDRE_DUPLIQUE" | "PERIODE_ACADEMIQUE_PERIODE_CHEVAUCHANTE" | "PERIODE_ACADEMIQUE_ANNEE_CLOTUREE" | "PERIODE_ACADEMIQUE_IMMUABLE" | "ADMISSION_ETABLISSEMENT_INTROUVABLE" | "ADMISSION_FERMEE" | "ADMISSION_CAPTCHA_ECHEC" | "ADMISSION_CHOIX_NIVEAU_CLASSE_INVALIDE" | "ADMISSION_CONSENTEMENT_MANQUANT" | "ADMISSION_AGE_INVALIDE" | "ADMISSION_REFERENCE_CONFLIT" | "ADMISSION_INTROUVABLE" | "ADMISSION_PIECE_INTROUVABLE" | "ADMISSION_PIECE_TYPE_MANQUANT" | "ADMISSION_PIECE_FORMAT_NON_SUPPORTE" | "ADMISSION_PIECE_CONTENU_SUSPECT" | "ADMISSION_PIECE_VIDE" | "ADMISSION_PIECE_TROP_VOLUMINEUSE" | "ADMISSION_TROP_DE_PIECES" | "ADMISSION_TAILLE_TOTALE_PIECES_DEPASSEE" | "ADMISSION_ACTE_NAISSANCE_MANQUANT" | "ADMISSION_MODIFICATION_REFUSEE_HORS_ATTENTE" | "ADMISSION_TRANSITION_INVALIDE" | "ADMISSION_PIECE_DUPLIQUEE" | "ADMISSION_OBSERVATION_OBLIGATOIRE" | "ADMISSION_MODIFICATION_CONCURRENTE" | "ADMISSION_DOUBLON" | "ECRITURE_INTER_ETABLISSEMENT_REFUSEE" | "ACCES_REFUSE" | "REQUETE_INVALIDE" | "CORPS_ILLISIBLE" | "TROP_DE_REQUETES" | "MODIFICATION_CONCURRENTE" | "ERREUR_INATTENDUE";
             correlationId?: string;
             detail?: string;
             instance?: string;
@@ -2833,6 +2881,77 @@ export interface operations {
             };
             /** @description Demande introuvable */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+        };
+    };
+    deciderDemandeAdmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionAdmissionRequeteDto"];
+            };
+        };
+        responses: {
+            /** @description Décision enregistrée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Requête invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Accès refusé */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Demande introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Conflit : version périmée ou dossier en doublon avec un autre actif */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DemandeAdmissionDto"];
+                };
+            };
+            /** @description Observation obligatoire manquante ou transition de statut invalide */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

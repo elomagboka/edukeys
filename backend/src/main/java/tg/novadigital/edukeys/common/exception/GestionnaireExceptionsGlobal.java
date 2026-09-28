@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -67,6 +68,23 @@ public class GestionnaireExceptionsGlobal {
     @ExceptionHandler(ConflitException.class)
     public ProblemDetail gererConflit(ConflitException ex, HttpServletRequest request) {
         return construire(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
+    }
+
+    /**
+     * Conflit de version optimiste (US-07) : {@code @Version} détecte qu'un
+     * autre appelant a modifié la ressource entre-temps. Cible la superclasse
+     * Spring Data {@link OptimisticLockingFailureException} (couvre aussi bien
+     * {@code ObjectOptimisticLockingFailureException} que la variante JPA
+     * {@code jakarta.persistence.OptimisticLockException} une fois traduite
+     * par {@code PersistenceExceptionTranslationPostProcessor}) : sans ce
+     * handler, un conflit de version retombait sur le catch-all générique en
+     * 500. Code générique, réutilisable par tout module (CLAUDE.md, cette
+     * règle touche tous les modules).
+     */
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ProblemDetail gererConflitVersionOptimiste(OptimisticLockingFailureException ex, HttpServletRequest request) {
+        return construire(HttpStatus.CONFLICT, CodeErreur.MODIFICATION_CONCURRENTE,
+                "La ressource a été modifiée entre-temps, veuillez la recharger.", request);
     }
 
     @ExceptionHandler(AccesInterditException.class)

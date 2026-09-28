@@ -2,7 +2,6 @@ package tg.novadigital.edukeys.testsupport;
 
 import java.time.LocalDate;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import tg.novadigital.edukeys.academique.domain.AnneeScolaire;
 
@@ -26,7 +25,7 @@ public class FabriqueAnneeScolaire implements FabriqueEntiteEtablissement<AnneeS
 
     @Override
     public AnneeScolaire creer(UUID etablissementId) {
-        int anneeDebut = 2000 + ThreadLocalRandom.current().nextInt(0, 1000);
+        int anneeDebut = FabriqueSupport.anneeDebutUnique();
         LocalDate dateDebut = LocalDate.of(anneeDebut, 9, 1);
         LocalDate dateFin = LocalDate.of(anneeDebut + 1, 7, 15);
         String libelle = "ISOLATION-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

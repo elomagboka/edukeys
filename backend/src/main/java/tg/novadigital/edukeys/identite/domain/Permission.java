@@ -87,6 +87,14 @@ public enum Permission {
     ADMISSION_CREER("Créer une demande d'admission et gérer ses pièces jointes"),
     /** Consultation des dossiers d'admission de son établissement (US-06). */
     ADMISSION_CONSULTER("Consulter les demandes d'admission de son établissement"),
+    /**
+     * Décision sur un dossier d'admission — accepter, refuser, mettre en
+     * liste d'attente (US-07). Distincte d'{@link #ADMISSION_CREER} :
+     * réservée à ADMIN, ni GESTIONNAIRE (qui saisit les dossiers hors ligne)
+     * ni DIRECTION (qui consulte, CLAUDE.md règle 11 — ne pas élargir
+     * silencieusement une permission existante).
+     */
+    ADMISSION_DECIDER("Décider d'un dossier d'admission (accepter, refuser, liste d'attente)"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

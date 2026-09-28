@@ -13,6 +13,12 @@ public enum TypeNotification {
     FERMETURE_EXCEPTIONNELLE(true),
     /** Accusé de réception d'une demande d'admission (US-06) : SMS et email, gabarit sans accents. */
     ADMISSION_ACCUSE_RECEPTION(true),
+    /** Décision d'admission (US-07) : dossier accepté, SMS et email, gabarit sans accents. */
+    ADMISSION_DECISION_ACCEPTEE(true),
+    /** Décision d'admission (US-07) : dossier refusé, SMS et email, gabarit sans accents. */
+    ADMISSION_DECISION_REFUSEE(true),
+    /** Décision d'admission (US-07) : dossier mis en liste d'attente, SMS et email, gabarit sans accents. */
+    ADMISSION_DECISION_LISTE_ATTENTE(true),
     NOUVELLE_NOTE(false),
     DEVOIR_PUBLIE(false),
     MESSAGE_MESSAGERIE(false);

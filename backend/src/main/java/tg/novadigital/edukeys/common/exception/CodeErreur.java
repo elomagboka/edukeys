@@ -148,6 +148,17 @@ public enum CodeErreur {
     ADMISSION_TRANSITION_INVALIDE,
     ADMISSION_PIECE_DUPLIQUEE,
 
+    // Décisions d'admission (US-07)
+    ADMISSION_OBSERVATION_OBLIGATOIRE,
+    ADMISSION_MODIFICATION_CONCURRENTE,
+    /**
+     * Traduction de {@code uk_demandes_admission_doublon} lors d'une décision
+     * (US-07) : un dossier REFUSEE repassé en LISTE_ATTENTE peut entrer en
+     * collision avec une nouvelle soumission du même enfant, déjà EN_ATTENTE
+     * ou LISTE_ATTENTE — la contrainte de base tranche, jamais un 500.
+     */
+    ADMISSION_DOUBLON,
+
     // Inter-établissement
     ECRITURE_INTER_ETABLISSEMENT_REFUSEE,
 
@@ -156,5 +167,6 @@ public enum CodeErreur {
     REQUETE_INVALIDE,
     CORPS_ILLISIBLE,
     TROP_DE_REQUETES,
+    MODIFICATION_CONCURRENTE,
     ERREUR_INATTENDUE
 }

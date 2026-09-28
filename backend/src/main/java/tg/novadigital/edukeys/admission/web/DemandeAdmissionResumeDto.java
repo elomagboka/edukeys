@@ -13,5 +13,6 @@ public record DemandeAdmissionResumeDto(
         String classeLibelle,
         String statut,
         String canal,
-        Instant dateSoumission) {
+        Instant dateSoumission,
+        Instant dateDecision) {
 }

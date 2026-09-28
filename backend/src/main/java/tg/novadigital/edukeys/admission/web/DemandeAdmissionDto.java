@@ -5,6 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record DemandeAdmissionDto(
         UUID id,
         String reference,
@@ -27,5 +29,11 @@ public record DemandeAdmissionDto(
         String statut,
         String canal,
         Instant dateSoumission,
-        List<PieceJointeAdmissionDto> pieces) {
+        long version,
+        Instant dateDecision,
+        @Schema(description = "Note interne, non transmise au parent.")
+        String observationDecision,
+        UUID decideParId,
+        List<PieceJointeAdmissionDto> pieces,
+        List<DecisionAdmissionDto> decisions) {
 }
