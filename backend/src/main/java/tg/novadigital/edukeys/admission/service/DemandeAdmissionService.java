@@ -51,6 +51,8 @@ public class DemandeAdmissionService {
     private static final int AGE_MIN_ANNEES = 2;
     private static final int AGE_MAX_ANNEES = 30;
     private static final String REFERENCE_FICTIVE_HONEYPOT = "PRE-0000-000000";
+    /** 3e revue, point 1 : même forme (26 caractères Crockford Base32) qu'un code de suivi réel — rien ne distingue le honeypot en aval. */
+    private static final String CODE_SUIVI_FICTIF_HONEYPOT = "0".repeat(26);
 
     private final DemandeAdmissionRepository demandeAdmissionRepository;
     private final EtablissementPublicQuery etablissementPublicQuery;
@@ -75,12 +77,14 @@ public class DemandeAdmissionService {
     }
 
     /**
-     * Résultat d'une soumission publique (I4, revue) : uniquement une
-     * référence et un message générique, {@code nouveau} pour le seul usage
-     * interne du contrôleur (toujours 201 côté public, quel que soit son
-     * état — plus de statut ni de date dans l'accusé public).
+     * Résultat d'une soumission publique (I4, revue) : {@code reference} reste
+     * disponible pour l'usage interne (notification au dossier existant,
+     * canal ADMIN) mais {@code codeSuivi} est la seule valeur que le
+     * contrôleur public expose (3e revue, point 1) — {@code nouveau} pour le
+     * seul usage interne du contrôleur (toujours 201 côté public, quel que
+     * soit son état — plus de statut ni de date dans l'accusé public).
      */
-    public record Accuse(String reference, boolean nouveau) {
+    public record Accuse(String reference, String codeSuivi, boolean nouveau) {
     }
 
     /** Résultat interne de {@link #creer} : distingue création et dossier existant retrouvé (règle 3, idempotence). */
@@ -103,7 +107,7 @@ public class DemandeAdmissionService {
 
         // Règle 6 : honeypot rempli -> succès fictif, rien n'est enregistré.
         if (siteWebHoneypot != null && !siteWebHoneypot.isBlank()) {
-            return new Accuse(REFERENCE_FICTIVE_HONEYPOT, true);
+            return new Accuse(REFERENCE_FICTIVE_HONEYPOT, CODE_SUIVI_FICTIF_HONEYPOT, true);
         }
 
         EtablissementPublicQuery.EtablissementPublic etablissement = etablissementPublicQuery.resoudreParCode(codeEtablissement)
@@ -119,9 +123,10 @@ public class DemandeAdmissionService {
 
         ResultatCreation resultat = creer(etablissement.id(), donnees, CanalAdmission.PUBLIC, pieces, typesPieces,
                 Instant.now(), hacherIp(adresseIp));
-        // I4 : même réponse publique, dossier nouveau ou existant — seule la
-        // référence et un message générique sortent, jamais le statut ni la date.
-        return new Accuse(resultat.demande().getReference(), resultat.nouveau());
+        // I4 : même réponse publique, dossier nouveau ou existant — seul le code
+        // de suivi et un message générique sortent, jamais le statut ni la date.
+        // La référence séquentielle (3e revue, point 1) reste interne.
+        return new Accuse(resultat.demande().getReference(), resultat.demande().getCodeSuivi(), resultat.nouveau());
     }
 
     public record OffrePublique(String etablissementNom, String etablissementLogoUrl, boolean admissionsOuvertes,
@@ -187,7 +192,7 @@ public class DemandeAdmissionService {
 
         try {
             // Étape 2 (écriture, transaction courte) : insertion effective.
-            DemandeAdmission sauvee = insertionTransactionnelle.inserer(
+            DemandeAdmission sauvee = insererAvecRattrapageDuCompteur(
                     etablissementId, nom, prenoms, responsableNom, responsablePrenoms, phase1.anneeScolaireId(),
                     canal, maintenant, ipHash, piecesPreparees, donnees);
             return new ResultatCreation(sauvee, true);
@@ -201,6 +206,39 @@ public class DemandeAdmissionService {
             DemandeAdmission existante = insertionTransactionnelle.relireApresConflit(
                     etablissementId, phase1.anneeScolaireId(), nomNormalise, prenomsNormalises, donnees.dateNaissance());
             return new ResultatCreation(existante, false);
+        }
+    }
+
+    /**
+     * Insère la demande, et rejoue **une seule fois** si l'échec vient de la
+     * création concurrente de la ligne de compteur de référence (3e revue,
+     * point 2) : {@code SELECT ... FOR UPDATE} ne verrouille pas une ligne
+     * inexistante, donc les deux premières soumissions d'un établissement — ou
+     * les deux premières après un passage d'année — tentent chacune de la
+     * créer, et la perdante violait {@code uk_compteurs_reference_admission_annee},
+     * remontée en 500 au parent.
+     *
+     * <p>Le rattrapage ne peut pas se faire à l'intérieur de la transaction
+     * fautive : PostgreSQL l'annule dès la violation, toute requête suivante y
+     * serait refusée. Il se fait donc ici, hors transaction : le nouvel appel
+     * ouvre une transaction neuve, où la ligne committée par la gagnante est
+     * visible. Une seule tentative supplémentaire suffit — la ligne ne peut
+     * plus manquer ensuite — et cela ne coûte rien au régime courant : elle
+     * n'est créée qu'une fois par établissement et par année.</p>
+     */
+    private DemandeAdmission insererAvecRattrapageDuCompteur(
+            UUID etablissementId, String nom, String prenoms, String responsableNom, String responsablePrenoms,
+            UUID anneeScolaireId, CanalAdmission canal, Instant maintenant, String ipHash,
+            List<PiecePreparee> piecesPreparees, CommandeDemandeAdmission donnees) {
+        try {
+            return insertionTransactionnelle.inserer(etablissementId, nom, prenoms, responsableNom, responsablePrenoms,
+                    anneeScolaireId, canal, maintenant, ipHash, piecesPreparees, donnees);
+        } catch (RuntimeException e) {
+            if (!InsertionDemandeAdmissionTransactionnelle.estViolationContrainteCompteur(e)) {
+                throw e;
+            }
+            return insertionTransactionnelle.inserer(etablissementId, nom, prenoms, responsableNom, responsablePrenoms,
+                    anneeScolaireId, canal, maintenant, ipHash, piecesPreparees, donnees);
         }
     }
 
@@ -272,6 +310,13 @@ public class DemandeAdmissionService {
         }
         TypePieceAdmission type = analyserType(typePieceBrut);
         PiecePreparee piece = validerFichier(fichier, type);
+        // 3e revue, point 5 : même fichier joint deux fois -> refus explicite
+        // (422), jamais la violation de l'index unique non rattrapée (500). Le
+        // parent croit avoir joint deux pièces distinctes, un écartement
+        // silencieux le laisserait dans l'erreur.
+        if (stockagePiecesJointes.existeDejaPourDemande(demandeId, piece.empreinteSha256())) {
+            throw new RegleMetierViolee(CodeErreur.ADMISSION_PIECE_DUPLIQUEE, "Cette pièce est déjà jointe à ce dossier.");
+        }
         return stockagePiecesJointes.enregistrer(
                 demande.getEtablissementId(), demandeId, piece.type(), piece.nomOriginal(), piece.typeMime(), piece.contenu(), piece.empreinteSha256());
     }
@@ -362,6 +407,7 @@ public class DemandeAdmissionService {
         }
 
         List<PiecePreparee> preparees = new ArrayList<>();
+        java.util.Set<String> empreintesVues = new java.util.HashSet<>();
         long tailleTotale = 0;
         boolean acteNaissancePresent = false;
         for (int i = 0; i < pieces.size(); i++) {
@@ -370,6 +416,12 @@ public class DemandeAdmissionService {
                 acteNaissancePresent = true;
             }
             PiecePreparee piece = validerFichier(pieces.get(i), type);
+            // 3e revue, point 5 : même fichier envoyé deux fois dans un même
+            // dossier (geste banal sur mobile) -> refus explicite (422), jamais
+            // la violation de l'index unique non rattrapée (500).
+            if (!empreintesVues.add(piece.empreinteSha256())) {
+                throw new RegleMetierViolee(CodeErreur.ADMISSION_PIECE_DUPLIQUEE, "Cette pièce est déjà jointe à ce dossier.");
+            }
             tailleTotale += piece.contenu().length;
             preparees.add(piece);
         }

@@ -8,6 +8,7 @@ import java.util.UUID;
 public record DemandeAdmissionDto(
         UUID id,
         String reference,
+        String codeSuivi,
         UUID anneeScolaireId,
         UUID niveauId,
         UUID classeId,

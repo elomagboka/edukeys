@@ -83,16 +83,9 @@ class AdmissionIdempotenceConcurrenceIntegrationTest {
         String cycleId = creerCycle(jetonAdmin, "Collège", prefixeCode + "C", 1);
         String niveauId = creerNiveau(jetonAdmin, "6ème", prefixeCode + "N", 1, cycleId);
         jdbcTemplate.update("update etablissements set admissions_ouvertes = true where id = ?::uuid", etablissementId);
-        // Pré-crée la ligne de compteur de référence (hors périmètre I5, cf.
-        // GenerateurReferenceAdmission) : sans elle, les deux threads
-        // tenteraient chacun de l'insérer et violeraient
-        // uk_compteurs_reference_admission_annee — une course distincte de
-        // celle exercée par ce test (uk_demandes_admission_doublon).
-        jdbcTemplate.update(
-                "insert into compteurs_reference_admission "
-                        + "(id, etablissement_id, annee, dernier, actif, date_creation, date_modification) "
-                        + "values (gen_random_uuid(), ?::uuid, extract(year from now())::int, 0, true, now(), now())",
-                etablissementId);
+        // 3e revue, point 2 : la ligne de compteur n'est plus pré-créée -- le
+        // test doit prouver le cas réel (deux premières soumissions
+        // simultanées d'un établissement, sans ligne de compteur préexistante).
         entityManager.clear();
 
         CountDownLatch depart = new CountDownLatch(1);
@@ -113,11 +106,11 @@ class AdmissionIdempotenceConcurrenceIntegrationTest {
             assertThat(reponseA.getStatusCode()).isEqualTo(HttpStatus.CREATED);
             assertThat(reponseB.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-            String referenceA = JsonPath.read(reponseA.getBody(), "$.reference");
-            String referenceB = JsonPath.read(reponseB.getBody(), "$.reference");
+            String codeSuiviA = JsonPath.read(reponseA.getBody(), "$.codeSuivi");
+            String codeSuiviB = JsonPath.read(reponseB.getBody(), "$.codeSuivi");
             // I5 : les deux appels concurrents reçoivent le même accusé — un seul
             // gagnant de la course, l'autre relit et renvoie sa référence.
-            assertThat(referenceB).isEqualTo(referenceA);
+            assertThat(codeSuiviB).isEqualTo(codeSuiviA);
 
             Long nombreDeDossiers = jdbcTemplate.queryForObject(
                     "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, etablissementId);
@@ -127,27 +120,97 @@ class AdmissionIdempotenceConcurrenceIntegrationTest {
         }
     }
 
+    /**
+     * 3e revue, point 2 : {@code SELECT ... FOR UPDATE} ne verrouille pas une
+     * ligne inexistante — deux PREMIÈRES soumissions simultanées d'un
+     * établissement (aucune ligne de compteur préexistante, contrairement à
+     * {@link #deuxSoumissionsStrictementConcurrentes_neCreentQuUnSeulDossier_etRenvoientLeMemeAccuse})
+     * créaient chacune la ligne, la seconde violait
+     * {@code uk_compteurs_reference_admission_annee} et remontait en 500. Deux
+     * enfants DIFFÉRENTS ici : aucun rattrapage de doublon ne doit masquer une
+     * éventuelle 500 sur la génération de référence elle-même.
+     */
+    @Test
+    void deuxPremieresSoumissionsSimultanees_sansLigneDeCompteurPreexistante_neRemontentJamaisUne500() throws Exception {
+        String prefixeCode = "CPT" + (System.nanoTime() % 100000);
+        String etablissementId = creerEtablissement(prefixeCode);
+        String code = jdbcTemplate.queryForObject("select code from etablissements where id = ?::uuid", String.class, etablissementId);
+        String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
+        creerEtActiverAnneeScolaire(jetonAdmin);
+        String cycleId = creerCycle(jetonAdmin, "Collège", prefixeCode + "C", 1);
+        String niveauId = creerNiveau(jetonAdmin, "6ème", prefixeCode + "N", 1, cycleId);
+        jdbcTemplate.update("update etablissements set admissions_ouvertes = true where id = ?::uuid", etablissementId);
+        entityManager.clear();
+
+        CountDownLatch depart = new CountDownLatch(1);
+        Callable<ResponseEntity<String>> soumissionEnfant1 = () -> {
+            depart.await();
+            return soumettre(code, niveauId, "Premier", "Enfant", "2015-01-01", "+22890000101");
+        };
+        Callable<ResponseEntity<String>> soumissionEnfant2 = () -> {
+            depart.await();
+            return soumettre(code, niveauId, "Second", "Enfant", "2016-02-02", "+22890000102");
+        };
+
+        ExecutorService executeur = Executors.newFixedThreadPool(2);
+        try {
+            Future<ResponseEntity<String>> futureA = executeur.submit(soumissionEnfant1);
+            Future<ResponseEntity<String>> futureB = executeur.submit(soumissionEnfant2);
+            depart.countDown();
+
+            ResponseEntity<String> reponseA = futureA.get(20, TimeUnit.SECONDS);
+            ResponseEntity<String> reponseB = futureB.get(20, TimeUnit.SECONDS);
+
+            assertThat(reponseA.getStatusCode())
+                    .withFailMessage("500 sur la première soumission concurrente : %s", reponseA.getBody())
+                    .isEqualTo(HttpStatus.CREATED);
+            assertThat(reponseB.getStatusCode())
+                    .withFailMessage("500 sur la seconde soumission concurrente : %s", reponseB.getBody())
+                    .isEqualTo(HttpStatus.CREATED);
+
+            String codeSuiviA = JsonPath.read(reponseA.getBody(), "$.codeSuivi");
+            String codeSuiviB = JsonPath.read(reponseB.getBody(), "$.codeSuivi");
+            assertThat(codeSuiviB).isNotEqualTo(codeSuiviA);
+
+            Long nombreDeDossiers = jdbcTemplate.queryForObject(
+                    "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, etablissementId);
+            assertThat(nombreDeDossiers).isEqualTo(2L);
+            Long nombreDeCompteurs = jdbcTemplate.queryForObject(
+                    "select count(*) from compteurs_reference_admission where etablissement_id = ?::uuid", Long.class, etablissementId);
+            assertThat(nombreDeCompteurs)
+                    .withFailMessage("Une seule ligne de compteur doit exister pour cet établissement et cette année.")
+                    .isEqualTo(1L);
+        } finally {
+            executeur.shutdownNow();
+        }
+    }
+
     private ResponseEntity<String> soumettre(String code, String niveauId) {
+        return soumettre(code, niveauId, "Concurrence", "Test", "2015-01-01", "+22890000088");
+    }
+
+    private ResponseEntity<String> soumettre(
+            String code, String niveauId, String nom, String prenoms, String dateNaissance, String telephone) {
         String json = """
                 {
                   "demande": {
                     "niveauId": "%s",
-                    "nom": "Concurrence",
-                    "prenoms": "Test",
-                    "dateNaissance": "2015-01-01",
+                    "nom": "%s",
+                    "prenoms": "%s",
+                    "dateNaissance": "%s",
                     "lieuNaissance": "Lomé",
                     "sexe": "F",
                     "nationalite": "TG",
                     "responsableNom": "Responsable",
                     "responsablePrenoms": "Test",
                     "responsableLien": "PERE",
-                    "responsableTelephone": "+22890000088",
+                    "responsableTelephone": "%s",
                     "responsableEmail": "responsable.conc@example.com",
                     "consentementDonnees": true
                   },
                   "siteWeb": null
                 }
-                """.formatted(niveauId);
+                """.formatted(niveauId, nom, prenoms, dateNaissance, telephone);
 
         MultiValueMap<String, Object> corps = new LinkedMultiValueMap<>();
         HttpHeaders enTetesDemande = new HttpHeaders();

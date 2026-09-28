@@ -59,6 +59,11 @@ public class StockagePiecesJointesBytea implements StockagePiecesJointes {
     }
 
     @Override
+    public boolean existeDejaPourDemande(UUID demandeId, String empreinteSha256) {
+        return pieceJointeAdmissionRepository.existsByDemandeIdAndEmpreinteSha256AndActifTrue(demandeId, empreinteSha256);
+    }
+
+    @Override
     public Optional<PieceJointeAdmission> trouver(UUID demandeId, UUID pieceId) {
         return pieceJointeAdmissionRepository.findByIdAndDemandeIdAndActifTrue(pieceId, demandeId);
     }

@@ -33,11 +33,14 @@ public class FabriqueContenuPieceJointeAdmission implements FabriqueEntiteEtabli
     public ContenuPieceJointeAdmission creer(UUID etablissementId) {
         EntityManager entityManager = FabriqueSupport.entityManager();
         String suffixe = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        UUID anneeScolaireId = FabriqueSupportAdmission.persisterAnneeScolaireId(etablissementId, suffixe);
+        UUID niveauId = FabriqueSupportAdmission.persisterNiveauId(etablissementId, suffixe);
         DemandeAdmission demande = new DemandeAdmission(
                 etablissementId,
                 "PRE-ISO-" + suffixe,
-                UUID.randomUUID(),
-                UUID.randomUUID(),
+                "CODESUIVI-ISO-" + suffixe,
+                anneeScolaireId,
+                niveauId,
                 null,
                 "Nom" + suffixe,
                 "Prenoms" + suffixe,

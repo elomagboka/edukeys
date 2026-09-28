@@ -145,6 +145,11 @@ edukeys:
         delai-initial: 1s
         delai-plafond: 5m
         duree-expiration: 15m
+      # 3e revue US-06 : budget de soumissions d'admission RÉUSSIES par IP et
+      # par jour. Large à dessein (IP mobiles mutualisées, cybercafés) — le
+      # garde-fou de cette route est Turnstile, ce budget ne borne que l'abus
+      # automatisé qui l'aurait franchi. Réglable sans nouvelle livraison.
+      budget-succes-admission-par-jour: ${EDUKEYS_ADMISSION_BUDGET_SUCCES_PAR_JOUR:100}
       taille-max-corps-octets: 4096
       taille-max-cache: 100000
 

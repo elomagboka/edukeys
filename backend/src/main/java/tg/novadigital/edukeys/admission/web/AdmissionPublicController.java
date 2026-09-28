@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -99,7 +100,7 @@ public class AdmissionPublicController {
                     schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = SoumissionAdmissionMultipartSchema.class)))
     @PostMapping(path = "/demandes-admission", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @SecurityRequirements
-    public ResponseEntity<AccuseReceptionAdmissionDto> soumettre(
+    public DeferredResult<ResponseEntity<AccuseReceptionAdmissionDto>> soumettre(
             @PathVariable String code,
             @io.swagger.v3.oas.annotations.Parameter(hidden = true)
             @Valid @RequestPart("demande") SoumissionPubliqueAdmissionDto demande,
@@ -108,16 +109,22 @@ public class AdmissionPublicController {
             @io.swagger.v3.oas.annotations.Parameter(hidden = true)
             @RequestParam(name = "typesPieces", required = false) List<String> typesPieces,
             HttpServletRequest request) {
-        // I4 (3e revue) : le plancher couvre le traitement ET les refus de
-        // validation, sinon le temps de réponse trahit ce que le corps tait.
-        DemandeAdmissionService.Accuse accuse = plancherTempsReponse.executerAvecPlancher(
-                () -> demandeAdmissionService.soumettrePublique(
-                        code, demandeAdmissionMapper.versCommande(demande.demande()), demande.siteWeb(), pieces,
-                        typesPieces, FiltreAdresseIpCliente.adresseIpDe(request)));
-        // I4 : toujours 201, corps limité à la référence et à un message générique —
-        // que le dossier soit nouveau ou déjà existant (idempotence).
-        AccuseReceptionAdmissionDto dto = new AccuseReceptionAdmissionDto(
-                accuse.reference(), "Votre demande a bien été enregistrée. Conservez cette référence.");
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        String adresseIp = FiltreAdresseIpCliente.adresseIpDe(request);
+        // I4 (3e revue, point 4) : le plancher couvre le traitement — création,
+        // doublon et tout refus métier levé par le service (voir la javadoc de
+        // PlancherTempsReponseAdmission pour ce qu'il ne couvre pas et
+        // pourquoi). L'attente jusqu'au plancher ne bloque plus le thread
+        // servlet : DeferredResult la reporte sur un exécuteur dédié.
+        return plancherTempsReponse.executerAvecPlancherAsync(() -> {
+            DemandeAdmissionService.Accuse accuse = demandeAdmissionService.soumettrePublique(
+                    code, demandeAdmissionMapper.versCommande(demande.demande()), demande.siteWeb(), pieces,
+                    typesPieces, adresseIp);
+            // I4 : toujours 201, corps limité au code de suivi et à un message
+            // générique — que le dossier soit nouveau ou déjà existant
+            // (idempotence). Jamais la référence séquentielle (3e revue, point 1).
+            AccuseReceptionAdmissionDto dto = new AccuseReceptionAdmissionDto(
+                    accuse.codeSuivi(), "Votre demande a bien été enregistrée. Conservez ce code de suivi.");
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        });
     }
 }

@@ -82,9 +82,15 @@ class AdmissionAccesEtDebitIntegrationTest {
         // I4 (3e revue) : plancher de temps de réponse réactivé pour ce test,
         // court pour ne pas alourdir la classe. Le profil test le met à 0.
         registry.add("edukeys.admission.plancher-temps-reponse", () -> PLANCHER_TEST.toMillis() + "ms");
+        // Point 3 (3e revue) : budget de succès abaissé, hors de portée du seuil de production (20).
+        registry.add("edukeys.securite.limitation-debit.budget-succes-admission-par-jour", () -> String.valueOf(BUDGET_SUCCES_TEST));
     }
 
     private static final java.time.Duration PLANCHER_TEST = java.time.Duration.ofMillis(400);
+    // >= au nombre maximal de soumissions réussies effectuées par un même test de cette classe
+    // (listerDemandes_... en effectue 6 dans un seul test), sans quoi ce test isolé ferait
+    // échouer des tests sans rapport avec le budget de succès.
+    private static final int BUDGET_SUCCES_TEST = 10;
 
     @BeforeEach
     void reinitialiserLeDouble() {
@@ -103,8 +109,8 @@ class AdmissionAccesEtDebitIntegrationTest {
 
         String reponse = soumettre(ctxA).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference = JsonPath.read(reponse, "$.reference");
-        String idDossier = trouverIdParReference(reference);
+        String reference = JsonPath.read(reponse, "$.codeSuivi");
+        String idDossier = trouverIdParCodeSuivi(reference);
 
         String reponseDetail = mockMvc.perform(get("/api/v1/demandes-admission/" + idDossier)
                         .header("Authorization", "Bearer " + ctxA.jetonAdmin()))
@@ -122,7 +128,7 @@ class AdmissionAccesEtDebitIntegrationTest {
         Contexte ctx = preparerEtablissementEtOffre("DLSA");
         String reponse = soumettre(ctx).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String idDossier = trouverIdParReference(JsonPath.read(reponse, "$.reference"));
+        String idDossier = trouverIdParCodeSuivi(JsonPath.read(reponse, "$.codeSuivi"));
 
         String jetonSuperAdmin = connecterEtObtenirAccessToken(EMAIL_SUPER_ADMIN);
         mockMvc.perform(get("/api/v1/demandes-admission/" + idDossier + "/pieces/" + UUID.randomUUID())
@@ -231,6 +237,29 @@ class AdmissionAccesEtDebitIntegrationTest {
                 .isTrue();
     }
 
+    /**
+     * 3e revue, point 3 : le débit ne comptait auparavant que les échecs — un
+     * jeton Turnstile valide permettait un dépôt illimité de dossiers, chacun
+     * jusqu'à 15 Mo de pièces jointes. Le budget de soumissions RÉUSSIES par
+     * IP et par jour ({@code edukeys.securite.limitation-debit.budget-succes-admission-par-jour},
+     * abaissé à {@link #BUDGET_SUCCES_TEST} ci-dessous) doit refuser la N+1e.
+     */
+    @Test
+    void repond429_apresLeBudgetDeSoumissionsReussiesParIpEtParJour() throws Exception {
+        Contexte ctx = preparerEtablissementEtOffre("BUDGET");
+
+        for (int i = 0; i < BUDGET_SUCCES_TEST; i++) {
+            soumettreAvecIdentite(ctx, "Budget" + i, "Succes" + i, "2015-01-0" + (i % 9 + 1))
+                    .andExpect(status().isCreated());
+        }
+
+        int statutApresBudget = soumettreAvecIdentite(ctx, "BudgetDepasse", "Refuse", "2015-02-02")
+                .andReturn().getResponse().getStatus();
+        assertThat(statutApresBudget)
+                .withFailMessage("La soumission suivant l'épuisement du budget de succès journalier doit être refusée en 429.")
+                .isEqualTo(429);
+    }
+
     // ------------------------------------------------------------------
     // Aides
     // ------------------------------------------------------------------
@@ -278,9 +307,11 @@ class AdmissionAccesEtDebitIntegrationTest {
             Contexte ctx, String nom, String prenoms, String dateNaissance) throws Exception {
         MockMultipartFile demandePart = construireDemandePubliqueJson(ctx, nom, prenoms, dateNaissance);
         MockMultipartFile piece = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
-        return mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
-                .file(demandePart).file(piece).param("typesPieces", "ACTE_NAISSANCE")
-                .header("CF-Turnstile-Response", "jeton-valide"));
+        // Point 4 (3e revue) : la soumission publique est désormais asynchrone (DeferredResult).
+        return tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc,
+                multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+                        .file(demandePart).file(piece).param("typesPieces", "ACTE_NAISSANCE")
+                        .header("CF-Turnstile-Response", "jeton-valide"));
     }
 
     /** Corps attendu par la route publique (B2+I1 : le jeton Turnstile voyage désormais dans l'en-tête, plus dans le JSON). */
@@ -334,8 +365,8 @@ class AdmissionAccesEtDebitIntegrationTest {
         return "%PDF-1.4\n1 0 obj <<>>\nendobj\n%%EOF".getBytes(StandardCharsets.ISO_8859_1);
     }
 
-    private String trouverIdParReference(String reference) {
-        return jdbcTemplate.queryForObject("select id from demandes_admission where reference = ?", String.class, reference);
+    private String trouverIdParCodeSuivi(String codeSuivi) {
+        return jdbcTemplate.queryForObject("select id from demandes_admission where code_suivi = ?", String.class, codeSuivi);
     }
 
     private String creerCycle(String jetonAdmin, String libelle, String code, int rang) throws Exception {

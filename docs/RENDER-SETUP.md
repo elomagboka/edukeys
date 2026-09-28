@@ -51,6 +51,13 @@ site*), un site par environnement, avec le domaine du frontend. La clé
 **secrète** va dans cette variable, la clé **publique** (site key) dans le
 formulaire frontend.
 
+Variable facultative, utile pour ajuster sans nouvelle livraison :
+`EDUKEYS_ADMISSION_BUDGET_SUCCES_PAR_JOUR` (défaut **100**) borne le nombre de
+pré-inscriptions **réussies** par adresse IP et par jour. À relever si de
+vraies familles sont refusées — un cybercafé ou un opérateur mobile fait sortir
+plusieurs foyers sur une même adresse. Le garde-fou de cette route est
+Turnstile, pas ce comptage.
+
 Ne jamais changer `EDUKEYS_ADMISSION_SEL_HACHAGE_IP` en production sans
 raison : les empreintes d'IP déjà enregistrées ne seraient plus comparables
 aux nouvelles.

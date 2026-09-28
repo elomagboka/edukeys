@@ -6,9 +6,17 @@ CREATE TABLE demandes_admission (
     id                          UUID          PRIMARY KEY,
     etablissement_id            UUID          NOT NULL REFERENCES etablissements (id),
     reference                   VARCHAR(20)   NOT NULL,
-    annee_scolaire_id           UUID          NOT NULL,
-    niveau_id                   UUID          NOT NULL,
-    classe_id                   UUID,
+    -- Code de suivi opaque (3e revue, point 1) : SecureRandom 128 bits, Crockford
+    -- Base32 sans padding (26 caractères) -- seule valeur renvoyée à l'appelant
+    -- public, jamais la référence séquentielle (voir GenerateurCodeSuiviAdmission).
+    code_suivi                  VARCHAR(32)   NOT NULL,
+    annee_scolaire_id           UUID          NOT NULL REFERENCES annees_scolaires (id),
+    niveau_id                   UUID          NOT NULL REFERENCES niveaux (id),
+    classe_id                   UUID          REFERENCES classes (id),
+    -- Antichambre d'une inscription, localisée (CLAUDE.md, règle 9) : hors du
+    -- filtre de sécurité (le site n'est pas un second niveau d'isolation),
+    -- nullable -- renseignée plus tard (US-07/US-08), table vide à ce jour.
+    site_id                     UUID          REFERENCES sites (id),
     nom                         VARCHAR(100)  NOT NULL,
     nom_normalise               VARCHAR(100)  NOT NULL,
     prenoms                     VARCHAR(150)  NOT NULL,
@@ -46,10 +54,20 @@ CREATE TABLE demandes_admission (
 CREATE UNIQUE INDEX uk_demandes_admission_reference
     ON demandes_admission (etablissement_id, reference) WHERE actif = TRUE;
 
+-- 3e revue, point 1 : unicité du code de suivi opaque, index partiel comme le
+-- reste des contraintes d'unicité (CLAUDE.md, règle 4).
+CREATE UNIQUE INDEX uk_demandes_admission_code_suivi
+    ON demandes_admission (code_suivi) WHERE actif = TRUE;
+
 CREATE INDEX idx_demandes_admission_statut_date
     ON demandes_admission (etablissement_id, statut, date_soumission DESC) WHERE actif = TRUE;
 
 CREATE INDEX idx_demandes_admission_etablissement ON demandes_admission (etablissement_id);
+
+-- 3e revue, point 6 : index requis par les FK ci-dessus, dont l'US-07 aura besoin.
+CREATE INDEX idx_demandes_admission_niveau ON demandes_admission (niveau_id);
+CREATE INDEX idx_demandes_admission_classe ON demandes_admission (classe_id);
+CREATE INDEX idx_demandes_admission_site ON demandes_admission (site_id);
 
 -- Idempotence de la soumission (règle 3 de la spec US-06, robustesse I5) : un
 -- même dossier (établissement, année, nom, prénoms, date de naissance) avec un
@@ -71,9 +89,11 @@ CREATE TABLE demandes_admission_aud (
     revtype                     SMALLINT NOT NULL,
     etablissement_id            UUID,
     reference                   VARCHAR(20),
+    code_suivi                  VARCHAR(32),
     annee_scolaire_id           UUID,
     niveau_id                   UUID,
     classe_id                   UUID,
+    site_id                     UUID,
     nom                         VARCHAR(100),
     nom_normalise               VARCHAR(100),
     prenoms                     VARCHAR(150),

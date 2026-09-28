@@ -20,7 +20,7 @@ class DemandeAdmissionEtatsTest {
 
     private DemandeAdmission nouvelleDemande() {
         return new DemandeAdmission(
-                UUID.randomUUID(), "PRE-2026-000001", UUID.randomUUID(), UUID.randomUUID(), null,
+                UUID.randomUUID(), "PRE-2026-000001", "CODESUIVI0000000000000001", UUID.randomUUID(), UUID.randomUUID(), null,
                 "Nom", "Prenoms", LocalDate.of(2015, 1, 1), "Lomé", "M", "TG", null,
                 "Responsable", "Nom", LienResponsable.PERE, "+22890000000", null,
                 CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");

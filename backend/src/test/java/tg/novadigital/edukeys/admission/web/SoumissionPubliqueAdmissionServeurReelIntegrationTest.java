@@ -125,8 +125,8 @@ class SoumissionPubliqueAdmissionServeurReelIntegrationTest {
                 requete, String.class);
 
         assertThat(reponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        String reference = JsonPath.read(reponse.getBody(), "$.reference");
-        assertThat(reference).isNotBlank();
+        String codeSuivi = JsonPath.read(reponse.getBody(), "$.codeSuivi");
+        assertThat(codeSuivi).isNotBlank();
     }
 
     private String creerEtablissement(String prefixeCode) {

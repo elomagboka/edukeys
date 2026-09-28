@@ -57,6 +57,24 @@ public class LimitationDebitProperties {
      */
     private final Compteur parIpAdmission = new Compteur(500, Duration.ofSeconds(1), Duration.ofMinutes(5), Duration.ofMinutes(15));
 
+    /**
+     * 3e revue, point 3 : budget de <strong>soumissions réussies</strong> par
+     * IP et par jour pour la famille admission — un jeton Turnstile valide ne
+     * suffit pas à borner un dépôt illimité de dossiers, chacun jusqu'à 15 Mo
+     * de pièces jointes.
+     *
+     * <p>Valeur volontairement large, au même titre que le seuil de 150 retenu
+     * sur {@code /auth/login} : les opérateurs mobiles togolais mutualisent
+     * leurs adresses, et un cybercafé où plusieurs familles déposent leur
+     * dossier le même après-midi sort sur une seule IP. Ce budget borne l'abus
+     * automatisé <em>qui aurait déjà franchi Turnstile</em> — le vrai garde-fou
+     * de cette route est le captcha, pas le comptage ; un attaquant capable
+     * d'obtenir 100 jetons valides en obtiendrait tout aussi bien 20. Réglable
+     * par propriété ({@code EDUKEYS_ADMISSION_BUDGET_SUCCES_PAR_JOUR}) pour
+     * s'ajuster sans nouvelle livraison si la réalité dément l'estimation.</p>
+     */
+    private int budgetSuccesAdmissionParJour = 100;
+
     /** Taille maximale du corps de requête mis en cache pour en extraire l'identifiant (voir {@code RequeteAvecCorpsMisEnCache}). */
     private int tailleMaxCorpsOctets = 4096;
 
@@ -89,6 +107,14 @@ public class LimitationDebitProperties {
 
     public void setCheminsAdmission(List<String> cheminsAdmission) {
         this.cheminsAdmission = cheminsAdmission;
+    }
+
+    public int getBudgetSuccesAdmissionParJour() {
+        return budgetSuccesAdmissionParJour;
+    }
+
+    public void setBudgetSuccesAdmissionParJour(int budgetSuccesAdmissionParJour) {
+        this.budgetSuccesAdmissionParJour = budgetSuccesAdmissionParJour;
     }
 
     public int getTailleMaxCorpsOctets() {

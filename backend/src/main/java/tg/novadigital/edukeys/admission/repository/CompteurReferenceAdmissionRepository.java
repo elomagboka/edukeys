@@ -22,4 +22,5 @@ public interface CompteurReferenceAdmissionRepository extends BaseRepository<Com
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from CompteurReferenceAdmission c where c.etablissementId = :etablissementId and c.annee = :annee and c.actif = true")
     Optional<CompteurReferenceAdmission> trouverPourVerrouiller(@Param("etablissementId") UUID etablissementId, @Param("annee") int annee);
+
 }

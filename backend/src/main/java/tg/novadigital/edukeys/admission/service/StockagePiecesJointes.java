@@ -30,6 +30,9 @@ public interface StockagePiecesJointes {
     /** Compte les pièces actives sans les charger (mineur, revue) — utilisé pour la limite de {@code AdmissionProperties#nombreMaxPieces}. */
     long compterActives(UUID demandeId);
 
+    /** 3e revue, point 5 : détecte un doublon exact (même empreinte SHA-256) déjà attaché à ce dossier. */
+    boolean existeDejaPourDemande(UUID demandeId, String empreinteSha256);
+
     Optional<PieceJointeAdmission> trouver(UUID demandeId, UUID pieceId);
 
     void desactiver(PieceJointeAdmission piece);

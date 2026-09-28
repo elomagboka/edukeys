@@ -17,14 +17,16 @@ public interface DemandeAdmissionMapper {
     /** Mineur (revue) : {@code DemandeAdmissionService} ne doit jamais importer de DTO de {@code admission.web}. */
     CommandeDemandeAdmission versCommande(DonneesDemandeAdmissionDto dto);
 
+    /** 3e revue, point 1 : le code de suivi opaque, jamais la référence séquentielle. */
     default AccuseReceptionAdmissionDto versAccuseReception(DemandeAdmission demande) {
-        return new AccuseReceptionAdmissionDto(demande.getReference(), "Votre demande a bien été enregistrée. Conservez cette référence.");
+        return new AccuseReceptionAdmissionDto(demande.getCodeSuivi(), "Votre demande a bien été enregistrée. Conservez ce code de suivi.");
     }
 
     default DemandeAdmissionDto versDto(DemandeAdmission demande, List<PieceJointeAdmission> pieces, PieceJointeAdmissionMapper pieceMapper) {
         return new DemandeAdmissionDto(
                 demande.getId(),
                 demande.getReference(),
+                demande.getCodeSuivi(),
                 demande.getAnneeScolaireId(),
                 demande.getNiveauId(),
                 demande.getClasseId(),

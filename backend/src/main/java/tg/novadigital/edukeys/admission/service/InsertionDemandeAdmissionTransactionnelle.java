@@ -42,9 +42,13 @@ public class InsertionDemandeAdmissionTransactionnelle {
     /** Nom de l'index unique partiel posé en V13 — seule violation récupérable ici. */
     static final String CONTRAINTE_DOUBLON = "uk_demandes_admission_doublon";
 
+    /** Unicité de la ligne de compteur de référence (une par établissement et par année). */
+    static final String CONTRAINTE_COMPTEUR = "uk_compteurs_reference_admission_annee";
+
     private final DemandeAdmissionRepository demandeAdmissionRepository;
     private final OffreAdmissionQuery offreAdmissionQuery;
     private final GenerateurReferenceAdmission generateurReferenceAdmission;
+    private final GenerateurCodeSuiviAdmission generateurCodeSuiviAdmission;
     private final StockagePiecesJointes stockagePiecesJointes;
     private final ApplicationEventPublisher eventPublisher;
     private final EntityManager entityManager;
@@ -53,12 +57,14 @@ public class InsertionDemandeAdmissionTransactionnelle {
             DemandeAdmissionRepository demandeAdmissionRepository,
             OffreAdmissionQuery offreAdmissionQuery,
             GenerateurReferenceAdmission generateurReferenceAdmission,
+            GenerateurCodeSuiviAdmission generateurCodeSuiviAdmission,
             StockagePiecesJointes stockagePiecesJointes,
             ApplicationEventPublisher eventPublisher,
             EntityManager entityManager) {
         this.demandeAdmissionRepository = demandeAdmissionRepository;
         this.offreAdmissionQuery = offreAdmissionQuery;
         this.generateurReferenceAdmission = generateurReferenceAdmission;
+        this.generateurCodeSuiviAdmission = generateurCodeSuiviAdmission;
         this.stockagePiecesJointes = stockagePiecesJointes;
         this.eventPublisher = eventPublisher;
         this.entityManager = entityManager;
@@ -123,12 +129,14 @@ public class InsertionDemandeAdmissionTransactionnelle {
 
         try (PorteeEtablissement portee = ContexteEtablissement.ouvrir(etablissementId)) {
             String reference = genererReferenceUnique(etablissementId);
+            String codeSuivi = generateurCodeSuiviAdmission.genererCodeSuivi();
             String email = donnees.responsableEmail() == null ? null : donnees.responsableEmail().trim().toLowerCase(Locale.ROOT);
             Instant consentement = canal == CanalAdmission.PUBLIC ? maintenant : null;
 
             DemandeAdmission demande = new DemandeAdmission(
                     etablissementId,
                     reference,
+                    codeSuivi,
                     anneeScolaireId,
                     donnees.niveauId(),
                     donnees.classeId(),
@@ -220,13 +228,28 @@ public class InsertionDemandeAdmissionTransactionnelle {
      * brut, jamais un {@code DataIntegrityViolationException} Spring.
      */
     public static boolean estViolationContrainteDoublon(RuntimeException e) {
+        return CONTRAINTE_DOUBLON.equals(nomContrainteViolee(e));
+    }
+
+    /**
+     * Vrai si l'exception vient de la création concurrente de la ligne de
+     * compteur (3e revue, point 2) : les deux premières soumissions d'un
+     * établissement, ou les deux premières après un passage d'année. La
+     * perdante n'a rien à relire — il suffit de rejouer l'insertion dans une
+     * transaction neuve, où la ligne créée par la gagnante est visible.
+     */
+    public static boolean estViolationContrainteCompteur(RuntimeException e) {
+        return CONTRAINTE_COMPTEUR.equals(nomContrainteViolee(e));
+    }
+
+    private static String nomContrainteViolee(RuntimeException e) {
         Throwable cause = e;
         while (cause != null) {
             if (cause instanceof org.hibernate.exception.ConstraintViolationException cve) {
-                return CONTRAINTE_DOUBLON.equals(cve.getConstraintName());
+                return cve.getConstraintName();
             }
             cause = cause.getCause();
         }
-        return false;
+        return null;
     }
 }

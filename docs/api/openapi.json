@@ -3,10 +3,10 @@
     "schemas" : {
       "AccuseReceptionAdmissionDto" : {
         "properties" : {
-          "message" : {
+          "codeSuivi" : {
             "type" : "string"
           },
-          "reference" : {
+          "message" : {
             "type" : "string"
           }
         },
@@ -741,6 +741,9 @@
           },
           "classeId" : {
             "format" : "uuid",
+            "type" : "string"
+          },
+          "codeSuivi" : {
             "type" : "string"
           },
           "dateNaissance" : {
@@ -2010,6 +2013,7 @@
               "ADMISSION_ACTE_NAISSANCE_MANQUANT",
               "ADMISSION_MODIFICATION_REFUSEE_HORS_ATTENTE",
               "ADMISSION_TRANSITION_INVALIDE",
+              "ADMISSION_PIECE_DUPLIQUEE",
               "ECRITURE_INTER_ETABLISSEMENT_REFUSEE",
               "ACCES_REFUSE",
               "REQUETE_INVALIDE",

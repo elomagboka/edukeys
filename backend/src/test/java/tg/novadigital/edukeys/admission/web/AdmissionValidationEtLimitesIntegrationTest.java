@@ -165,7 +165,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
         MockMultipartFile p2 = new MockMultipartFile("pieces", "photo.jpg", "image/jpeg", jpegMinimal());
         MockMultipartFile p3 = new MockMultipartFile("pieces", "autre.pdf", "application/pdf", pdfMinimal());
 
-        mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+        tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
                         .file(demandePart).file(p1).file(p2).file(p3)
                         .param("typesPieces", "ACTE_NAISSANCE").param("typesPieces", "PHOTO").param("typesPieces", "BULLETIN")
                         .header("CF-Turnstile-Response", "jeton-valide"))
@@ -192,12 +192,34 @@ class AdmissionValidationEtLimitesIntegrationTest {
         MockMultipartFile p1 = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfDeTaille(9 * 1024 + 500));
         MockMultipartFile p2 = new MockMultipartFile("pieces", "photo.jpg", "image/jpeg", jpegDeTaille(9 * 1024 + 500));
 
-        mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+        tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
                         .file(demandePart).file(p1).file(p2)
                         .param("typesPieces", "ACTE_NAISSANCE").param("typesPieces", "PHOTO")
                         .header("CF-Turnstile-Response", "jeton-valide"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("ADMISSION_TAILLE_TOTALE_PIECES_DEPASSEE"));
+        assertThat(nombreDeDossiers(ctx.etablissementId())).isZero();
+    }
+
+    // ------------------------------------------------------------------
+    // 3e revue, point 5 : même fichier joint deux fois -> 422 explicite, jamais 500
+    // ------------------------------------------------------------------
+
+    @Test
+    void refuse422_memeFichierJointDeuxFoisDansLaMemeSoumission() throws Exception {
+        Contexte ctx = preparerEtablissementEtOffre("DUPPIECE");
+        MockMultipartFile demandePart = construireDemandeJson(ctx);
+        MockMultipartFile acte = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
+        // Même contenu (donc même empreinte SHA-256), nom différent : geste banal sur mobile.
+        MockMultipartFile memeActeAutreNom = new MockMultipartFile("pieces", "acte-copie.pdf", "application/pdf", pdfMinimal());
+
+        tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc,
+                        multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+                                .file(demandePart).file(acte).file(memeActeAutreNom)
+                                .param("typesPieces", "ACTE_NAISSANCE").param("typesPieces", "AUTRE")
+                                .header("CF-Turnstile-Response", "jeton-valide"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("ADMISSION_PIECE_DUPLIQUEE"));
         assertThat(nombreDeDossiers(ctx.etablissementId())).isZero();
     }
 
@@ -211,7 +233,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
         MockMultipartFile demandePart = construireDemandeJson(ctx);
         MockMultipartFile piece = new MockMultipartFile("pieces", "photo.jpg", "image/jpeg", jpegMinimal());
 
-        mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+        tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
                         .file(demandePart).file(piece).param("typesPieces", "PHOTO")
                         .header("CF-Turnstile-Response", "jeton-valide"))
                 .andExpect(status().isUnprocessableEntity())
@@ -231,7 +253,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
         MockMultipartFile mauvaisePhoto = new MockMultipartFile("pieces", "photo.svg", "image/svg+xml",
                 "<svg></svg>".getBytes(StandardCharsets.UTF_8));
 
-        mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+        tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
                         .file(demandePart).file(bonneActe).file(mauvaisePhoto)
                         .param("typesPieces", "ACTE_NAISSANCE").param("typesPieces", "PHOTO")
                         .header("CF-Turnstile-Response", "jeton-valide"))
@@ -295,7 +317,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
             Contexte ctx, byte[] contenu, String nomFichier, String contentType) throws Exception {
         MockMultipartFile demandePart = construireDemandeJson(ctx);
         MockMultipartFile piece = new MockMultipartFile("pieces", nomFichier, contentType, contenu);
-        return mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+        return tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
                 .file(demandePart).file(piece).param("typesPieces", "ACTE_NAISSANCE")
                 .header("CF-Turnstile-Response", "jeton-valide"));
     }
@@ -304,7 +326,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
             Contexte ctx, String niveauId, String classeId) throws Exception {
         MockMultipartFile demandePart = construireDemandeJsonAvecChoix(ctx, niveauId, classeId);
         MockMultipartFile piece = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
-        return mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
+        return tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code() + "/demandes-admission")
                 .file(demandePart).file(piece).param("typesPieces", "ACTE_NAISSANCE")
                 .header("CF-Turnstile-Response", "jeton-valide"));
     }

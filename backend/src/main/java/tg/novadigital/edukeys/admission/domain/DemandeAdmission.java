@@ -33,9 +33,13 @@ import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 @Audited
 public class DemandeAdmission extends EntiteEtablissement {
 
-    /** EN_ATTENTE -> {ACCEPTEE, REFUSEE, LISTE_ATTENTE} ; LISTE_ATTENTE -> {ACCEPTEE, REFUSEE} ; les autres sont finales (US-07). */
+    /**
+     * EN_ATTENTE -> {ACCEPTEE, REFUSEE, LISTE_ATTENTE} ; LISTE_ATTENTE ->
+     * {ACCEPTEE, REFUSEE} ; les autres sont finales (US-07).
+     */
     private static final Map<StatutAdmission, Set<StatutAdmission>> TRANSITIONS_AUTORISEES = new EnumMap<>(Map.of(
-            StatutAdmission.EN_ATTENTE, EnumSet.of(StatutAdmission.ACCEPTEE, StatutAdmission.REFUSEE, StatutAdmission.LISTE_ATTENTE),
+            StatutAdmission.EN_ATTENTE,
+            EnumSet.of(StatutAdmission.ACCEPTEE, StatutAdmission.REFUSEE, StatutAdmission.LISTE_ATTENTE),
             StatutAdmission.LISTE_ATTENTE, EnumSet.of(StatutAdmission.ACCEPTEE, StatutAdmission.REFUSEE),
             StatutAdmission.ACCEPTEE, EnumSet.noneOf(StatutAdmission.class),
             StatutAdmission.REFUSEE, EnumSet.noneOf(StatutAdmission.class),
@@ -43,6 +47,16 @@ public class DemandeAdmission extends EntiteEtablissement {
 
     @Column(nullable = false, length = 20)
     private String reference;
+
+    /**
+     * Code de suivi opaque, seule valeur rendue au parent sur le canal public
+     * (3e revue, point 1) : la référence séquentielle {@code PRE-AAAA-NNNNNN}
+     * laissait deviner, en comparant les numéros, qu'un enfant avait déjà un
+     * dossier dans l'école. Aléatoire cryptographique, jamais ordonnable —
+     * voir {@code GenerateurCodeSuiviAdmission}.
+     */
+    @Column(name = "code_suivi", nullable = false, length = 32, updatable = false)
+    private String codeSuivi;
 
     @Column(name = "annee_scolaire_id", nullable = false, updatable = false)
     private UUID anneeScolaireId;
@@ -56,7 +70,10 @@ public class DemandeAdmission extends EntiteEtablissement {
     @Column(nullable = false, length = 100)
     private String nom;
 
-    /** I5 : comparaison d'idempotence insensible à la casse et aux accents, calculée en Java (jamais en SQL, CLAUDE.md règle 2). */
+    /**
+     * I5 : comparaison d'idempotence insensible à la casse et aux accents, calculée
+     * en Java (jamais en SQL, CLAUDE.md règle 2).
+     */
     @Column(name = "nom_normalise", nullable = false, length = 100)
     private String nomNormalise;
 
@@ -83,7 +100,6 @@ public class DemandeAdmission extends EntiteEtablissement {
 
     @Column(name = "responsable_nom", nullable = false, length = 100)
     private String responsableNom;
-
     @Column(name = "responsable_prenoms", nullable = false, length = 150)
     private String responsablePrenoms;
 
@@ -120,7 +136,10 @@ public class DemandeAdmission extends EntiteEtablissement {
     @Column(name = "consentement_donnees_at")
     private Instant consentementDonneesAt;
 
-    /** Hachage SHA-256 salé, à sens unique — jamais l'IP en clair, aucun moyen de la retrouver (règle 4 de la spec US-06). */
+    /**
+     * Hachage SHA-256 salé, à sens unique — jamais l'IP en clair, aucun moyen de la
+     * retrouver (règle 4 de la spec US-06).
+     */
     @Column(name = "ip_soumission_hash", length = 64)
     private String ipSoumissionHash;
 
@@ -134,6 +153,7 @@ public class DemandeAdmission extends EntiteEtablissement {
     public DemandeAdmission(
             UUID etablissementId,
             String reference,
+            String codeSuivi,
             UUID anneeScolaireId,
             UUID niveauId,
             UUID classeId,
@@ -155,6 +175,7 @@ public class DemandeAdmission extends EntiteEtablissement {
             String ipSoumissionHash) {
         super(etablissementId);
         this.reference = reference;
+        this.codeSuivi = codeSuivi;
         this.anneeScolaireId = anneeScolaireId;
         this.niveauId = niveauId;
         this.classeId = classeId;
@@ -200,7 +221,10 @@ public class DemandeAdmission extends EntiteEtablissement {
         return prenomsNormalises;
     }
 
-    /** Machine à états (US-07) : lève {@link RegleMetierViolee} sur toute transition non autorisée. */
+    /**
+     * Machine à états (US-07) : lève {@link RegleMetierViolee} sur toute transition
+     * non autorisée.
+     */
     public void changerStatut(StatutAdmission cible, String motif, UUID decidePar, Instant maintenant) {
         Set<StatutAdmission> autorisees = TRANSITIONS_AUTORISEES.getOrDefault(this.statut, Set.of());
         if (!autorisees.contains(cible)) {
@@ -215,6 +239,10 @@ public class DemandeAdmission extends EntiteEtablissement {
 
     public boolean estModifiable() {
         return this.statut == StatutAdmission.EN_ATTENTE;
+    }
+
+    public String getCodeSuivi() {
+        return codeSuivi;
     }
 
     public String getReference() {

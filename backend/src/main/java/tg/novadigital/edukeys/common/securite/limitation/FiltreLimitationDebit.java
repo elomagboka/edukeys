@@ -62,6 +62,8 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     private final CompteurAttenteCroissante compteurParCompte;
     private final CompteurAttenteCroissante compteurParIp;
     private final CompteurAttenteCroissante compteurParIpAdmission;
+    /** 3e revue, point 3 : budget de soumissions RÉUSSIES par IP et par jour — {@link #compteurParIpAdmission} ne compte que les échecs. */
+    private final CompteurBudgetJournalier compteurBudgetSuccesAdmission;
 
     public FiltreLimitationDebit(LimitationDebitProperties proprietes, ObjectMapper objectMapper) {
         this.proprietes = proprietes;
@@ -69,6 +71,8 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         this.compteurParCompte = new CompteurAttenteCroissante(proprietes.getParCompte(), proprietes.getTailleMaxCache());
         this.compteurParIp = new CompteurAttenteCroissante(proprietes.getParIp(), proprietes.getTailleMaxCache());
         this.compteurParIpAdmission = new CompteurAttenteCroissante(proprietes.getParIpAdmission(), proprietes.getTailleMaxCache());
+        this.compteurBudgetSuccesAdmission = new CompteurBudgetJournalier(
+                proprietes.getBudgetSuccesAdmissionParJour(), Duration.ofDays(1), proprietes.getTailleMaxCache());
     }
 
     @Override
@@ -140,23 +144,64 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
      * d'entrée intact pour analyser le multipart (B1) et permet au filtre
      * Turnstile placé avant celui-ci de refuser sans qu'aucun octet du corps
      * n'ait été consommé.
+     *
+     * <p><strong>Asynchrone depuis la 3e revue (point 4)</strong> : la route
+     * de soumission renvoie désormais un {@code DeferredResult}, traité en
+     * deux passages de ce filtre ({@link #shouldNotFilterAsyncDispatch()}
+     * retourne {@code false}) — les vérifications préalables (attente, budget)
+     * ne s'exécutent que sur le dispatch {@code REQUEST} initial, jamais sur
+     * le redispatch {@code ASYNC}, sans quoi elles s'appliqueraient deux fois.
+     * La comptabilisation (échec/succès) est reportée au redispatch
+     * {@code ASYNC} pour une route encore en cours de traitement : avant cela,
+     * {@code response.getStatus()} ne porte pas encore le statut final.</p>
      */
     private void doFiltrerAdmission(
             HttpServletRequest request, HttpServletResponse response, FilterChain filterChain, String adresseIp)
             throws ServletException, IOException {
-        var attenteIp = compteurParIpAdmission.dureeAttenteRestante(adresseIp);
-        if (attenteIp.compareTo(Duration.ZERO) > 0) {
-            JournalSecurite.echecLimitationDebit("ip_seule", adresseIp);
-            repondre429(request, response, attenteIp);
-            return;
+        boolean estRedispatchAsync = jakarta.servlet.DispatcherType.ASYNC.equals(request.getDispatcherType());
+        boolean estSoumission = "POST".equalsIgnoreCase(request.getMethod());
+
+        if (!estRedispatchAsync) {
+            var attenteIp = compteurParIpAdmission.dureeAttenteRestante(adresseIp);
+            if (attenteIp.compareTo(Duration.ZERO) > 0) {
+                JournalSecurite.echecLimitationDebit("ip_seule", adresseIp);
+                repondre429(request, response, attenteIp);
+                return;
+            }
+
+            // 3e revue, point 3 : budget de soumissions réussies, vérifié AVANT
+            // le traitement (pour refuser la N+1e tentative) — uniquement sur
+            // la route de dépôt (POST), jamais sur la simple consultation de
+            // l'offre (GET), pure lecture sans coût d'écriture.
+            if (estSoumission && !compteurBudgetSuccesAdmission.budgetDisponible(adresseIp)) {
+                JournalSecurite.echecLimitationDebit("ip_seule", adresseIp);
+                repondre429(request, response, Duration.ofDays(1));
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);
 
-        if (response.getStatus() != HttpStatus.TOO_MANY_REQUESTS.value()
-                && !(response.getStatus() >= 200 && response.getStatus() < 300)) {
+        if (request.isAsyncStarted()) {
+            // Traitement encore en cours (attente du plancher de temps de
+            // réponse, point 4) : le statut final n'est pas encore connu, la
+            // comptabilisation se fera au redispatch ASYNC.
+            return;
+        }
+
+        boolean succes = response.getStatus() >= 200 && response.getStatus() < 300;
+        if (response.getStatus() != HttpStatus.TOO_MANY_REQUESTS.value() && !succes) {
             compteurParIpAdmission.enregistrerEchec(adresseIp);
         }
+        if (estSoumission && succes) {
+            compteurBudgetSuccesAdmission.enregistrerSucces(adresseIp);
+        }
+    }
+
+    /** Indispensable pour que ce filtre soit ré-invoqué au redispatch ASYNC de la soumission publique (point 4, 3e revue). */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
     }
 
     /**
@@ -169,6 +214,12 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         compteurParCompte.reinitialiserTout();
         compteurParIp.reinitialiserTout();
         compteurParIpAdmission.reinitialiserTout();
+        compteurBudgetSuccesAdmission.reinitialiserTout();
+    }
+
+    /** Réservé aux tests : nombre de soumissions réussies déjà comptées contre cette IP (point 3, 3e revue). */
+    public int nombreDeSuccesAdmissionPourLesTests(String adresseIp) {
+        return compteurBudgetSuccesAdmission.nombreDeSucces(adresseIp);
     }
 
     /**

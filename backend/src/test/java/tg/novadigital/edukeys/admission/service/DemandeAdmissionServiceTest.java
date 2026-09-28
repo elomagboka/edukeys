@@ -3,6 +3,7 @@ package tg.novadigital.edukeys.admission.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -101,6 +102,7 @@ class DemandeAdmissionServiceTest {
                 "ecole", donneesValides(), "http://spam.example", null, null, "41.207.0.1");
 
         assertThat(accuse.reference()).isEqualTo("PRE-0000-000000");
+        assertThat(accuse.codeSuivi()).isEqualTo("0".repeat(26));
         assertThat(accuse.nouveau()).isTrue();
         verify(insertionTransactionnelle, never()).resoudreOffreEtVerifierDoublon(any(), any(), any(), any(), any(), any());
         verify(insertionTransactionnelle, never()).inserer(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
@@ -114,7 +116,7 @@ class DemandeAdmissionServiceTest {
     void doitRenvoyerLeDossierExistant_quandUneDemandeIdentiqueEstDejaEnAttente_sansDupliquer() {
         arrangerEtablissementOuvert();
         DemandeAdmission existante = new DemandeAdmission(
-                etablissementId, "PRE-2026-000042", anneeId, niveauId, null, "Kodjo", "Ama",
+                etablissementId, "PRE-2026-000042", "CS-000042", anneeId, niveauId, null, "Kodjo", "Ama",
                 LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
                 "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(),
                 Instant.now(), "hash");
@@ -128,6 +130,7 @@ class DemandeAdmissionServiceTest {
                 "ecole", donneesValides(), null, List.of(piece), List.of("ACTE_NAISSANCE"), "41.207.0.1");
 
         assertThat(accuse.reference()).isEqualTo("PRE-2026-000042");
+        assertThat(accuse.codeSuivi()).isEqualTo("CS-000042");
         assertThat(accuse.nouveau()).isFalse();
         verify(insertionTransactionnelle, never()).inserer(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
@@ -145,7 +148,7 @@ class DemandeAdmissionServiceTest {
         when(insertionTransactionnelle.inserer(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(violationDe(InsertionDemandeAdmissionTransactionnelle.CONTRAINTE_DOUBLON));
         DemandeAdmission gagnante = new DemandeAdmission(
-                etablissementId, "PRE-2026-000077", anneeId, niveauId, null, "Kodjo", "Ama",
+                etablissementId, "PRE-2026-000077", "CS-000077", anneeId, niveauId, null, "Kodjo", "Ama",
                 LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
                 "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");
         when(insertionTransactionnelle.relireApresConflit(any(), any(), any(), any(), any())).thenReturn(gagnante);
@@ -189,7 +192,7 @@ class DemandeAdmissionServiceTest {
         arrangerEtablissementOuvert();
         arrangerAucunDoublon();
         DemandeAdmission sauvegardee = new DemandeAdmission(
-                etablissementId, "PRE-2026-000001", anneeId, niveauId, null, "Kodjo", "Ama",
+                etablissementId, "PRE-2026-000001", "CS-000001", anneeId, niveauId, null, "Kodjo", "Ama",
                 LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
                 "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");
         when(insertionTransactionnelle.inserer(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
@@ -333,6 +336,42 @@ class DemandeAdmissionServiceTest {
         verify(insertionTransactionnelle, never()).resoudreOffreEtVerifierDoublon(any(), any(), any(), any(), any(), any());
     }
 
+    // ------------------------------------------------------------------
+    // 3e revue, point 5 : même fichier joint deux fois -> refus explicite (422)
+    // ------------------------------------------------------------------
+
+    @Test
+    void doitRefuserSoumission_quandLaMemePieceEstJointeDeuxFoisDansLeMemeEnvoi() {
+        arrangerEtablissementOuvert();
+
+        MockMultipartFile acte = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
+        MockMultipartFile memeActeEncore = new MockMultipartFile("pieces", "acte-encore.pdf", "application/pdf", pdfMinimal());
+
+        assertThatThrownBy(() -> service.soumettrePublique(
+                "ecole", donneesValides(), null, List.of(acte, memeActeEncore), List.of("ACTE_NAISSANCE", "AUTRE"), "41.207.0.1"))
+                .isInstanceOf(RegleMetierViolee.class)
+                .satisfies(e -> assertThat(((RegleMetierViolee) e).getCode()).isEqualTo(CodeErreur.ADMISSION_PIECE_DUPLIQUEE));
+        verify(insertionTransactionnelle, never()).resoudreOffreEtVerifierDoublon(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void doitRefuserAjoutDePiece_quandLaMemeEmpreinteEstDejaAttacheeAuDossier() {
+        UUID demandeId = UUID.randomUUID();
+        DemandeAdmission existante = new DemandeAdmission(
+                etablissementId, "PRE-2026-000099", "CS-000099", anneeId, niveauId, null, "Kodjo", "Ama",
+                LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
+                "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");
+        when(demandeAdmissionRepository.findById(demandeId)).thenReturn(Optional.of(existante));
+        when(stockagePiecesJointes.compterActives(demandeId)).thenReturn(0L);
+        when(stockagePiecesJointes.existeDejaPourDemande(eq(demandeId), any())).thenReturn(true);
+
+        MockMultipartFile acte = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
+
+        assertThatThrownBy(() -> service.ajouterPiece(demandeId, "ACTE_NAISSANCE", acte))
+                .isInstanceOf(RegleMetierViolee.class)
+                .satisfies(e -> assertThat(((RegleMetierViolee) e).getCode()).isEqualTo(CodeErreur.ADMISSION_PIECE_DUPLIQUEE));
+    }
+
     @Test
     void doitRefuserPiece_quandFormatNonSupporte_detectionParMagicBytesPasParExtension() {
         arrangerEtablissementOuvert();
@@ -372,7 +411,7 @@ class DemandeAdmissionServiceTest {
         arrangerEtablissementOuvert();
         arrangerAucunDoublon();
         DemandeAdmission sauvegardee = new DemandeAdmission(
-                etablissementId, "PRE-2026-000002", anneeId, niveauId, null, "Kodjo", "Ama",
+                etablissementId, "PRE-2026-000002", "CS-000002", anneeId, niveauId, null, "Kodjo", "Ama",
                 LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
                 "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");
         ArgumentCaptor<String> ipHashCaptor = ArgumentCaptor.forClass(String.class);
@@ -392,7 +431,7 @@ class DemandeAdmissionServiceTest {
         arrangerEtablissementOuvert();
         arrangerAucunDoublon();
         DemandeAdmission sauvegardee = new DemandeAdmission(
-                etablissementId, "PRE-2026-000003", anneeId, niveauId, null, "Kodjo", "Ama",
+                etablissementId, "PRE-2026-000003", "CS-000003", anneeId, niveauId, null, "Kodjo", "Ama",
                 LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
                 "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");
         ArgumentCaptor<String> ipHashCaptor = ArgumentCaptor.forClass(String.class);

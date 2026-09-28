@@ -87,6 +87,43 @@ class SoumissionPubliqueAdmissionIntegrationTest {
     }
 
     // ------------------------------------------------------------------
+    // 3e revue, point 1 : opacité du code de suivi
+    // ------------------------------------------------------------------
+
+    @Test
+    void laReponsePublique_neContientJamaisLaReferenceSequentielle_etLeCodeSuiviEstIdempotent() throws Exception {
+        Contexte ctx = preparerEtablissementEtOffre("OPAQUE");
+
+        String reponse1 = soumettre(ctx, "Ama", "Kodjo", "2015-04-04", "jeton-valide", null)
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(reponse1).doesNotContain("PRE-");
+        String codeSuivi1 = JsonPath.read(reponse1, "$.codeSuivi");
+
+        // Idempotence (règle 3) : même enfant -> même code de suivi.
+        String reponse2 = soumettre(ctx, "Ama", "Kodjo", "2015-04-04", "jeton-valide", null)
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(reponse2).doesNotContain("PRE-");
+        String codeSuivi2 = JsonPath.read(reponse2, "$.codeSuivi");
+        assertThat(codeSuivi2).isEqualTo(codeSuivi1);
+
+        // Deux enfants différents -> deux codes de suivi sans relation d'ordre
+        // déductible : aucun préfixe/suffixe commun de compteur séquentiel.
+        String reponse3 = soumettre(ctx, "Kossi", "Sena", "2016-06-06", "jeton-valide", null)
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String codeSuivi3 = JsonPath.read(reponse3, "$.codeSuivi");
+        assertThat(codeSuivi3).isNotEqualTo(codeSuivi1);
+        assertThat(codeSuivi1).hasSameSizeAs(codeSuivi3);
+
+        // La référence séquentielle interne, elle, reste bien "PRE-...".
+        String referenceInterne = jdbcTemplate.queryForObject(
+                "select reference from demandes_admission where code_suivi = ?", String.class, codeSuivi1);
+        assertThat(referenceInterne).startsWith("PRE-");
+    }
+
+    // ------------------------------------------------------------------
     // Idempotence (critère 1, le cas central)
     // ------------------------------------------------------------------
 
@@ -97,14 +134,14 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse1 = soumettre(ctx, "Kodjo", "Ama", "2015-05-12", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference1 = JsonPath.read(reponse1, "$.reference");
+        String reference1 = JsonPath.read(reponse1, "$.codeSuivi");
 
         // I4 : réponse strictement identique (toujours 201, référence + message
         // générique) que le dossier soit nouveau ou déjà existant.
         String reponse2 = soumettre(ctx, "Kodjo", "Ama", "2015-05-12", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference2 = JsonPath.read(reponse2, "$.reference");
+        String reference2 = JsonPath.read(reponse2, "$.codeSuivi");
 
         assertThat(reference2).isEqualTo(reference1);
         Long nombreDeDossiers = jdbcTemplate.queryForObject(
@@ -142,15 +179,15 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse1 = soumettre(ctx, "Afi", "Mensah", "2015-03-01", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference1 = JsonPath.read(reponse1, "$.reference");
+        String reference1 = JsonPath.read(reponse1, "$.codeSuivi");
         entityManager.flush();
-        jdbcTemplate.update("update demandes_admission set statut = 'LISTE_ATTENTE' where reference = ?", reference1);
+        jdbcTemplate.update("update demandes_admission set statut = 'LISTE_ATTENTE' where code_suivi = ?", reference1);
 
         String reponse2 = soumettre(ctx, "Afi", "Mensah", "2015-03-01", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat((String) JsonPath.read(reponse2, "$.reference")).isEqualTo(reference1);
+        assertThat((String) JsonPath.read(reponse2, "$.codeSuivi")).isEqualTo(reference1);
         Long nombreDeDossiers = jdbcTemplate.queryForObject(
                 "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, ctx.etablissementId);
         assertThat(nombreDeDossiers).isEqualTo(1L);
@@ -163,13 +200,13 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse1 = soumettre(ctx, "Yawa", "Adjo", "2015-08-20", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference1 = JsonPath.read(reponse1, "$.reference");
-        jdbcTemplate.update("update demandes_admission set statut = 'REFUSEE' where reference = ?", reference1);
+        String reference1 = JsonPath.read(reponse1, "$.codeSuivi");
+        jdbcTemplate.update("update demandes_admission set statut = 'REFUSEE' where code_suivi = ?", reference1);
 
         String reponse2 = soumettre(ctx, "Yawa", "Adjo", "2015-08-20", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference2 = JsonPath.read(reponse2, "$.reference");
+        String reference2 = JsonPath.read(reponse2, "$.codeSuivi");
 
         assertThat(reference2).isNotEqualTo(reference1);
         Long nombreDeDossiers = jdbcTemplate.queryForObject(
@@ -184,8 +221,8 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse1 = soumettre(ctx, "Essi", "Bena", "2015-11-02", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference1 = JsonPath.read(reponse1, "$.reference");
-        jdbcTemplate.update("update demandes_admission set statut = 'ACCEPTEE' where reference = ?", reference1);
+        String reference1 = JsonPath.read(reponse1, "$.codeSuivi");
+        jdbcTemplate.update("update demandes_admission set statut = 'ACCEPTEE' where code_suivi = ?", reference1);
 
         String reponse2 = soumettre(ctx, "Essi", "Bena", "2015-11-02", "jeton-valide", null)
                 .andExpect(status().isCreated())
@@ -206,7 +243,11 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse = soumettre(ctx, "Koffi", "Sena", "2015-01-01", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference = JsonPath.read(reponse, "$.reference");
+        String codeSuivi = JsonPath.read(reponse, "$.codeSuivi");
+        // La référence séquentielle reste interne (3e revue, point 1) : on la relit
+        // en base par le code de suivi pour vérifier qu'elle apparaît bien côté admin.
+        String reference = jdbcTemplate.queryForObject(
+                "select reference from demandes_admission where code_suivi = ?", String.class, codeSuivi);
 
         String jetonAdmin = ctx.jetonAdmin;
         mockMvc.perform(get("/api/v1/demandes-admission")
@@ -254,7 +295,7 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         MockMultipartFile demandePart = construireDemandeJson(ctx, "Ama", "Efo", "2015-01-01", null);
         MockMultipartFile pieceCorrompue = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", new byte[0]);
 
-        mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
+        tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
                         .file(demandePart).file(pieceCorrompue).param("typesPieces", "ACTE_NAISSANCE")
                         .header("CF-Turnstile-Response", "jeton-invalide"))
                 .andExpect(status().isUnprocessableEntity())
@@ -273,7 +314,7 @@ class SoumissionPubliqueAdmissionIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat((String) JsonPath.read(reponse, "$.reference")).isEqualTo("PRE-0000-000000");
+        assertThat((String) JsonPath.read(reponse, "$.codeSuivi")).isEqualTo("0".repeat(26));
         Long nombreDeDossiers = jdbcTemplate.queryForObject(
                 "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, ctx.etablissementId);
         assertThat(nombreDeDossiers).isEqualTo(0L);
@@ -291,7 +332,7 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse = soumettre(ctxA, "Sena", "Kokou", "2015-06-06", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String idDossier = trouverIdParReference(JsonPath.read(reponse, "$.reference"));
+        String idDossier = trouverIdParCodeSuivi(JsonPath.read(reponse, "$.codeSuivi"));
 
         mockMvc.perform(get("/api/v1/demandes-admission/" + idDossier)
                         .header("Authorization", "Bearer " + ctxB.jetonAdmin))
@@ -342,10 +383,10 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String reponse = soumettre(ctx, "Ip", "Test", "2015-01-01", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference = JsonPath.read(reponse, "$.reference");
+        String reference = JsonPath.read(reponse, "$.codeSuivi");
 
         String hash = jdbcTemplate.queryForObject(
-                "select ip_soumission_hash from demandes_admission where reference = ?", String.class, reference);
+                "select ip_soumission_hash from demandes_admission where code_suivi = ?", String.class, reference);
         assertThat(hash).hasSize(64).matches("[0-9a-f]{64}");
         // 127.0.0.1 est l'adresse distante par défaut de MockMvc : elle ne doit apparaître nulle part.
         assertThat(hash).doesNotContain("127001").doesNotContain("127.0.0.1");
@@ -361,13 +402,13 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         MockMultipartFile demandePart = construireDemandeJson(ctx, "Dl", "Test", "2015-02-02", null);
         MockMultipartFile piece = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
 
-        String reponse = mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
+        String reponse = tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
                         .file(demandePart).file(piece).param("typesPieces", "ACTE_NAISSANCE")
                         .header("CF-Turnstile-Response", "jeton-valide"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference = JsonPath.read(reponse, "$.reference");
-        String idDossier = trouverIdParReference(reference);
+        String reference = JsonPath.read(reponse, "$.codeSuivi");
+        String idDossier = trouverIdParCodeSuivi(reference);
 
         String reponseDetail = mockMvc.perform(get("/api/v1/demandes-admission/" + idDossier)
                         .header("Authorization", "Bearer " + ctx.jetonAdmin))
@@ -394,13 +435,13 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         MockMultipartFile demandePart = construireDemandeJson(ctx, "Contenu", "Test", "2015-02-02", null);
         MockMultipartFile piece = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
 
-        String reponse = mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
+        String reponse = tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
                         .file(demandePart).file(piece).param("typesPieces", "ACTE_NAISSANCE")
                         .header("CF-Turnstile-Response", "jeton-valide"))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        String reference = JsonPath.read(reponse, "$.reference");
-        String idDossier = trouverIdParReference(reference);
+        String reference = JsonPath.read(reponse, "$.codeSuivi");
+        String idDossier = trouverIdParCodeSuivi(reference);
 
         Statistics stats = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         entityManager.clear();
@@ -433,12 +474,12 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         if (turnstileToken != null) {
             requete.header("CF-Turnstile-Response", turnstileToken);
         }
-        return mockMvc.perform(requete);
+        return tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, requete);
     }
 
     private org.springframework.test.web.servlet.ResultActions soumettreSansPiece(
             Contexte ctx, String nom, String prenoms, String dateNaissance) throws Exception {
-        return mockMvc.perform(multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
+        return tg.novadigital.edukeys.testsupport.AsyncMockMvcSupport.performerEtResoudre(mockMvc, multipart("/api/v1/public/etablissements/" + ctx.code + "/demandes-admission")
                 .file(construireDemandeJson(ctx, nom, prenoms, dateNaissance, null))
                 .header("CF-Turnstile-Response", "jeton-valide"));
     }
@@ -473,8 +514,8 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         return "%PDF-1.4\n1 0 obj <<>>\nendobj\n%%EOF".getBytes(StandardCharsets.ISO_8859_1);
     }
 
-    private String trouverIdParReference(String reference) {
-        return jdbcTemplate.queryForObject("select id from demandes_admission where reference = ?", String.class, reference);
+    private String trouverIdParCodeSuivi(String reference) {
+        return jdbcTemplate.queryForObject("select id from demandes_admission where code_suivi = ?", String.class, reference);
     }
 
     private Contexte preparerEtablissementEtOffre(String prefixeCode) throws Exception {
