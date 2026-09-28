@@ -81,13 +81,26 @@ class DemandeAdmissionEtatsTest {
                 .isInstanceOf(RegleMetierViolee.class);
     }
 
+    /**
+     * REFUSEE n'est plus finale (amendement produit US-07) : un refus est
+     * corrigible, ex. clic erroné. Seuls ACCEPTEE et ANNULEE sont finaux.
+     */
     @Test
-    void doitRejeterTransition_depuisUnStatutFinalRefusee() {
+    void doitAccepterTransition_deRefuseeVersListeAttente() {
         DemandeAdmission demande = nouvelleDemande();
         demande.changerStatut(StatutAdmission.REFUSEE, "motif", UUID.randomUUID(), Instant.now());
-        assertThatThrownBy(() -> demande.changerStatut(StatutAdmission.ACCEPTEE, "motif", UUID.randomUUID(), Instant.now()))
-                .isInstanceOf(RegleMetierViolee.class);
+        demande.changerStatut(StatutAdmission.LISTE_ATTENTE, "correction", UUID.randomUUID(), Instant.now());
+        assertThat(demande.getStatut()).isEqualTo(StatutAdmission.LISTE_ATTENTE);
     }
+
+    @Test
+    void doitAccepterTransition_deRefuseeVersAcceptee() {
+        DemandeAdmission demande = nouvelleDemande();
+        demande.changerStatut(StatutAdmission.REFUSEE, "motif", UUID.randomUUID(), Instant.now());
+        demande.changerStatut(StatutAdmission.ACCEPTEE, "correction", UUID.randomUUID(), Instant.now());
+        assertThat(demande.getStatut()).isEqualTo(StatutAdmission.ACCEPTEE);
+    }
+
 
     @Test
     void doitRejeterTransition_deEnAttenteVersEnAttente_transitionReflexiveNonAutorisee() {

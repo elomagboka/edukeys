@@ -716,6 +716,60 @@
         },
         "type" : "object"
       },
+      "DecisionAdmissionDto" : {
+        "properties" : {
+          "dateDecision" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "decideParId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "observation" : {
+            "description" : "Note interne, non transmise au parent.",
+            "type" : "string"
+          },
+          "statutNouveau" : {
+            "type" : "string"
+          },
+          "statutPrecedent" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DecisionAdmissionRequeteDto" : {
+        "properties" : {
+          "observation" : {
+            "description" : "Note interne, non transmise au parent.",
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "statut" : {
+            "enum" : [
+              "ACCEPTEE",
+              "REFUSEE",
+              "LISTE_ATTENTE"
+            ],
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [
+          "statut",
+          "version"
+        ],
+        "type" : "object"
+      },
       "DefinirAffectationsMatiereRequestDto" : {
         "properties" : {
           "affectations" : {
@@ -746,6 +800,10 @@
           "codeSuivi" : {
             "type" : "string"
           },
+          "dateDecision" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "dateNaissance" : {
             "format" : "date",
             "type" : "string"
@@ -753,6 +811,16 @@
           "dateSoumission" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "decideParId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "decisions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DecisionAdmissionDto"
+            },
+            "type" : "array"
           },
           "etablissementOrigine" : {
             "type" : "string"
@@ -772,6 +840,10 @@
             "type" : "string"
           },
           "nom" : {
+            "type" : "string"
+          },
+          "observationDecision" : {
+            "description" : "Note interne, non transmise au parent.",
             "type" : "string"
           },
           "pieces" : {
@@ -806,6 +878,10 @@
           },
           "statut" : {
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -816,6 +892,10 @@
             "type" : "string"
           },
           "classeLibelle" : {
+            "type" : "string"
+          },
+          "dateDecision" : {
+            "format" : "date-time",
             "type" : "string"
           },
           "dateSoumission" : {
@@ -2014,11 +2094,15 @@
               "ADMISSION_MODIFICATION_REFUSEE_HORS_ATTENTE",
               "ADMISSION_TRANSITION_INVALIDE",
               "ADMISSION_PIECE_DUPLIQUEE",
+              "ADMISSION_OBSERVATION_OBLIGATOIRE",
+              "ADMISSION_MODIFICATION_CONCURRENTE",
+              "ADMISSION_DOUBLON",
               "ECRITURE_INTER_ETABLISSEMENT_REFUSEE",
               "ACCES_REFUSE",
               "REQUETE_INVALIDE",
               "CORPS_ILLISIBLE",
               "TROP_DE_REQUETES",
+              "MODIFICATION_CONCURRENTE",
               "ERREUR_INATTENDUE"
             ],
             "type" : "string"
@@ -3601,6 +3685,98 @@
           }
         },
         "summary" : "Détail d'une demande d'admission",
+        "tags" : [
+          "Admission"
+        ]
+      }
+    },
+    "/api/v1/demandes-admission/{id}/decisions" : {
+      "post" : {
+        "operationId" : "deciderDemandeAdmission",
+        "parameters" : [
+          {
+            "in" : "path",
+            "name" : "id",
+            "required" : true,
+            "schema" : {
+              "format" : "uuid",
+              "type" : "string"
+            }
+          }
+        ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecisionAdmissionRequeteDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Décision enregistrée"
+          },
+          "400" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Requête invalide"
+          },
+          "403" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Accès refusé"
+          },
+          "404" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Demande introuvable"
+          },
+          "409" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Conflit : version périmée ou dossier en doublon avec un autre actif"
+          },
+          "422" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DemandeAdmissionDto"
+                }
+              }
+            },
+            "description" : "Observation obligatoire manquante ou transition de statut invalide"
+          }
+        },
+        "summary" : "Décide du sort d'un dossier d'admission (accepter, refuser, liste d'attente)",
         "tags" : [
           "Admission"
         ]

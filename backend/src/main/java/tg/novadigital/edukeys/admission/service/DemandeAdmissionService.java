@@ -12,24 +12,32 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.admission.domain.CanalAdmission;
+import tg.novadigital.edukeys.admission.domain.DecisionAdmission;
 import tg.novadigital.edukeys.admission.domain.DemandeAdmission;
 import tg.novadigital.edukeys.admission.domain.PieceJointeAdmission;
+import tg.novadigital.edukeys.admission.domain.StatutAdmission;
+import tg.novadigital.edukeys.admission.domain.StatutDecisionAdmission;
 import tg.novadigital.edukeys.admission.domain.TypePieceAdmission;
+import tg.novadigital.edukeys.admission.repository.DecisionAdmissionRepository;
 import tg.novadigital.edukeys.admission.repository.DemandeAdmissionRepository;
 import tg.novadigital.edukeys.academique.OffreAdmissionQuery;
 import tg.novadigital.edukeys.admission.AdmissionProperties;
 import tg.novadigital.edukeys.common.exception.CodeErreur;
+import tg.novadigital.edukeys.common.exception.ConflitException;
 import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.fichier.DetecteurTypeFichier;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
+import tg.novadigital.edukeys.common.securite.UtilisateurCourant;
 import tg.novadigital.edukeys.etablissement.EtablissementPublicQuery;
 
 /**
@@ -54,26 +62,38 @@ public class DemandeAdmissionService {
     /** 3e revue, point 1 : même forme (26 caractères Crockford Base32) qu'un code de suivi réel — rien ne distingue le honeypot en aval. */
     private static final String CODE_SUIVI_FICTIF_HONEYPOT = "0".repeat(26);
 
+    /** Nom de l'index unique partiel posé en V13 (voir {@link InsertionDemandeAdmissionTransactionnelle#CONTRAINTE_DOUBLON}). */
+    private static final String CONTRAINTE_DOUBLON = "uk_demandes_admission_doublon";
+
     private final DemandeAdmissionRepository demandeAdmissionRepository;
+    private final DecisionAdmissionRepository decisionAdmissionRepository;
     private final EtablissementPublicQuery etablissementPublicQuery;
     private final OffreAdmissionQuery offreAdmissionQuery;
     private final StockagePiecesJointes stockagePiecesJointes;
     private final AdmissionProperties proprietes;
     private final InsertionDemandeAdmissionTransactionnelle insertionTransactionnelle;
+    private final ApplicationEventPublisher eventPublisher;
+    private final EntityManager entityManager;
 
     public DemandeAdmissionService(
             DemandeAdmissionRepository demandeAdmissionRepository,
+            DecisionAdmissionRepository decisionAdmissionRepository,
             EtablissementPublicQuery etablissementPublicQuery,
             OffreAdmissionQuery offreAdmissionQuery,
             StockagePiecesJointes stockagePiecesJointes,
             AdmissionProperties proprietes,
-            InsertionDemandeAdmissionTransactionnelle insertionTransactionnelle) {
+            InsertionDemandeAdmissionTransactionnelle insertionTransactionnelle,
+            ApplicationEventPublisher eventPublisher,
+            EntityManager entityManager) {
         this.demandeAdmissionRepository = demandeAdmissionRepository;
+        this.decisionAdmissionRepository = decisionAdmissionRepository;
         this.etablissementPublicQuery = etablissementPublicQuery;
         this.offreAdmissionQuery = offreAdmissionQuery;
         this.stockagePiecesJointes = stockagePiecesJointes;
         this.proprietes = proprietes;
         this.insertionTransactionnelle = insertionTransactionnelle;
+        this.eventPublisher = eventPublisher;
+        this.entityManager = entityManager;
     }
 
     /**
@@ -262,12 +282,13 @@ public class DemandeAdmissionService {
         return page.map(d -> new DemandeAdmissionResumeVue(
                 d.getId(), d.getReference(), d.getNom(), d.getPrenoms(),
                 libelles.get(d.getNiveauId()), d.getClasseId() == null ? null : libelles.get(d.getClasseId()),
-                d.getStatut().name(), d.getCanal().name(), d.getDateSoumission()));
+                d.getStatut().name(), d.getCanal().name(), d.getDateSoumission(), d.getDateDecision()));
     }
 
     public record DemandeAdmissionResumeVue(
             UUID id, String reference, String nom, String prenoms,
-            String niveauLibelle, String classeLibelle, String statut, String canal, Instant dateSoumission) {
+            String niveauLibelle, String classeLibelle, String statut, String canal, Instant dateSoumission,
+            Instant dateDecision) {
     }
 
     @Transactional(readOnly = true)
@@ -281,14 +302,19 @@ public class DemandeAdmissionService {
         return demande;
     }
 
-    public record DemandeEtPieces(DemandeAdmission demande, List<PieceJointeAdmission> pieces) {
+    public record DemandeEtPieces(DemandeAdmission demande, List<PieceJointeAdmission> pieces, List<DecisionAdmission> decisions) {
     }
 
-    /** Un seul {@link #obtenir(UUID)}, jamais deux (mineur, revue) : détail du dossier + ses pièces en un aller-retour logique. */
+    /**
+     * Un seul {@link #obtenir(UUID)}, jamais deux (mineur, revue) : détail du dossier + ses
+     * pièces + son journal de décisions (US-07) en trois requêtes fixes, jamais de N+1
+     * (CLAUDE.md, règle 10).
+     */
     @Transactional(readOnly = true)
     public DemandeEtPieces obtenirAvecPieces(UUID id) {
         DemandeAdmission demande = obtenir(id);
-        return new DemandeEtPieces(demande, stockagePiecesJointes.lister(id));
+        List<DecisionAdmission> decisions = decisionAdmissionRepository.findByDemandeIdAndActifTrueOrderByDateDecisionAsc(id);
+        return new DemandeEtPieces(demande, stockagePiecesJointes.lister(id), decisions);
     }
 
     @Transactional(readOnly = true)
@@ -331,6 +357,81 @@ public class DemandeAdmissionService {
         PieceJointeAdmission piece = stockagePiecesJointes.trouver(demandeId, pieceId)
                 .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.ADMISSION_PIECE_INTROUVABLE, "Pièce introuvable."));
         stockagePiecesJointes.desactiver(piece);
+    }
+
+    /**
+     * Décide du sort d'un dossier d'admission (US-07) : accepter, refuser ou
+     * mettre en liste d'attente. Observation obligatoire pour REFUSEE et
+     * LISTE_ATTENTE (facultative pour ACCEPTEE), version optimiste vérifiée
+     * explicitement (message applicatif plus clair que l'exception JPA brute),
+     * et flush explicite (règle 12 CLAUDE.md) pour capter, dès ce service, une
+     * éventuelle violation de {@value #CONTRAINTE_DOUBLON} — un dossier REFUSEE
+     * repassé en LISTE_ATTENTE peut entrer en collision avec une nouvelle
+     * soumission du même enfant.
+     */
+    @Transactional
+    public DemandeAdmission decider(UUID id, StatutDecisionAdmission statutDecision, String observationBrute, long version) {
+        DemandeAdmission demande = obtenir(id);
+        if (version != demande.getVersion()) {
+            throw new ConflitException(CodeErreur.ADMISSION_MODIFICATION_CONCURRENTE,
+                    "Le dossier a été modifié entre-temps, veuillez le recharger.");
+        }
+
+        StatutAdmission statutCible = statutDecision.versStatutAdmission();
+        String observation = normaliserObservation(observationBrute);
+        if (observation == null && statutCible != StatutAdmission.ACCEPTEE) {
+            throw new RegleMetierViolee(CodeErreur.ADMISSION_OBSERVATION_OBLIGATOIRE,
+                    "Une observation est obligatoire pour un refus ou une mise en liste d'attente.");
+        }
+
+        StatutAdmission statutPrecedent = demande.getStatut();
+        UUID auteurId = UtilisateurCourant.exigerId();
+        Instant maintenant = Instant.now();
+        demande.changerStatut(statutCible, observation, auteurId, maintenant);
+
+        DecisionAdmission decision = new DecisionAdmission(
+                demande.getEtablissementId(), demande.getId(), statutPrecedent, statutCible, observation, auteurId, maintenant);
+
+        try {
+            demandeAdmissionRepository.save(demande);
+            decisionAdmissionRepository.save(decision);
+            entityManager.flush();
+        } catch (RuntimeException e) {
+            if (!estViolationContrainteDoublon(e)) {
+                throw e;
+            }
+            throw new ConflitException(CodeErreur.ADMISSION_DOUBLON,
+                    "Un autre dossier actif existe déjà pour cet enfant sur cette année.");
+        }
+
+        eventPublisher.publishEvent(new DecisionAdmissionPriseEvent(
+                demande.getId(), statutCible, demande.getCodeSuivi(), demande.getResponsableTelephone(), demande.getResponsableEmail()));
+        return demande;
+    }
+
+    private static String normaliserObservation(String observationBrute) {
+        if (observationBrute == null) {
+            return null;
+        }
+        String observation = observationBrute.trim();
+        return observation.isEmpty() ? null : observation;
+    }
+
+    /**
+     * Vrai si l'exception provient de {@value #CONTRAINTE_DOUBLON} — même
+     * logique que {@code InsertionDemandeAdmissionTransactionnelle}, le flush
+     * explicite ici passant par l'{@code EntityManager} brut (pas de
+     * traduction Spring des exceptions).
+     */
+    private static boolean estViolationContrainteDoublon(RuntimeException e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof org.hibernate.exception.ConstraintViolationException cve) {
+                return CONTRAINTE_DOUBLON.equals(cve.getConstraintName());
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     public record PieceEtContenu(PieceJointeAdmission piece, byte[] contenu) {

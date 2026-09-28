@@ -31,11 +31,12 @@ import jakarta.validation.Valid;
 import tg.novadigital.edukeys.admission.domain.DemandeAdmission;
 import tg.novadigital.edukeys.admission.domain.PieceJointeAdmission;
 import tg.novadigital.edukeys.admission.domain.StatutAdmission;
+import tg.novadigital.edukeys.admission.mapper.DecisionAdmissionMapper;
 import tg.novadigital.edukeys.admission.mapper.DemandeAdmissionMapper;
 import tg.novadigital.edukeys.admission.mapper.PieceJointeAdmissionMapper;
 import tg.novadigital.edukeys.admission.service.DemandeAdmissionService;
 
-/** Gestion des dossiers d'admission côté back-office (US-06). */
+/** Gestion des dossiers d'admission côté back-office (US-06, US-07). */
 @Tag(name = "Admission")
 @RestController
 @RequestMapping("/api/v1/demandes-admission")
@@ -44,14 +45,17 @@ public class DemandeAdmissionController {
     private final DemandeAdmissionService demandeAdmissionService;
     private final DemandeAdmissionMapper demandeAdmissionMapper;
     private final PieceJointeAdmissionMapper pieceJointeAdmissionMapper;
+    private final DecisionAdmissionMapper decisionAdmissionMapper;
 
     public DemandeAdmissionController(
             DemandeAdmissionService demandeAdmissionService,
             DemandeAdmissionMapper demandeAdmissionMapper,
-            PieceJointeAdmissionMapper pieceJointeAdmissionMapper) {
+            PieceJointeAdmissionMapper pieceJointeAdmissionMapper,
+            DecisionAdmissionMapper decisionAdmissionMapper) {
         this.demandeAdmissionService = demandeAdmissionService;
         this.demandeAdmissionMapper = demandeAdmissionMapper;
         this.pieceJointeAdmissionMapper = pieceJointeAdmissionMapper;
+        this.decisionAdmissionMapper = decisionAdmissionMapper;
     }
 
     @Operation(operationId = "creerDemandeAdmission", summary = "Crée un dossier d'admission depuis le back-office (canal ADMIN)",
@@ -91,7 +95,7 @@ public class DemandeAdmissionController {
         return demandeAdmissionService.lister(statut, pageable)
                 .map(d -> new DemandeAdmissionResumeDto(
                         d.id(), d.reference(), d.nom(), d.prenoms(), d.niveauLibelle(), d.classeLibelle(),
-                        d.statut(), d.canal(), d.dateSoumission()));
+                        d.statut(), d.canal(), d.dateSoumission(), d.dateDecision()));
     }
 
     @Operation(operationId = "lireDemandeAdmission", summary = "Détail d'une demande d'admission",
@@ -103,7 +107,26 @@ public class DemandeAdmissionController {
     @PreAuthorize("hasAuthority('ADMISSION_CONSULTER')")
     public DemandeAdmissionDto obtenir(@PathVariable UUID id) {
         DemandeAdmissionService.DemandeEtPieces resultat = demandeAdmissionService.obtenirAvecPieces(id);
-        return demandeAdmissionMapper.versDto(resultat.demande(), resultat.pieces(), pieceJointeAdmissionMapper);
+        return demandeAdmissionMapper.versDto(
+                resultat.demande(), resultat.pieces(), resultat.decisions(), pieceJointeAdmissionMapper, decisionAdmissionMapper);
+    }
+
+    @Operation(operationId = "deciderDemandeAdmission", summary = "Décide du sort d'un dossier d'admission (accepter, refuser, liste d'attente)",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Décision enregistrée"),
+                    @ApiResponse(responseCode = "400", description = "Requête invalide"),
+                    @ApiResponse(responseCode = "403", description = "Accès refusé"),
+                    @ApiResponse(responseCode = "404", description = "Demande introuvable"),
+                    @ApiResponse(responseCode = "409", description = "Conflit : version périmée ou dossier en doublon avec un autre actif"),
+                    @ApiResponse(responseCode = "422", description = "Observation obligatoire manquante ou transition de statut invalide")
+            })
+    @PostMapping("/{id}/decisions")
+    @PreAuthorize("hasAuthority('ADMISSION_DECIDER')")
+    public DemandeAdmissionDto decider(@PathVariable UUID id, @Valid @org.springframework.web.bind.annotation.RequestBody DecisionAdmissionRequeteDto requete) {
+        DemandeAdmission demande = demandeAdmissionService.decider(id, requete.statut(), requete.observation(), requete.version());
+        DemandeAdmissionService.DemandeEtPieces resultat = demandeAdmissionService.obtenirAvecPieces(demande.getId());
+        return demandeAdmissionMapper.versDto(
+                resultat.demande(), resultat.pieces(), resultat.decisions(), pieceJointeAdmissionMapper, decisionAdmissionMapper);
     }
 
     @Operation(operationId = "telechargerPieceAdmission", summary = "Télécharge une pièce jointe d'une demande d'admission",

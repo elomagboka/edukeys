@@ -697,29 +697,46 @@ class IsolationEtablissementTest {
      */
     private static ChampMutable premierChampMutableDeclare(Class<?> typeEntite) {
         for (Field champ : typeEntite.getDeclaredFields()) {
-            if (champ.getType().equals(String.class)) {
+            if (champ.getType().equals(String.class) && estModifiable(champ)) {
                 return new ChampMutable(champ, "MUTEE-DEPUIS-CONTEXTE-A");
             }
         }
         for (Field champ : typeEntite.getDeclaredFields()) {
-            if (champ.getType().equals(Boolean.class) || champ.getType().equals(boolean.class)) {
+            if ((champ.getType().equals(Boolean.class) || champ.getType().equals(boolean.class)) && estModifiable(champ)) {
                 return new ChampMutable(champ, Boolean.TRUE);
             }
         }
         // Repli numérique (US-06) : CompteurReferenceAdmission n'a par conception
         // aucun champ texte ni booléen, seulement des compteurs entiers/longs.
         for (Field champ : typeEntite.getDeclaredFields()) {
-            if (champ.getType().equals(Integer.class) || champ.getType().equals(int.class)) {
+            if ((champ.getType().equals(Integer.class) || champ.getType().equals(int.class)) && estModifiable(champ)) {
                 return new ChampMutable(champ, Integer.MAX_VALUE);
             }
         }
         for (Field champ : typeEntite.getDeclaredFields()) {
-            if (champ.getType().equals(Long.class) || champ.getType().equals(long.class)) {
+            if ((champ.getType().equals(Long.class) || champ.getType().equals(long.class)) && estModifiable(champ)) {
                 return new ChampMutable(champ, Long.MAX_VALUE);
             }
         }
-        throw new IllegalStateException("Aucun champ String, Boolean, int ni long declare directement sur " + typeEntite
+        // Repli journal immuable (US-07) : DecisionAdmission n'a que des colonnes
+        // updatable = false -- muter l'une d'elles ne produit aucun UPDATE, donc
+        // aucun @PreUpdate à refuser. On tente alors la désactivation logique
+        // (actif hérité de BaseEntity), vrai chemin d'écriture de toute entité.
+        for (Class<?> type = typeEntite.getSuperclass(); type != null; type = type.getSuperclass()) {
+            for (Field champ : type.getDeclaredFields()) {
+                if (champ.getName().equals("actif") && estModifiable(champ)) {
+                    return new ChampMutable(champ, Boolean.FALSE);
+                }
+            }
+        }
+        throw new IllegalStateException("Aucun champ String, Boolean, int ni long modifiable sur " + typeEntite
                 + " : adapter c8_modificationDUneEntiteDeBDepuisLeContexteAEstRefusee pour cette entite.");
+    }
+
+    /** Une colonne {@code updatable = false} n'est jamais écrite par Hibernate : inutile pour C8. */
+    private static boolean estModifiable(Field champ) {
+        jakarta.persistence.Column annotation = champ.getAnnotation(jakarta.persistence.Column.class);
+        return annotation == null || annotation.updatable();
     }
 
     @SuppressWarnings("unchecked")

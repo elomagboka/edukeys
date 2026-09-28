@@ -1,5 +1,7 @@
 package tg.novadigital.edukeys.testsupport;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import jakarta.persistence.EntityManager;
 
 /**
@@ -21,6 +23,8 @@ public final class FabriqueSupport {
 
     private static EntityManager entityManager;
 
+    private static final AtomicInteger PROCHAINE_ANNEE = new AtomicInteger(2000);
+
     private FabriqueSupport() {
     }
 
@@ -30,5 +34,15 @@ public final class FabriqueSupport {
 
     public static EntityManager entityManager() {
         return entityManager;
+    }
+
+    /**
+     * Année de début unique dans la JVM, pour toute fabrique qui persiste une
+     * année scolaire (contrainte d'exclusion {@code ex_annees_scolaires_chevauchement}
+     * par établissement). Un tirage aléatoire sur 1000 ans entrait en collision
+     * dès que cinq fabriques en créaient dans le même établissement (US-07).
+     */
+    public static int anneeDebutUnique() {
+        return PROCHAINE_ANNEE.getAndIncrement();
     }
 }

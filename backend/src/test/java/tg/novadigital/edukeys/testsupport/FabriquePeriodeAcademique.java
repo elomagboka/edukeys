@@ -27,7 +27,7 @@ public class FabriquePeriodeAcademique implements FabriqueEntiteEtablissement<Pe
     @Override
     public PeriodeAcademique creer(UUID etablissementId) {
         EntityManager entityManager = FabriqueSupport.entityManager();
-        int anneeDebut = 2000 + ThreadLocalRandom.current().nextInt(0, 1000);
+        int anneeDebut = FabriqueSupport.anneeDebutUnique();
         LocalDate debutAnnee = LocalDate.of(anneeDebut, 9, 1);
         LocalDate finAnnee = LocalDate.of(anneeDebut + 1, 7, 15);
         String suffixe = UUID.randomUUID().toString().substring(0, 8).toUpperCase();

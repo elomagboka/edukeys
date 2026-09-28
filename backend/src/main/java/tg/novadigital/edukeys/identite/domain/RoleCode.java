@@ -5,6 +5,7 @@ import java.util.Set;
 
 import static tg.novadigital.edukeys.identite.domain.Permission.ADMISSION_CONSULTER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ADMISSION_CREER;
+import static tg.novadigital.edukeys.identite.domain.Permission.ADMISSION_DECIDER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ANNEE_SCOLAIRE_CONSULTER;
 import static tg.novadigital.edukeys.identite.domain.Permission.ANNEE_SCOLAIRE_GERER;
 import static tg.novadigital.edukeys.identite.domain.Permission.BULLETIN_CONSULTER;
@@ -54,7 +55,8 @@ public enum RoleCode {
     // pouvoir toucher aux rôles).
     ADMIN(ETABLISSEMENT_GERER, UTILISATEUR_GERER, UTILISATEUR_CONSULTER, ROLE_ATTRIBUER,
             ANNEE_SCOLAIRE_GERER, ANNEE_SCOLAIRE_CONSULTER, STRUCTURE_ACADEMIQUE_GERER, STRUCTURE_ACADEMIQUE_CONSULTER,
-            MATIERE_GERER, MATIERE_CONSULTER, PERIODE_GERER, PERIODE_CONSULTER, ADMISSION_CREER, ADMISSION_CONSULTER),
+            MATIERE_GERER, MATIERE_CONSULTER, PERIODE_GERER, PERIODE_CONSULTER, ADMISSION_CREER, ADMISSION_CONSULTER,
+            ADMISSION_DECIDER),
     // DIRECTION lit le personnel de son établissement, mais ne crée ni
     // n'attribue rien (US-04). Consulte les demandes d'admission (US-06).
     DIRECTION(UTILISATEUR_CONSULTER, ANNEE_SCOLAIRE_CONSULTER, STRUCTURE_ACADEMIQUE_CONSULTER, MATIERE_CONSULTER,

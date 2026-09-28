@@ -25,7 +25,7 @@ final class FabriqueSupportAdmission {
 
     static UUID persisterAnneeScolaireId(UUID etablissementId, String suffixe) {
         EntityManager entityManager = FabriqueSupport.entityManager();
-        int anneeDebut = 2000 + ThreadLocalRandom.current().nextInt(0, 1000);
+        int anneeDebut = FabriqueSupport.anneeDebutUnique();
         LocalDate debut = LocalDate.of(anneeDebut, 9, 1);
         LocalDate fin = LocalDate.of(anneeDebut + 1, 7, 15);
         AnneeScolaire anneeScolaire = new AnneeScolaire(null, "ADM-ANNEE-" + suffixe, debut, fin);

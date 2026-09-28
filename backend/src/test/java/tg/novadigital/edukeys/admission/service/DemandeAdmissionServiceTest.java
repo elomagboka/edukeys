@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.hibernate.exception.ConstraintViolationException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,16 +25,23 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import tg.novadigital.edukeys.academique.OffreAdmissionQuery;
 import tg.novadigital.edukeys.admission.AdmissionProperties;
 import tg.novadigital.edukeys.admission.domain.CanalAdmission;
+import tg.novadigital.edukeys.admission.domain.DecisionAdmission;
 import tg.novadigital.edukeys.admission.domain.DemandeAdmission;
 import tg.novadigital.edukeys.admission.domain.LienResponsable;
+import tg.novadigital.edukeys.admission.domain.StatutAdmission;
+import tg.novadigital.edukeys.admission.domain.StatutDecisionAdmission;
 import tg.novadigital.edukeys.admission.repository.DemandeAdmissionRepository;
 import tg.novadigital.edukeys.common.exception.CodeErreur;
+import tg.novadigital.edukeys.common.exception.ConflitException;
 import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
+import tg.novadigital.edukeys.common.securite.PrincipalAuditable;
 import tg.novadigital.edukeys.etablissement.EtablissementPublicQuery;
 
 /**
@@ -52,11 +60,14 @@ import tg.novadigital.edukeys.etablissement.EtablissementPublicQuery;
 class DemandeAdmissionServiceTest {
 
     private DemandeAdmissionRepository demandeAdmissionRepository;
+    private tg.novadigital.edukeys.admission.repository.DecisionAdmissionRepository decisionAdmissionRepository;
     private EtablissementPublicQuery etablissementPublicQuery;
     private OffreAdmissionQuery offreAdmissionQuery;
     private StockagePiecesJointes stockagePiecesJointes;
     private AdmissionProperties proprietes;
     private InsertionDemandeAdmissionTransactionnelle insertionTransactionnelle;
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private jakarta.persistence.EntityManager entityManager;
     private DemandeAdmissionService service;
 
     private final UUID etablissementId = UUID.randomUUID();
@@ -66,14 +77,17 @@ class DemandeAdmissionServiceTest {
     @BeforeEach
     void avantChaqueTest() {
         demandeAdmissionRepository = mock(DemandeAdmissionRepository.class);
+        decisionAdmissionRepository = mock(tg.novadigital.edukeys.admission.repository.DecisionAdmissionRepository.class);
         etablissementPublicQuery = mock(EtablissementPublicQuery.class);
         offreAdmissionQuery = mock(OffreAdmissionQuery.class);
         stockagePiecesJointes = mock(StockagePiecesJointes.class);
         proprietes = new AdmissionProperties();
         insertionTransactionnelle = mock(InsertionDemandeAdmissionTransactionnelle.class);
+        eventPublisher = mock(org.springframework.context.ApplicationEventPublisher.class);
+        entityManager = mock(jakarta.persistence.EntityManager.class);
         service = new DemandeAdmissionService(
-                demandeAdmissionRepository, etablissementPublicQuery, offreAdmissionQuery,
-                stockagePiecesJointes, proprietes, insertionTransactionnelle);
+                demandeAdmissionRepository, decisionAdmissionRepository, etablissementPublicQuery, offreAdmissionQuery,
+                stockagePiecesJointes, proprietes, insertionTransactionnelle, eventPublisher, entityManager);
     }
 
     private CommandeDemandeAdmission donneesValides() {
@@ -451,5 +465,130 @@ class DemandeAdmissionServiceTest {
 
     private static byte[] pdfMinimal() {
         return "%PDF-1.4\n1 0 obj <<>>\nendobj\n%%EOF".getBytes(java.nio.charset.StandardCharsets.ISO_8859_1);
+    }
+
+    // ------------------------------------------------------------------
+    // Décisions (US-07)
+    // ------------------------------------------------------------------
+
+    @AfterEach
+    void apresChaqueTest() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private final UUID decideurId = UUID.randomUUID();
+
+    private void arrangerUtilisateurAuthentifie() {
+        PrincipalAuditable principal = () -> decideurId.toString();
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(principal, null));
+    }
+
+    private DemandeAdmission demandeEnAttente(UUID id) {
+        DemandeAdmission demande = new DemandeAdmission(
+                etablissementId, "PRE-2026-000123", "CS-000123", anneeId, niveauId, null, "Kodjo", "Ama",
+                LocalDate.of(2015, 5, 12), "Lomé", "F", "TG", null, "Kodjo", "Père", LienResponsable.PERE,
+                "+22890000001", "responsable@example.com", CanalAdmission.PUBLIC, Instant.now(), Instant.now(), "hash");
+        when(demandeAdmissionRepository.findById(id)).thenReturn(Optional.of(demande));
+        return demande;
+    }
+
+    @Test
+    void doitAccepterUnDossier_sansObservationObligatoire() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        DemandeAdmission demande = demandeEnAttente(demandeId);
+
+        DemandeAdmission resultat = service.decider(demandeId, StatutDecisionAdmission.ACCEPTEE, null, 0L);
+
+        assertThat(resultat.getStatut()).isEqualTo(StatutAdmission.ACCEPTEE);
+        verify(demandeAdmissionRepository).save(demande);
+        ArgumentCaptor<DecisionAdmission> decisionCaptor = ArgumentCaptor.forClass(DecisionAdmission.class);
+        verify(decisionAdmissionRepository).save(decisionCaptor.capture());
+        assertThat(decisionCaptor.getValue().getStatutNouveau()).isEqualTo(StatutAdmission.ACCEPTEE);
+        assertThat(decisionCaptor.getValue().getStatutPrecedent()).isEqualTo(StatutAdmission.EN_ATTENTE);
+        assertThat(decisionCaptor.getValue().getDecidePar()).isEqualTo(decideurId);
+        verify(eventPublisher).publishEvent(any(DecisionAdmissionPriseEvent.class));
+    }
+
+    @Test
+    void doitRefuserDecision_refus_quandObservationAbsente() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        demandeEnAttente(demandeId);
+
+        assertThatThrownBy(() -> service.decider(demandeId, StatutDecisionAdmission.REFUSEE, "   ", 0L))
+                .isInstanceOf(RegleMetierViolee.class)
+                .satisfies(e -> assertThat(((RegleMetierViolee) e).getCode()).isEqualTo(CodeErreur.ADMISSION_OBSERVATION_OBLIGATOIRE));
+        verify(decisionAdmissionRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void doitRefuserDecision_listeAttente_quandObservationAbsente() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        demandeEnAttente(demandeId);
+
+        assertThatThrownBy(() -> service.decider(demandeId, StatutDecisionAdmission.LISTE_ATTENTE, null, 0L))
+                .isInstanceOf(RegleMetierViolee.class)
+                .satisfies(e -> assertThat(((RegleMetierViolee) e).getCode()).isEqualTo(CodeErreur.ADMISSION_OBSERVATION_OBLIGATOIRE));
+    }
+
+    @Test
+    void doitAccepterRefus_avecObservation() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        demandeEnAttente(demandeId);
+
+        DemandeAdmission resultat = service.decider(demandeId, StatutDecisionAdmission.REFUSEE, "Dossier incomplet", 0L);
+
+        assertThat(resultat.getStatut()).isEqualTo(StatutAdmission.REFUSEE);
+        assertThat(resultat.getMotifDecision()).isEqualTo("Dossier incomplet");
+    }
+
+    @Test
+    void doitRejeterDecision_quandVersionPerimee_sansAucuneEcriture() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        demandeEnAttente(demandeId);
+
+        assertThatThrownBy(() -> service.decider(demandeId, StatutDecisionAdmission.ACCEPTEE, null, 99L))
+                .isInstanceOf(ConflitException.class)
+                .satisfies(e -> assertThat(((ConflitException) e).getCode()).isEqualTo(CodeErreur.ADMISSION_MODIFICATION_CONCURRENTE));
+        verify(demandeAdmissionRepository, never()).save(any());
+        verify(decisionAdmissionRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void doitRejeterDecision_quandTransitionInvalide() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        DemandeAdmission demande = demandeEnAttente(demandeId);
+        demande.changerStatut(StatutAdmission.ACCEPTEE, "motif", UUID.randomUUID(), Instant.now());
+
+        assertThatThrownBy(() -> service.decider(demandeId, StatutDecisionAdmission.REFUSEE, "motif", 0L))
+                .isInstanceOf(RegleMetierViolee.class)
+                .satisfies(e -> assertThat(((RegleMetierViolee) e).getCode()).isEqualTo(CodeErreur.ADMISSION_TRANSITION_INVALIDE));
+        verify(decisionAdmissionRepository, never()).save(any());
+    }
+
+    @Test
+    void doitTraduireLaViolationDeLindexDeDoublon_enConflitExplicite() {
+        arrangerUtilisateurAuthentifie();
+        UUID demandeId = UUID.randomUUID();
+        demandeEnAttente(demandeId);
+        // REFUSEE -> LISTE_ATTENTE peut entrer en collision avec une nouvelle soumission active du même enfant.
+        doThrowSurFlush("uk_demandes_admission_doublon");
+
+        assertThatThrownBy(() -> service.decider(demandeId, StatutDecisionAdmission.LISTE_ATTENTE, "Réexamen", 0L))
+                .isInstanceOf(ConflitException.class)
+                .satisfies(e -> assertThat(((ConflitException) e).getCode()).isEqualTo(CodeErreur.ADMISSION_DOUBLON));
+    }
+
+    private void doThrowSurFlush(String contrainte) {
+        org.mockito.Mockito.doThrow(new org.springframework.dao.DataIntegrityViolationException("violation simulée",
+                        new ConstraintViolationException("violation simulée", new SQLException("duplicate key", "23505"), contrainte)))
+                .when(entityManager).flush();
     }
 }

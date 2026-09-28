@@ -34,7 +34,7 @@ public class FabriqueClasse implements FabriqueEntiteEtablissement<Classe> {
         Cycle cycle = new Cycle(null, "ISOLATION-CYCLE-" + suffixe, null, ThreadLocalRandom.current().nextInt(1, 1_000_000));
         Niveau niveau = new Niveau(null, "ISOLATION-NIVEAU-" + suffixe, null,
                 ThreadLocalRandom.current().nextInt(1, 1_000_000), cycle);
-        int anneeDebut = 2000 + ThreadLocalRandom.current().nextInt(0, 1000);
+        int anneeDebut = FabriqueSupport.anneeDebutUnique();
         AnneeScolaire anneeScolaire = new AnneeScolaire(null, "ISOL-" + suffixe,
                 LocalDate.of(anneeDebut, 9, 1), LocalDate.of(anneeDebut + 1, 7, 15));
         Site site = new Site(null, "ISOL-" + suffixe, "Site isolation " + suffixe, false, "Lomé", null, null, null);
