@@ -43,12 +43,7 @@ Consigner l'exécution dans `docs/JOURNAL.md` avec la liste des entités
 vérifiées. C'est ce qui permet de savoir, au sprint suivant, ce qui reste à
 couvrir.
 
-### Quand le lancer
-
-**À chaque nouvelle entité `EntiteEtablissement`**, une fois sa fabrique
-enregistrée, avant la PR — et à chaque modification de
-`RemplisseurEtablissement`, `ArmeurFiltreEtablissement`,
-`GardeContexteEtablissement` ou d'`IsolationEtablissementTest`.
+### Comment le lancer
 
 ```bash
 bash scripts/mutation-isolation.sh DecisionAdmission    # nom simple de l'entité
