@@ -131,8 +131,8 @@ public class UtilisateurController {
     @Operation(operationId = "creerUtilisateur", summary = "Crée un compte dans l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Compte créé, avec le mot de passe temporaire de son titulaire (retourné une seule fois)"),
-                    @ApiResponse(responseCode = "409", description = "Cet email est déjà utilisé sur la plateforme (message unique, y compris pour un compte de plateforme)"),
-                    @ApiResponse(responseCode = "422", description = "Aucun rôle fourni, ou SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici)")
+                    @ApiResponse(responseCode = "409", description = "Cet email est déjà utilisé sur la plateforme (code UTILISATEUR_EMAIL_DUPLIQUE, message unique y compris pour un compte de plateforme), ou cet identifiant de connexion l'est déjà (code UTILISATEUR_IDENTIFIANT_DUPLIQUE)"),
+                    @ApiResponse(responseCode = "422", description = "Aucun rôle fourni, SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici), ou ELEVE/PARENT demandé (code ROLE_NON_ATTRIBUABLE_MANUELLEMENT : ces comptes sont créés par leur module)")
             })
     @PostMapping
     @PreAuthorize("hasAuthority('UTILISATEUR_GERER') and hasAuthority('ROLE_ATTRIBUER')")
@@ -170,7 +170,7 @@ public class UtilisateurController {
             responses = {
                     @ApiResponse(responseCode = "204", description = "Rôles remplacés"),
                     @ApiResponse(responseCode = "404", description = "Aucun compte actif portant cet identifiant dans l'établissement courant"),
-                    @ApiResponse(responseCode = "422", description = "Aucun rôle fourni, SUPER_ADMIN demandé, ou tentative de modifier ses propres rôles")
+                    @ApiResponse(responseCode = "422", description = "Aucun rôle fourni, SUPER_ADMIN demandé, ELEVE/PARENT ajouté ou rôle du personnel ajouté à un compte élève (code ROLE_NON_ATTRIBUABLE_MANUELLEMENT ; ELEVE/PARENT déjà présents sont conservés), ou tentative de modifier ses propres rôles")
             })
     @PutMapping("/{id}/roles")
     @PreAuthorize("hasAuthority('ROLE_ATTRIBUER')")
@@ -199,7 +199,8 @@ public class UtilisateurController {
     @Operation(operationId = "reactiverUtilisateur", summary = "Réactive l'affectation d'un compte à l'établissement courant",
             responses = {
                     @ApiResponse(responseCode = "204", description = "Affectation réactivée"),
-                    @ApiResponse(responseCode = "404", description = "Aucun compte portant cet identifiant dans l'établissement courant")
+                    @ApiResponse(responseCode = "404", description = "Aucun compte portant cet identifiant dans l'établissement courant"),
+                    @ApiResponse(responseCode = "409", description = "Un autre compte actif porte désormais cet email (UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION) ou cet identifiant de connexion (UTILISATEUR_IDENTIFIANT_DUPLIQUE) : réactivation impossible")
             })
     @PostMapping("/{id}/reactiver")
     @PreAuthorize("hasAuthority('UTILISATEUR_GERER')")

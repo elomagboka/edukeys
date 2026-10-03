@@ -19,7 +19,7 @@ describe('App', () => {
     const utilisateur = userEvent.setup()
     render(<App />)
 
-    await utilisateur.type(screen.getByLabelText('Adresse email'), 'super.admin@edukeys.tg')
+    await utilisateur.type(screen.getByLabelText('Email ou matricule'), 'super.admin@edukeys.tg')
     await utilisateur.type(screen.getByLabelText('Mot de passe'), 'Password123!')
     await utilisateur.click(screen.getByRole('button', { name: 'Se connecter' }))
 
@@ -33,7 +33,7 @@ describe('App', () => {
     const utilisateur = userEvent.setup()
     render(<App />)
 
-    await utilisateur.type(screen.getByLabelText('Adresse email'), 'inconnu@edukeys.tg')
+    await utilisateur.type(screen.getByLabelText('Email ou matricule'), 'inconnu@edukeys.tg')
     await utilisateur.type(screen.getByLabelText('Mot de passe'), 'mauvais')
     await utilisateur.click(screen.getByRole('button', { name: 'Se connecter' }))
 

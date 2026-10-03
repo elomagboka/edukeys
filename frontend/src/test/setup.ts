@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom/vitest'
+import { configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from './mswServer'
 
@@ -16,6 +17,10 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   })
 }
+
+// Le rendu AntD en jsdom dépasse le délai par défaut (1 s) dès que la machine est chargée (CI, build Maven
+// en parallèle) : les tests asynchrones étaient instables sans lien avec le code applicatif.
+configure({ asyncUtilTimeout: 5000 })
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())

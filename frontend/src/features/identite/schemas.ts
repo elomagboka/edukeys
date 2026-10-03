@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const connexionSchema = z.object({
-  email: z.string().min(1, "L'email est requis.").email('Adresse email invalide.'),
+  identifiant: z.string().min(1, "L'identifiant est requis."),
   motDePasse: z.string().min(1, 'Le mot de passe est requis.'),
 })
 

@@ -18,3 +18,8 @@ edukeys:
       # application-local.yml (gitignoré) et la remplacer par un secret propre
       # à votre poste. Ne jamais réutiliser la valeur d'un autre profil.
       secret: remplacez-moi-par-un-secret-local-32-octets-minimum-svp
+    journal:
+      # Clé HMAC des empreintes du journal de sécurité et du limiteur de débit
+      # (US-08a). Obligatoire : l'application refuse de démarrer sans elle.
+      # Même règle que le secret JWT : 32 octets minimum, propre à votre poste.
+      cle-empreinte: remplacez-moi-par-une-cle-locale-32-octets-minimum

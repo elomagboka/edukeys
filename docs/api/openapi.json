@@ -1182,11 +1182,13 @@
       },
       "LoginRequestDto" : {
         "properties" : {
-          "email" : {
+          "identifiant" : {
+            "maxLength" : 255,
             "minLength" : 1,
             "type" : "string"
           },
           "motDePasse" : {
+            "maxLength" : 255,
             "minLength" : 1,
             "type" : "string"
           }
@@ -2018,6 +2020,8 @@
               "DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE",
               "ROLE_OBLIGATOIRE",
               "ROLE_SUPER_ADMIN_NON_ATTRIBUABLE",
+              "ROLE_NON_ATTRIBUABLE_MANUELLEMENT",
+              "UTILISATEUR_IDENTIFIANT_DUPLIQUE",
               "IDENTIFIANTS_INVALIDES",
               "MOT_DE_PASSE_TEMPORAIRE_EXPIRE",
               "COMPTE_DESACTIVE",
@@ -2102,6 +2106,7 @@
               "REQUETE_INVALIDE",
               "CORPS_ILLISIBLE",
               "TROP_DE_REQUETES",
+              "ENCODAGE_NON_SUPPORTE",
               "MODIFICATION_CONCURRENTE",
               "ERREUR_INATTENDUE"
             ],
@@ -2267,6 +2272,9 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "identifiantConnexion" : {
+            "type" : "string"
+          },
           "motDePasseAChanger" : {
             "type" : "boolean"
           },
@@ -2306,6 +2314,9 @@
           },
           "id" : {
             "format" : "uuid",
+            "type" : "string"
+          },
+          "identifiantConnexion" : {
             "type" : "string"
           },
           "motDePasseAChanger" : {
@@ -2861,7 +2872,7 @@
           }
         },
         "security" : [ ],
-        "summary" : "Connexion par email et mot de passe",
+        "summary" : "Connexion par identifiant (email ou matricule) et mot de passe",
         "tags" : [
           "Authentification"
         ]
@@ -6210,7 +6221,7 @@
                 }
               }
             },
-            "description" : "Cet email est déjà utilisé sur la plateforme (message unique, y compris pour un compte de plateforme)"
+            "description" : "Cet email est déjà utilisé sur la plateforme (code UTILISATEUR_EMAIL_DUPLIQUE, message unique y compris pour un compte de plateforme), ou cet identifiant de connexion l'est déjà (code UTILISATEUR_IDENTIFIANT_DUPLIQUE)"
           },
           "422" : {
             "content" : {
@@ -6220,7 +6231,7 @@
                 }
               }
             },
-            "description" : "Aucun rôle fourni, ou SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici)"
+            "description" : "Aucun rôle fourni, SUPER_ADMIN demandé (rôle de plateforme, non attribuable ici), ou ELEVE/PARENT demandé (code ROLE_NON_ATTRIBUABLE_MANUELLEMENT : ces comptes sont créés par leur module)"
           }
         },
         "summary" : "Crée un compte dans l'établissement courant",
@@ -6481,6 +6492,16 @@
               }
             },
             "description" : "Aucun compte portant cet identifiant dans l'établissement courant"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetailEdukeys"
+                }
+              }
+            },
+            "description" : "Un autre compte actif porte désormais cet email (UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION) ou cet identifiant de connexion (UTILISATEUR_IDENTIFIANT_DUPLIQUE) : réactivation impossible"
           }
         },
         "summary" : "Réactive l'affectation d'un compte à l'établissement courant",
@@ -6535,7 +6556,7 @@
                 }
               }
             },
-            "description" : "Aucun rôle fourni, SUPER_ADMIN demandé, ou tentative de modifier ses propres rôles"
+            "description" : "Aucun rôle fourni, SUPER_ADMIN demandé, ELEVE/PARENT ajouté ou rôle du personnel ajouté à un compte élève (code ROLE_NON_ATTRIBUABLE_MANUELLEMENT ; ELEVE/PARENT déjà présents sont conservés), ou tentative de modifier ses propres rôles"
           }
         },
         "summary" : "Remplace les rôles d'un compte de l'établissement courant",

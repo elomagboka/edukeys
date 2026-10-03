@@ -66,30 +66,41 @@ class UtilisateurServiceTest {
         utilisateurService = new UtilisateurService(
                 utilisateurRepository, jetonRafraichissementRepository, affectationEtablissementRepository,
                 jetonActivationCompteRepository, passwordEncoder, jetonHacheur, generateurMotDePasseTemporaire,
-                java.time.Duration.ofDays(14));
+                java.time.Duration.ofDays(14), java.time.Duration.ofDays(90));
     }
 
 
     @Test
-    void leveUneExceptionRessourceIntrouvable_quandUtilisateurInexistant() {
+    void desactiverDansEtablissementCourant_leveRessourceIntrouvable_quandAucuneAffectationLocale() {
+        UUID etab = UUID.randomUUID();
         UUID id = UUID.randomUUID();
-        when(utilisateurRepository.findById(id)).thenReturn(Optional.empty());
+        when(affectationEtablissementRepository.findByUtilisateurIdAndEtablissementIdAndActifTrue(id, etab))
+                .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> utilisateurService.desactiverCompte(id))
-                .isInstanceOf(RessourceIntrouvableException.class);
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            assertThatThrownBy(() -> utilisateurService.desactiverDansEtablissementCourant(id, UUID.randomUUID()))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
     }
 
     @Test
-    void desactiveLeCompteEtRevoqueSesJetonsActifs_quandDesactivationDemandee() {
+    void desactiveLeCompteEtRevoqueSesJetonsActifs_quandPlusAucuneAffectationActive() {
         Utilisateur utilisateur = new Utilisateur("marie@edukeys.tg", "hash", "Marie Dupont", false);
-        UUID id = UUID.randomUUID();
-        when(utilisateurRepository.findById(id)).thenReturn(Optional.of(utilisateur));
+        UUID id = utilisateur.getId() != null ? utilisateur.getId() : UUID.randomUUID();
+        UUID etab = UUID.randomUUID();
+        AffectationEtablissement affectation = new AffectationEtablissement(utilisateur, etab, EnumSet.of(RoleCode.ENSEIGNANT));
+        when(affectationEtablissementRepository.findByUtilisateurIdAndEtablissementIdAndActifTrue(id, etab))
+                .thenReturn(Optional.of(affectation));
+        when(affectationEtablissementRepository.existsByUtilisateurIdAndActifTrueAndIdNot(utilisateur.getId(), affectation.getId()))
+                .thenReturn(false);
 
         JetonRafraichissement jeton1 = new JetonRafraichissement(utilisateur, "h1", Instant.now().plusSeconds(3600));
         JetonRafraichissement jeton2 = new JetonRafraichissement(utilisateur, "h2", Instant.now().plusSeconds(3600));
-        when(jetonRafraichissementRepository.findByUtilisateurIdAndActifTrue(id)).thenReturn(List.of(jeton1, jeton2));
+        when(jetonRafraichissementRepository.findByUtilisateurIdAndActifTrue(utilisateur.getId())).thenReturn(List.of(jeton1, jeton2));
 
-        utilisateurService.desactiverCompte(id);
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            utilisateurService.desactiverDansEtablissementCourant(id, UUID.randomUUID());
+        }
 
         assertThat(utilisateur.isActif()).isFalse();
         assertThat(jeton1.isActif()).isFalse();
@@ -496,5 +507,215 @@ class UtilisateurServiceTest {
         // Une autre affectation active du même compte subsiste : le compte
         // Utilisateur lui-même ne doit pas être désactivé.
         verify(utilisateurRepository, never()).save(any());
+    }
+
+    // ------------------------------------------------------------------
+    // US-08a : identifiant de connexion, rôles non attribuables, expiration explicite
+    // ------------------------------------------------------------------
+
+    @Test
+    void creerCompteAvecRoles_pose_identifiantDeConnexionEgalALEmailNormalise() {
+        when(generateurMotDePasseTemporaire.generer()).thenReturn("Temp-123");
+        when(passwordEncoder.encode(any())).thenReturn("hache");
+        when(jetonHacheur.hacher(any())).thenReturn("sha");
+        when(utilisateurRepository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+        when(affectationEtablissementRepository.save(any(AffectationEtablissement.class))).thenAnswer(i -> i.getArgument(0));
+
+        try (var portee = ContexteEtablissement.ouvrir(UUID.randomUUID())) {
+            var compte = utilisateurService.creerCompteAvecRoles(
+                    "Marie.Dupont@Edukeys.TG", "Marie", Set.of(RoleCode.GESTIONNAIRE), null);
+            assertThat(compte.utilisateur().getEmail()).isEqualTo("marie.dupont@edukeys.tg");
+            assertThat(compte.utilisateur().getIdentifiantConnexion()).isEqualTo("marie.dupont@edukeys.tg");
+        }
+    }
+
+    @Test
+    void creerCompteAvecRoles_refuse409_quandLEmailEstDejaUnIdentifiantActif() {
+        // Un matricule ne ressemble pas à un email, mais un identifiant actif identique doit bloquer.
+        when(utilisateurRepository.existsByIdentifiantConnexionAndActifTrue("pris@edukeys.tg")).thenReturn(true);
+
+        try (var portee = ContexteEtablissement.ouvrir(UUID.randomUUID())) {
+            assertThatThrownBy(() -> utilisateurService.creerCompteAvecRoles(
+                    "pris@edukeys.tg", "X", Set.of(RoleCode.GESTIONNAIRE), null))
+                    .isInstanceOf(ConflitException.class);
+        }
+        verify(utilisateurRepository, never()).save(any());
+    }
+
+    @Test
+    void creerCompteAvecRoles_refuseEleveEtParent_avecUnCodeExplicite() {
+        try (var portee = ContexteEtablissement.ouvrir(UUID.randomUUID())) {
+            for (RoleCode interdit : new RoleCode[] {RoleCode.ELEVE, RoleCode.PARENT}) {
+                assertThatThrownBy(() -> utilisateurService.creerCompteAvecRoles(
+                        "x@edukeys.tg", "X", EnumSet.of(RoleCode.GESTIONNAIRE, interdit), null))
+                        .isInstanceOf(RegleMetierViolee.class)
+                        .extracting(e -> ((RegleMetierViolee) e).getCode())
+                        .isEqualTo(tg.novadigital.edukeys.common.exception.CodeErreur.ROLE_NON_ATTRIBUABLE_MANUELLEMENT);
+            }
+        }
+        verify(utilisateurRepository, never()).save(any());
+    }
+
+    private AffectationEtablissement affectationExistante(UUID etablissementId, UUID utilisateurId, Utilisateur compte, RoleCode... roles) {
+        AffectationEtablissement affectation = new AffectationEtablissement(compte, etablissementId, EnumSet.copyOf(Set.of(roles)));
+        when(affectationEtablissementRepository.findByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId))
+                .thenReturn(Optional.of(affectation));
+        return affectation;
+    }
+
+    @Test
+    void remplacerRoles_refuseEleveEtParentAjoutes() {
+        UUID etab = UUID.randomUUID();
+        UUID cible = UUID.randomUUID();
+        affectationExistante(etab, cible, new Utilisateur("p@edukeys.tg", "h", "P", false), RoleCode.GESTIONNAIRE);
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            for (RoleCode interdit : new RoleCode[] {RoleCode.ELEVE, RoleCode.PARENT}) {
+                assertThatThrownBy(() -> utilisateurService.remplacerRoles(
+                        cible, EnumSet.of(RoleCode.GESTIONNAIRE, interdit), UUID.randomUUID()))
+                        .isInstanceOf(RegleMetierViolee.class)
+                        .extracting(e -> ((RegleMetierViolee) e).getCode())
+                        .isEqualTo(tg.novadigital.edukeys.common.exception.CodeErreur.ROLE_NON_ATTRIBUABLE_MANUELLEMENT);
+            }
+        }
+        verify(affectationEtablissementRepository, never()).save(any());
+    }
+
+    @Test
+    void remplacerRoles_accepteLeRenvoiTelQuelDunCompteEnseignantParent() {
+        UUID etab = UUID.randomUUID();
+        UUID cible = UUID.randomUUID();
+        AffectationEtablissement affectation = affectationExistante(
+                etab, cible, new Utilisateur("ep@edukeys.tg", "h", "EP", false), RoleCode.ENSEIGNANT, RoleCode.PARENT);
+
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            utilisateurService.remplacerRoles(cible, EnumSet.of(RoleCode.ENSEIGNANT, RoleCode.PARENT), UUID.randomUUID());
+        }
+        assertThat(affectation.getRoles()).containsExactlyInAnyOrder(RoleCode.ENSEIGNANT, RoleCode.PARENT);
+    }
+
+    @Test
+    void remplacerRoles_conserveParentDejaPresent_quandSeulEnseignantEstEnvoye() {
+        UUID etab = UUID.randomUUID();
+        UUID cible = UUID.randomUUID();
+        AffectationEtablissement affectation = affectationExistante(
+                etab, cible, new Utilisateur("ep@edukeys.tg", "h", "EP", false), RoleCode.ENSEIGNANT, RoleCode.PARENT);
+
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            utilisateurService.remplacerRoles(cible, EnumSet.of(RoleCode.ENSEIGNANT), UUID.randomUUID());
+        }
+        assertThat(affectation.getRoles()).containsExactlyInAnyOrder(RoleCode.ENSEIGNANT, RoleCode.PARENT);
+    }
+
+    @Test
+    void remplacerRoles_refuseLAjoutDunRoleDuPersonnelSurUnCompteEleve() {
+        UUID etab = UUID.randomUUID();
+        UUID cible = UUID.randomUUID();
+        AffectationEtablissement affectation = affectationExistante(
+                etab, cible, new Utilisateur(null, "mat-1", "h", "Élève", false), RoleCode.ELEVE);
+
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            assertThatThrownBy(() -> utilisateurService.remplacerRoles(
+                    cible, EnumSet.of(RoleCode.ELEVE, RoleCode.GESTIONNAIRE), UUID.randomUUID()))
+                    .isInstanceOf(RegleMetierViolee.class);
+            // Renvoyer ELEVE seul reste un no-op légitime.
+            utilisateurService.remplacerRoles(cible, EnumSet.of(RoleCode.ELEVE), UUID.randomUUID());
+        }
+        assertThat(affectation.getRoles()).containsExactly(RoleCode.ELEVE);
+    }
+
+    // --- emettreMotDePasseTemporaireAvecExpiration : mêmes bornes que regenererMotDePasseTemporaire
+
+    private Utilisateur eleveDansEtablissement(UUID etab, UUID id) {
+        Utilisateur eleve = new Utilisateur(null, "mat-2026-0001", "hash", "Élève", false);
+        affectationExistante(etab, id, eleve, RoleCode.ELEVE);
+        when(generateurMotDePasseTemporaire.generer()).thenReturn("Temp-123");
+        when(passwordEncoder.encode("Temp-123")).thenReturn("hache");
+        when(jetonHacheur.hacher("Temp-123")).thenReturn("sha");
+        return eleve;
+    }
+
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_utiliseLaDateExplicite() {
+        UUID etab = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
+        Utilisateur eleve = eleveDansEtablissement(etab, id);
+        Instant expiration = Instant.now().plus(java.time.Duration.ofDays(45));
+
+        String motDePasse;
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            motDePasse = utilisateurService.emettreMotDePasseTemporaireAvecExpiration(id, expiration);
+        }
+
+        assertThat(motDePasse).isEqualTo("Temp-123");
+        assertThat(eleve.isMotDePasseAChanger()).isTrue();
+        org.mockito.ArgumentCaptor<JetonActivationCompte> jeton = org.mockito.ArgumentCaptor.forClass(JetonActivationCompte.class);
+        verify(jetonActivationCompteRepository).save(jeton.capture());
+        assertThat(jeton.getValue().getDateExpiration()).isEqualTo(expiration);
+    }
+
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_leveIllegalArgument_pourDateNulleDansLePasseOuAuDelaDuPlafond() {
+        UUID etab = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
+        eleveDansEtablissement(etab, id);
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(id, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(id, Instant.now().minusSeconds(5)))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
+                    id, Instant.now().plus(java.time.Duration.ofDays(91))))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+        verify(jetonActivationCompteRepository, never()).save(any());
+    }
+
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_refuseSansContexteEtablissement() {
+        assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
+                UUID.randomUUID(), Instant.now().plus(java.time.Duration.ofDays(5))))
+                .isInstanceOf(ContexteEtablissementAbsentException.class);
+    }
+
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_refuseUnCompteNonAffecteIci() {
+        UUID etab = UUID.randomUUID();
+        when(affectationEtablissementRepository.findByUtilisateurIdAndEtablissementIdAndActifTrue(any(), eq(etab)))
+                .thenReturn(Optional.empty());
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
+                    UUID.randomUUID(), Instant.now().plus(java.time.Duration.ofDays(5))))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_refuseUnCompteAffecteAilleurs_unSuperAdmin_unInactif_ouUnCompteDuPersonnel() {
+        UUID etab = UUID.randomUUID();
+        Instant expiration = Instant.now().plus(java.time.Duration.ofDays(5));
+
+        UUID ailleurs = UUID.randomUUID();
+        eleveDansEtablissement(etab, ailleurs);
+        when(affectationEtablissementRepository.existsByUtilisateurIdAndActifTrueAndEtablissementIdNot(ailleurs, etab)).thenReturn(true);
+
+        UUID superAdmin = UUID.randomUUID();
+        affectationExistante(etab, superAdmin, new Utilisateur("sa@edukeys.tg", "h", "SA", true), RoleCode.ELEVE);
+
+        UUID inactif = UUID.randomUUID();
+        Utilisateur compteInactif = new Utilisateur(null, "mat-inactif", "h", "Inactif", false);
+        compteInactif.desactiver();
+        affectationExistante(etab, inactif, compteInactif, RoleCode.ELEVE);
+
+        UUID personnel = UUID.randomUUID();
+        affectationExistante(etab, personnel, new Utilisateur("pers@edukeys.tg", "h", "Pers", false), RoleCode.ENSEIGNANT);
+
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            for (UUID refuse : new UUID[] {ailleurs, superAdmin, inactif, personnel}) {
+                assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(refuse, expiration))
+                        .isInstanceOf(RessourceIntrouvableException.class);
+            }
+        }
+        verify(jetonActivationCompteRepository, never()).save(any());
     }
 }

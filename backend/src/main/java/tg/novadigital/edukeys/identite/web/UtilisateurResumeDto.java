@@ -9,12 +9,13 @@ import tg.novadigital.edukeys.identite.domain.Utilisateur;
  * (CLAUDE.md, règle 7).
  */
 public record UtilisateurResumeDto(
-        UUID id, String email, String nomComplet, boolean superAdmin, boolean actif, boolean motDePasseAChanger) {
+        UUID id, String email, String identifiantConnexion, String nomComplet, boolean superAdmin, boolean actif, boolean motDePasseAChanger) {
 
     public static UtilisateurResumeDto depuis(Utilisateur utilisateur) {
         return new UtilisateurResumeDto(
                 utilisateur.getId(),
                 utilisateur.getEmail(),
+                utilisateur.getIdentifiantConnexion(),
                 utilisateur.getNomComplet(),
                 utilisateur.isSuperAdmin(),
                 utilisateur.isActif(),

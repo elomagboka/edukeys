@@ -4,8 +4,8 @@ const baseUrl = 'http://localhost:8080'
 
 export const handlers = [
   http.post(`${baseUrl}/api/v1/auth/login`, async ({ request }) => {
-    const corps = (await request.json()) as { email: string; motDePasse: string }
-    if (corps.email === 'super.admin@edukeys.tg' && corps.motDePasse === 'Password123!') {
+    const corps = (await request.json()) as { identifiant: string; motDePasse: string }
+    if (corps.identifiant === 'super.admin@edukeys.tg' && corps.motDePasse === 'Password123!') {
       return HttpResponse.json({
         accessToken: 'access-test',
         refreshToken: 'refresh-test',

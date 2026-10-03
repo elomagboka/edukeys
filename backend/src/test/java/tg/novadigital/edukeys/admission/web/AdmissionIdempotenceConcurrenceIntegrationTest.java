@@ -276,7 +276,7 @@ class AdmissionIdempotenceConcurrenceIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         String corps = """
-                {"email":"%s","motDePasse":"%s"}
+                {"identifiant":"%s","motDePasse":"%s"}
                 """.formatted(email, MOT_DE_PASSE);
         ResponseEntity<String> reponse = restTemplate.postForEntity(
                 "http://localhost:" + port + "/api/v1/auth/login", new HttpEntity<>(corps, headers), String.class);

@@ -1,12 +1,14 @@
 package tg.novadigital.edukeys.common.securite;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.UUID;
-import java.util.regex.Pattern;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Ne journalise jamais un email ni un mot de passe en clair : un compte
  * existant est identifié par son UUID, un compte inconnu par une empreinte
- * SHA-256 tronquée de la valeur tentée — juste assez pour corréler des
+ * HMAC-SHA256 tronquée de la valeur tentée — juste assez pour corréler des
  * tentatives répétées contre la même valeur, sans permettre de la retrouver
  * ni de l'énumérer. Voir {@code issue-rate-limiting.md} : le message d'erreur
  * HTTP reste identique quel que soit le motif interne.</p>
@@ -28,9 +30,14 @@ public final class JournalSecurite {
 
     private static final Logger LOG = LoggerFactory.getLogger("SECURITE");
 
-    private static final Pattern FORME_EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+    private static final int LONGUEUR_EMPREINTE = 16;
+    private static final String ALGORITHME = "HmacSHA256";
 
-    private static final int LONGUEUR_EMPREINTE = 12;
+    /**
+     * Clé HMAC des empreintes, posée au démarrage par {@link CleEmpreinteSecurite}
+     * (aucune valeur de repli : sans clé, {@link #empreinte} échoue).
+     */
+    private static volatile SecretKeySpec cleEmpreinte;
 
     private JournalSecurite() {
     }
@@ -43,20 +50,16 @@ public final class JournalSecurite {
 
     /**
      * Échec d'authentification quand aucun compte ne correspond à la valeur
-     * tentée. Si la valeur n'a pas la forme d'une adresse email, aucune
-     * empreinte n'est calculée : l'utilisateur a probablement interverti
-     * email et mot de passe, et une empreinte du mot de passe faciliterait
-     * une attaque par dictionnaire hors ligne.
+     * tentée. {@code identifiantNormalise} doit être la valeur NORMALISÉE
+     * ({@link IdentifiantConnexion#normaliser}) : l'empreinte se corrèle alors
+     * avec celle de la limitation de débit. L'empreinte est un HMAC-SHA256 à
+     * clé serveur : même si l'utilisateur a interverti identifiant et mot de
+     * passe, la valeur ne peut pas être retrouvée par dictionnaire hors ligne
+     * sans la clé, quelle que soit sa forme (email, matricule...).
      */
-    public static void echecAuthentificationCompteInconnu(String valeurTentee, String adresseIp) {
-        if (!ressembleAUnEmail(valeurTentee)) {
-            LOG.warn("echec_authentification motif=format_invalide ip={} horodatage={}",
-                    adresseIp, Instant.now());
-            return;
-        }
-
+    public static void echecAuthentificationCompteInconnu(String identifiantNormalise, String adresseIp) {
         LOG.warn("echec_authentification motif=compte_inconnu empreinte={} ip={} horodatage={}",
-                empreinte(valeurTentee), adresseIp, Instant.now());
+                empreinte(identifiantNormalise), adresseIp, Instant.now());
     }
 
     /**
@@ -118,26 +121,34 @@ public final class JournalSecurite {
                 nomEntite, etablissementAttendu, etablissementRencontre, Instant.now());
     }
 
-    private static boolean ressembleAUnEmail(String valeur) {
-        return valeur != null && FORME_EMAIL.matcher(valeur).matches();
+    /** Pose la clé HMAC des empreintes (appelé une seule fois au démarrage, ou par un test unitaire). */
+    public static void configurerCle(byte[] cle) {
+        cleEmpreinte = new SecretKeySpec(cle, ALGORITHME);
     }
 
     /**
-     * Empreinte SHA-256 tronquée d'une valeur sensible (email, jeton), à des
-     * fins de corrélation dans les journaux et dans les clés du limiteur de
-     * débit ({@code common/securite/limitation}) — jamais pour retrouver la
-     * valeur d'origine. Exposée en {@code public} pour être réutilisée en
-     * dehors de cette classe (ex. {@code FiltreLimitationDebit}), qui a
-     * besoin de la même empreinte pour journaliser sans dupliquer le calcul
-     * ni journaliser la valeur en clair.
+     * Empreinte HMAC-SHA256 (clé serveur, tronquée à 16 caractères hexadécimaux)
+     * d'une valeur sensible (identifiant de connexion, jeton), à des fins de
+     * corrélation dans les journaux et dans les clés du limiteur de débit
+     * ({@code common/securite/limitation}) — jamais pour retrouver la valeur
+     * d'origine. Un simple hash sans clé serait inversible par dictionnaire
+     * pour des valeurs à faible entropie (matricules séquentiels).
+     *
+     * @throws IllegalStateException si la clé n'est pas configurée (jamais de repli)
      */
     public static String empreinte(String valeur) {
+        SecretKeySpec cle = cleEmpreinte;
+        if (cle == null) {
+            throw new IllegalStateException(
+                    "Clé d'empreinte de sécurité non configurée (edukeys.securite.journal.cle-empreinte).");
+        }
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hache = digest.digest(valeur.getBytes(StandardCharsets.UTF_8));
+            Mac mac = Mac.getInstance(ALGORITHME);
+            mac.init(cle);
+            byte[] hache = mac.doFinal(valeur.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hache).substring(0, LONGUEUR_EMPREINTE);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 indisponible.", e);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new IllegalStateException("HmacSHA256 indisponible.", e);
         }
     }
 }

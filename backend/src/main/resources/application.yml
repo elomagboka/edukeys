@@ -16,6 +16,12 @@ server:
 spring:
   application:
     name: edukeys-backend
+  jackson:
+    parser:
+      # Un champ JSON dupliqué est une requête invalide (400) : sans cela, {"identifiant":"a","identifiant":"b"}
+      # fait échouer le désérialiseur du DTO en 500, et surtout laisse le filtre de limitation de débit et le
+      # contrôleur lire deux valeurs différentes (le filtre partage cet ObjectMapper, donc cette option).
+      strict-duplicate-detection: true
   servlet:
     multipart:
       # Borne Tomcat, commune à tous les envois de fichiers : c'est le
@@ -78,6 +84,10 @@ edukeys:
   securite:
     jwt:
       secret: ${EDUKEYS_JWT_SECRET}
+    # Clé HMAC des empreintes du journal de sécurité et du limiteur de débit
+    # (US-08a). Aucune valeur de repli : CleEmpreinteSecurite refuse de démarrer sans elle.
+    journal:
+      cle-empreinte: ${EDUKEYS_JOURNAL_CLE_EMPREINTE}
     cors:
       origines-autorisees: ${EDUKEYS_CORS_ORIGINES:http://localhost:5173}
     # Durée de validité du mot de passe temporaire (US-04) : au-delà, le
@@ -90,6 +100,9 @@ edukeys:
     # utilisé, sans rester valable indéfiniment.
     mot-de-passe-temporaire:
       duree-validite: 14d
+      # Plafond de l'expiration explicite (EmetteurMotDePasseTemporaire, comptes
+      # élèves, US-08) : au-delà, erreur de programmation (IllegalArgumentException).
+      expiration-max: 90d
     reseau:
       # Nombre d'intermédiaires que la requête traverse chez nous (Render :
       # l'edge, donc 1). L'IP cliente retenue est le N-ième élément de
