@@ -73,6 +73,12 @@ services:
       # Absente, l'application démarre mais refuse toute pré-inscription.
       - key: EDUKEYS_TURNSTILE_CLE_SECRETE
         sync: false
+      # US-08a : clé HMAC des empreintes du journal de sécurité et du limiteur de
+      # débit (identifiants de connexion). Obligatoire : l'application refuse de
+      # démarrer sans elle (CleEmpreinteSecurite). Jamais versionnée : à saisir
+      # dans le tableau de bord (docs/RENDER-SETUP.md, section 2).
+      - key: EDUKEYS_JOURNAL_CLE_EMPREINTE
+        sync: false
       - key: CORS_ORIGINS
         fromService:
           type: web
@@ -148,6 +154,12 @@ services:
         value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       - key: JWT_SECRET
         sync: false          # saisi à la main dans le tableau de bord
+      # US-08a : clé HMAC des empreintes du journal de sécurité et du limiteur de
+      # débit (identifiants de connexion). Obligatoire : l'application refuse de
+      # démarrer sans elle (CleEmpreinteSecurite). Jamais versionnée : à saisir
+      # dans le tableau de bord (docs/RENDER-SETUP.md, section 2).
+      - key: EDUKEYS_JOURNAL_CLE_EMPREINTE
+        sync: false
       - key: CORS_ORIGINS
         fromService:
           type: web

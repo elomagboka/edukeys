@@ -18,12 +18,12 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<ConnexionFormValues>({
     resolver: zodResolver(connexionSchema),
-    defaultValues: { email: '', motDePasse: '' },
+    defaultValues: { identifiant: '', motDePasse: '' },
   })
 
   const onSoumettre = handleSubmit((valeurs) => {
     connexion.mutate(
-      { email: valeurs.email, motDePasse: valeurs.motDePasse },
+      { identifiant: valeurs.identifiant, motDePasse: valeurs.motDePasse },
       { onSuccess: () => void navigate('/') },
     )
   })
@@ -37,15 +37,15 @@ export function LoginPage() {
         <form onSubmit={(event) => void onSoumettre(event)} noValidate>
           <Form layout="vertical" component={false}>
             <Form.Item
-              label={t('connexion.email')}
-              htmlFor="email"
-              validateStatus={errors.email ? 'error' : undefined}
-              help={errors.email?.message}
+              label={t('connexion.identifiant')}
+              htmlFor="identifiant"
+              validateStatus={errors.identifiant ? 'error' : undefined}
+              help={errors.identifiant?.message}
             >
               <Controller
-                name="email"
+                name="identifiant"
                 control={control}
-                render={({ field }) => <Input id="email" type="email" autoComplete="username" {...field} />}
+                render={({ field }) => <Input id="identifiant" type="text" autoComplete="username" {...field} />}
               />
             </Form.Item>
             <Form.Item

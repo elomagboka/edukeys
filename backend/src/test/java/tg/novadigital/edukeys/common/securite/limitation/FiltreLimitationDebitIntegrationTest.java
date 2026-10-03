@@ -151,7 +151,7 @@ class FiltreLimitationDebitIntegrationTest {
             mockMvc.perform(post("/api/v1/auth/login")
                     .header("X-Forwarded-For", "10.9.9." + i + ", " + ipReelleVueParLEdge)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"email\":\"forge.%s@edukeys.tg\",\"motDePasse\":\"peu-importe\"}"
+                    .content("{\"identifiant\":\"forge.%s@edukeys.tg\",\"motDePasse\":\"peu-importe\"}"
                             .formatted(java.util.UUID.randomUUID())))
                     .andExpect(status().isUnauthorized());
         }
@@ -316,7 +316,7 @@ class FiltreLimitationDebitIntegrationTest {
     void neRenvoieJamais500_quandLeCorpsDepasseLaTailleMaximale() throws Exception {
         String emailEnorme = "a".repeat(5000) + "@edukeys.tg";
         String corps = """
-                {"email":"%s","motDePasse":"mauvais"}
+                {"identifiant":"%s","motDePasse":"mauvais"}
                 """.formatted(emailEnorme);
 
         mockMvc.perform(post("/api/v1/auth/login")
@@ -353,7 +353,7 @@ class FiltreLimitationDebitIntegrationTest {
         return mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"email":"%s","motDePasse":"%s"}
+                        {"identifiant":"%s","motDePasse":"%s"}
                         """.formatted(email, motDePasse)));
     }
 

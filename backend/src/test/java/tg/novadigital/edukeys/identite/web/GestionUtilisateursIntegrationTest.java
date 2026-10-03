@@ -103,7 +103,7 @@ class GestionUtilisateursIntegrationTest {
         String reponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(email, motDePasse)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -516,7 +516,7 @@ class GestionUtilisateursIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(emailNouveauCompte, motDePasseTemporaire)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -548,7 +548,7 @@ class GestionUtilisateursIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(emailCompte, motDePasseTemporaire)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -586,7 +586,7 @@ class GestionUtilisateursIntegrationTest {
         String reponseReconnexion = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"NouveauMotDePasse123!"}
+                                {"identifiant":"%s","motDePasse":"NouveauMotDePasse123!"}
                                 """.formatted(emailCompte)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -616,7 +616,7 @@ class GestionUtilisateursIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(emailCompte, motDePasseTemporaire)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -847,17 +847,31 @@ class GestionUtilisateursIntegrationTest {
                         .content("""
                                 {"roles":["ENSEIGNANT","PARENT"]}
                                 """))
+                // US-08a : PARENT/ELEVE ne s'attribuent plus par cette API.
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("ROLE_NON_ATTRIBUABLE_MANUELLEMENT"));
+
+        mockMvc.perform(put("/api/v1/utilisateurs/" + compteCibleId + "/roles")
+                        .header("Authorization", "Bearer " + jetonAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"roles":["ENSEIGNANT","GESTIONNAIRE"]}
+                                """))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/api/v1/utilisateurs/mon-etablissement/" + compteCibleId)
                         .header("Authorization", "Bearer " + jetonAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles.length()").value(2))
-                .andExpect(jsonPath("$.roles", org.hamcrest.Matchers.containsInAnyOrder("ENSEIGNANT", "PARENT")));
+                .andExpect(jsonPath("$.roles", org.hamcrest.Matchers.containsInAnyOrder("ENSEIGNANT", "GESTIONNAIRE")));
     }
 
     @Test
-    void unCompteCumuleEnseignantEtParent_sansMatriceDexclusion() throws Exception {
+    void unCompteCumuleDeuxRolesDuPersonnel_sansMatriceDexclusion() throws Exception {
+        // US-08a : le cumul ENSEIGNANT + PARENT n'est plus créable par cette API
+        // (PARENT est réservé au module qui rattache un parent à un dossier) ;
+        // il reste possible en base (données de démo) et le principe « pas de
+        // matrice d'exclusion » est vérifié ici sur deux rôles du personnel.
         UUID adminAId = creerAdminSurEtablissementA("admin.cumul." + UUID.randomUUID() + "@edukeys.tg");
         String jetonAdmin = connecter(utilisateurRepository.findById(adminAId).orElseThrow().getEmail());
 
@@ -865,7 +879,7 @@ class GestionUtilisateursIntegrationTest {
                         .header("Authorization", "Bearer " + jetonAdmin)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"cumul.%s@edukeys.tg","nomComplet":"Cumul","roles":["ENSEIGNANT","PARENT"]}
+                                {"email":"cumul.%s@edukeys.tg","nomComplet":"Cumul","roles":["ENSEIGNANT","GESTIONNAIRE"]}
                                 """.formatted(UUID.randomUUID())))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.compte.roles.length()").value(2));

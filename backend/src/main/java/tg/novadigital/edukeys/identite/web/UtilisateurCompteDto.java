@@ -14,6 +14,7 @@ import tg.novadigital.edukeys.identite.domain.RoleCode;
 public record UtilisateurCompteDto(
         UUID id,
         String email,
+        String identifiantConnexion,
         String nomComplet,
         boolean actif,
         boolean motDePasseAChanger,

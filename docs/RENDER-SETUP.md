@@ -37,6 +37,22 @@ openssl rand -base64 48
 
 En recette, Render le génère automatiquement — aucune action.
 
+### Journal de sécurité et limitation de débit (US-08a)
+
+Un secret de plus, sur **edukeys-api-recette** comme sur **edukeys-api-prod**,
+à côté de `JWT_SECRET` :
+
+| Variable | Recette | Production | Si elle manque |
+|---|---|---|---|
+| `EDUKEYS_JOURNAL_CLE_EMPREINTE` | `openssl rand -base64 48`, saisie à la main | `openssl rand -base64 48`, saisie à la main | **le démarrage échoue** (`CleEmpreinteSecurite`, 32 octets minimum) |
+
+Elle sert de clé HMAC-SHA256 aux empreintes des identifiants de connexion
+(email, matricule) dans le journal `SECURITE` et dans le limiteur de débit :
+sans clé serveur, un matricule séquentiel se retrouverait par dictionnaire.
+La changer ne casse rien (les empreintes déjà journalisées ne se corrèlent
+plus avec les nouvelles, c'est tout) ; aucune valeur de repli n'existe, comme
+pour `JWT_SECRET`. En local, elle est fournie par `application-local.yml`.
+
 ### Pré-inscription en ligne (US-06)
 
 Deux secrets de plus, sur **edukeys-api-recette** comme sur **edukeys-api-prod** :

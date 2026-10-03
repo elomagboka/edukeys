@@ -45,6 +45,8 @@ public enum CodeErreur {
     DERNIER_ADMINISTRATEUR_NON_DESACTIVABLE,
     ROLE_OBLIGATOIRE,
     ROLE_SUPER_ADMIN_NON_ATTRIBUABLE,
+    ROLE_NON_ATTRIBUABLE_MANUELLEMENT,
+    UTILISATEUR_IDENTIFIANT_DUPLIQUE,
 
     // Authentification
     IDENTIFIANTS_INVALIDES,
@@ -167,6 +169,12 @@ public enum CodeErreur {
     REQUETE_INVALIDE,
     CORPS_ILLISIBLE,
     TROP_DE_REQUETES,
+    /**
+     * Posé par {@code FiltreLimitationDebit} (US-08a) : charset déclaré non
+     * Unicode sur un chemin limité. Le filtre doit lire le corps exactement
+     * comme le contrôleur, sinon la clé de limitation par compte diverge.
+     */
+    ENCODAGE_NON_SUPPORTE,
     MODIFICATION_CONCURRENTE,
     ERREUR_INATTENDUE
 }

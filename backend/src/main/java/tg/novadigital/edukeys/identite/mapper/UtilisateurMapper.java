@@ -28,6 +28,7 @@ public interface UtilisateurMapper {
         return new UtilisateurCompteDto(
                 utilisateur.getId(),
                 utilisateur.getEmail(),
+                utilisateur.getIdentifiantConnexion(),
                 utilisateur.getNomComplet(),
                 utilisateur.isActif(),
                 utilisateur.isMotDePasseAChanger(),
