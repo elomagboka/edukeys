@@ -420,7 +420,7 @@ class DecisionAdmissionIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(email, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();

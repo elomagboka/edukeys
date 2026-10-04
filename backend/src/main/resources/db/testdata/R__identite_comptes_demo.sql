@@ -13,15 +13,16 @@
 -- 01977000-0000-7000-9000-000000000001
 
 -- Comptes de démonstration (mot de passe : Password123!).
-INSERT INTO utilisateurs (id, email, mot_de_passe_hache, nom_complet, super_admin, actif, date_creation, date_modification)
+INSERT INTO utilisateurs (id, email, identifiant_connexion, mot_de_passe_hache, nom_complet, super_admin, actif, date_creation, date_modification)
 VALUES
-    ('01977000-0000-7000-8000-000000000201', 'super.admin@edukeys.tg', '$2a$10$1LBQ2yIY6KnmX8yU5j87A.nQ66bZfAkoeWEUg3p52W8ssSOde9/QS', 'Super Administrateur Demo', TRUE,  TRUE, now(), now()),
-    ('01977000-0000-7000-8000-000000000202', 'directeur@edukeys.tg',   '$2a$10$1LBQ2yIY6KnmX8yU5j87A.nQ66bZfAkoeWEUg3p52W8ssSOde9/QS', 'Directeur Demo',            FALSE, TRUE, now(), now()),
+    ('01977000-0000-7000-8000-000000000201', 'super.admin@edukeys.tg', 'super.admin@edukeys.tg', '$2a$10$1LBQ2yIY6KnmX8yU5j87A.nQ66bZfAkoeWEUg3p52W8ssSOde9/QS', 'Super Administrateur Demo', TRUE,  TRUE, now(), now()),
+    ('01977000-0000-7000-8000-000000000202', 'directeur@edukeys.tg', 'directeur@edukeys.tg',   '$2a$10$1LBQ2yIY6KnmX8yU5j87A.nQ66bZfAkoeWEUg3p52W8ssSOde9/QS', 'Directeur Demo',            FALSE, TRUE, now(), now()),
     -- Cas de référence de l'arbitrage T-04 n°1 : un enseignant dont l'enfant
     -- est scolarisé dans le même établissement porte aussi le rôle PARENT.
-    ('01977000-0000-7000-8000-000000000203', 'enseignant.parent@edukeys.tg', '$2a$10$1LBQ2yIY6KnmX8yU5j87A.nQ66bZfAkoeWEUg3p52W8ssSOde9/QS', 'Enseignant Parent Demo', FALSE, TRUE, now(), now())
+    ('01977000-0000-7000-8000-000000000203', 'enseignant.parent@edukeys.tg', 'enseignant.parent@edukeys.tg', '$2a$10$1LBQ2yIY6KnmX8yU5j87A.nQ66bZfAkoeWEUg3p52W8ssSOde9/QS', 'Enseignant Parent Demo', FALSE, TRUE, now(), now())
 ON CONFLICT (id) DO UPDATE SET
     email              = EXCLUDED.email,
+    identifiant_connexion = EXCLUDED.identifiant_connexion,
     mot_de_passe_hache = EXCLUDED.mot_de_passe_hache,
     nom_complet        = EXCLUDED.nom_complet,
     super_admin        = EXCLUDED.super_admin,

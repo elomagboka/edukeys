@@ -37,7 +37,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @Operation(operationId = "login", summary = "Connexion par email et mot de passe",
+    @Operation(operationId = "login", summary = "Connexion par identifiant (email ou matricule) et mot de passe",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Jetons émis"),
                     @ApiResponse(responseCode = "401", description = "Identifiants invalides"),
@@ -46,7 +46,7 @@ public class AuthController {
     @PostMapping("/login")
     @SecurityRequirements
     public JetonsReponseDto login(@Valid @RequestBody LoginRequestDto requete, HttpServletRequest request) {
-        return authService.connecter(requete.email(), requete.motDePasse(), FiltreAdresseIpCliente.adresseIpDe(request));
+        return authService.connecter(requete.identifiant(), requete.motDePasse(), FiltreAdresseIpCliente.adresseIpDe(request));
     }
 
     @Operation(operationId = "refresh", summary = "Rafraîchissement de l'access token à partir d'un refresh token valide",

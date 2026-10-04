@@ -52,6 +52,9 @@ class AuthServiceTest {
 
     @BeforeEach
     void configurer() {
+        // Clé HMAC des empreintes : jamais de repli, donc posée explicitement hors contexte Spring.
+        tg.novadigital.edukeys.common.securite.JournalSecurite.configurerCle(
+                "cle-empreinte-test-unitaire-32-octets-minimum!!".getBytes(java.nio.charset.StandardCharsets.UTF_8));
         utilisateurRepository = mock(UtilisateurRepository.class);
         affectationEtablissementRepository = mock(AffectationEtablissementRepository.class);
         jetonRafraichissementRepository = mock(JetonRafraichissementRepository.class);
@@ -86,7 +89,7 @@ class AuthServiceTest {
 
     @Test
     void refuseLaConnexion_quandEmailInconnu() {
-        when(utilisateurRepository.findByEmailAndActifTrue("inconnu@edukeys.tg")).thenReturn(java.util.Optional.empty());
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("inconnu@edukeys.tg")).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> authService.connecter("inconnu@edukeys.tg", "peu-importe", "203.0.113.1"))
                 .isInstanceOf(IdentifiantsInvalidesException.class);
@@ -96,7 +99,7 @@ class AuthServiceTest {
     void executeQuandMemeBCrypt_quandEmailInconnu() {
         // Un email inconnu doit coûter le même calcul BCrypt qu'un mauvais mot de
         // passe, sinon le temps de réponse distingue les deux cas (T-04, lot 2 n°6).
-        when(utilisateurRepository.findByEmailAndActifTrue("inconnu@edukeys.tg")).thenReturn(java.util.Optional.empty());
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("inconnu@edukeys.tg")).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> authService.connecter("inconnu@edukeys.tg", "peu-importe", "203.0.113.1"))
                 .isInstanceOf(IdentifiantsInvalidesException.class);
@@ -107,7 +110,7 @@ class AuthServiceTest {
     @Test
     void refuseLaConnexion_quandMotDePasseIncorrect() {
         Utilisateur utilisateur = unUtilisateur();
-        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())).thenReturn(java.util.Optional.of(utilisateur));
         when(passwordEncoder.matches("mauvais", utilisateur.getMotDePasseHache())).thenReturn(false);
 
         assertThatThrownBy(() -> authService.connecter(utilisateur.getEmail(), "mauvais", "203.0.113.1"))
@@ -117,9 +120,9 @@ class AuthServiceTest {
     @Test
     void neJournalisePasLEmailEnClair_quandCompteExistantOuInconnu() {
         Utilisateur utilisateur = unUtilisateur();
-        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())).thenReturn(java.util.Optional.of(utilisateur));
         when(passwordEncoder.matches("mauvais", utilisateur.getMotDePasseHache())).thenReturn(false);
-        when(utilisateurRepository.findByEmailAndActifTrue("inconnu@edukeys.tg")).thenReturn(java.util.Optional.empty());
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("inconnu@edukeys.tg")).thenReturn(java.util.Optional.empty());
 
         assertThatThrownBy(() -> authService.connecter(utilisateur.getEmail(), "mauvais", "203.0.113.1"))
                 .isInstanceOf(IdentifiantsInvalidesException.class);
@@ -139,7 +142,7 @@ class AuthServiceTest {
     @Test
     void cumuleLesPermissionsDesRolesDeLAffectation_casDeReferenceEnseignantParent() {
         Utilisateur utilisateur = unUtilisateur();
-        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())).thenReturn(java.util.Optional.of(utilisateur));
         when(passwordEncoder.matches("bonMotDePasse", utilisateur.getMotDePasseHache())).thenReturn(true);
 
         UUID etablissementId = UUID.randomUUID();
@@ -163,7 +166,7 @@ class AuthServiceTest {
     @Test
     void neRenvoieAucunEtablissement_quandUtilisateurSansAffectation() {
         Utilisateur utilisateur = unUtilisateur();
-        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())).thenReturn(java.util.Optional.of(utilisateur));
         when(passwordEncoder.matches("bonMotDePasse", utilisateur.getMotDePasseHache())).thenReturn(true);
         when(affectationEtablissementRepository.findByUtilisateurIdAndActifTrueOrderByDateCreationAsc(any()))
                 .thenReturn(List.of());
@@ -346,7 +349,7 @@ class AuthServiceTest {
         Utilisateur utilisateur = unUtilisateur();
         utilisateur.exigerChangementMotDePasse();
 
-        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())).thenReturn(java.util.Optional.of(utilisateur));
         when(passwordEncoder.matches("motDePasseTemporaire", utilisateur.getMotDePasseHache())).thenReturn(true);
         when(jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(eq(utilisateur.getId()), any()))
                 .thenReturn(true);
@@ -364,7 +367,7 @@ class AuthServiceTest {
         Utilisateur utilisateur = unUtilisateur();
         utilisateur.exigerChangementMotDePasse();
 
-        when(utilisateurRepository.findByEmailAndActifTrue(utilisateur.getEmail())).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())).thenReturn(java.util.Optional.of(utilisateur));
         when(passwordEncoder.matches("motDePasseTemporaire", utilisateur.getMotDePasseHache())).thenReturn(true);
         when(jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(eq(utilisateur.getId()), any()))
                 .thenReturn(false);
@@ -377,5 +380,49 @@ class AuthServiceTest {
         JetonsReponseDto reponse = authService.connecter(utilisateur.getEmail(), "motDePasseTemporaire", "203.0.113.1");
 
         assertThat(reponse.accessToken()).isEqualTo("access-token");
+    }
+
+    @Test
+    void connecte_parIdentifiantSansEmail_etNormaliseLaSaisie() {
+        Utilisateur eleve = new Utilisateur(null, "MAT-2026-0001", "hash", "Élève Test", false);
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("mat-2026-0001")).thenReturn(java.util.Optional.of(eleve));
+        when(passwordEncoder.matches("mdp", "hash")).thenReturn(true);
+        when(jetonHacheur.genererJetonEnClair()).thenReturn("refresh");
+        when(jetonHacheur.hacher("refresh")).thenReturn("h");
+        when(jwtService.genererAccessToken(any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean())).thenReturn("acces");
+
+        var jetons = authService.connecter("  Mat-2026-0001 ", "mdp", "203.0.113.1");
+
+        assertThat(jetons.accessToken()).isEqualTo("acces");
+        assertThat(eleve.getEmail()).isNull();
+    }
+
+    @Test
+    void messageIdentique_pourIdentifiantInconnuEtMotDePasseIncorrect() {
+        Utilisateur utilisateur = unUtilisateur();
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("marie@edukeys.tg")).thenReturn(java.util.Optional.of(utilisateur));
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("inconnu")).thenReturn(java.util.Optional.empty());
+
+        String messageInconnu = org.junit.jupiter.api.Assertions.assertThrows(IdentifiantsInvalidesException.class,
+                () -> authService.connecter("inconnu", "x", "203.0.113.1")).getMessage();
+        String messageMauvaisMdp = org.junit.jupiter.api.Assertions.assertThrows(IdentifiantsInvalidesException.class,
+                () -> authService.connecter("marie@edukeys.tg", "x", "203.0.113.1")).getMessage();
+
+        assertThat(messageInconnu).isEqualTo(messageMauvaisMdp);
+    }
+
+    @Test
+    void journaliseUneEmpreinteHmacDeLIdentifiantNormalise_aussiPourUnMatricule() {
+        when(utilisateurRepository.findByIdentifiantConnexionAndActifTrue("mat-2026-0042")).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> authService.connecter("  MAT-2026-0042 ", "peu-importe", "203.0.113.1"))
+                .isInstanceOf(IdentifiantsInvalidesException.class);
+
+        List<String> messages = appenderSecurite.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
+        assertThat(messages).hasSize(1);
+        // Plus de cas « format_invalide » : tout identifiant inconnu a son empreinte, calculée sur la valeur normalisée.
+        assertThat(messages.get(0)).contains("motif=compte_inconnu")
+                .contains("empreinte=" + tg.novadigital.edukeys.common.securite.JournalSecurite.empreinte("mat-2026-0042"))
+                .doesNotContain("MAT-2026-0042", "mat-2026-0042 ");
     }
 }

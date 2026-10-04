@@ -20,6 +20,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tg.novadigital.edukeys.common.exception.CodeErreur;
+import tg.novadigital.edukeys.common.securite.IdentifiantConnexion;
 import tg.novadigital.edukeys.common.securite.JournalSecurite;
 import tg.novadigital.edukeys.common.securite.reseau.FiltreAdresseIpCliente;
 import tg.novadigital.edukeys.common.web.CorrelationIdFilter;
@@ -99,6 +101,16 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         // seul à l'analyser pour que getParts()/getParameter() fonctionnent en aval).
         if (estCheminAdmission(request.getRequestURI())) {
             doFiltrerAdmission(request, response, filterChain, adresseIp);
+            return;
+        }
+
+        // Charset déclaré non Unicode (ex. ISO-8859-1) : le convertisseur Spring décoderait le corps avec ce charset
+        // alors que ce filtre lit les octets avec la détection Unicode de Jackson — les deux pourraient diverger sur
+        // l'identifiant. Refusé sur les chemins limités plutôt que d'aligner deux décodeurs (415).
+        // On lit l'en-tête Content-Type lui-même (comme le convertisseur Spring), pas getCharacterEncoding() :
+        // le CharacterEncodingFilter de Boot force l'encodage de la requête à UTF-8 en amont et le masquerait.
+        if (charsetDeclareNonUnicode(request.getContentType())) {
+            repondre415(request, response);
             return;
         }
 
@@ -233,7 +245,7 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
     }
 
     /**
-     * Extrait l'identifiant de compte soumis (email pour {@code /login},
+     * Extrait l'identifiant de compte soumis (identifiant de connexion, email ou matricule, pour {@code /login},
      * jeton de rafraîchissement pour {@code /refresh}), jamais un utilisateur
      * résolu en base : c'est la valeur telle qu'écrite par l'appelant, que le
      * compte existe ou non. {@code null} si le corps est absent, trop
@@ -243,18 +255,32 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
      * (JSON malformé) ou 401 (identifiants invalides).
      */
     private String extraireCleCompte(RequeteAvecCorpsMisEnCache requete) {
-        String corps = requete.corpsCommeTexte();
+        byte[] corps = requete.corpsOctets();
         if (corps == null) {
             return null;
         }
         try {
+            // Octets bruts, même détection d'encodage (UTF-8/16/32) que le convertisseur du contrôleur ; même
+            // ObjectMapper (donc mêmes options de parseur, ex. détection stricte des champs dupliqués).
             JsonNode racine = objectMapper.readTree(corps);
             if (racine == null) {
                 return null;
             }
-            JsonNode email = racine.get("email");
-            if (email != null && email.isTextual() && !email.asText().isBlank()) {
-                return email.asText().trim().toLowerCase();
+            // Seul un identifiant textuel est une clé de compte : un nombre ou un booléen JSON est
+            // rejeté en 400 par LoginRequestDto (désérialiseur strict), il n'authentifie jamais,
+            // donc n'a pas besoin de compteur par compte (le compteur par IP s'applique).
+            //
+            // Alias de compatibilité : l'ancien champ "email" reste accepté une version (API et site
+            // statique se déploient séparément, ADR-0004/0007). MÊME règle que LoginRequestDto :
+            // "identifiant" prime dès qu'il est présent et non nul (même non textuel : requête
+            // rejetée en 400, jamais retombée sur "email") ; "email" n'est lu que s'il est absent.
+            // À supprimer avec l'alias du DTO (issue #107, retrait de l'alias "email").
+            JsonNode identifiant = racine.get("identifiant");
+            if (identifiant == null || identifiant.isNull()) {
+                identifiant = racine.get("email");
+            }
+            if (identifiant != null && identifiant.isTextual() && !identifiant.asText().isBlank()) {
+                return IdentifiantConnexion.normaliser(identifiant.asText());
             }
             JsonNode refreshToken = racine.get("refreshToken");
             if (refreshToken != null && refreshToken.isTextual() && !refreshToken.asText().isBlank()) {
@@ -264,6 +290,33 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private static boolean charsetDeclareNonUnicode(String contentType) {
+        if (contentType == null) {
+            return false;
+        }
+        try {
+            java.nio.charset.Charset charset = MediaType.parseMediaType(contentType).getCharset();
+            return charset != null && !charset.name().toUpperCase(java.util.Locale.ROOT).startsWith("UTF-");
+        } catch (RuntimeException e) {
+            // Content-Type illisible ou charset inconnu : le convertisseur Spring le refusera lui aussi (400/415).
+            return true;
+        }
+    }
+
+    private void repondre415(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Map<String, Object> corpsProblemDetail = new LinkedHashMap<>();
+        corpsProblemDetail.put("type", "about:blank");
+        corpsProblemDetail.put("title", HttpStatus.UNSUPPORTED_MEDIA_TYPE.getReasonPhrase());
+        corpsProblemDetail.put("status", HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
+        corpsProblemDetail.put("detail", "Encodage de contenu non supporté : utilisez UTF-8.");
+        corpsProblemDetail.put("instance", request.getRequestURI());
+        corpsProblemDetail.put("correlationId", request.getAttribute(CorrelationIdFilter.ATTRIBUT_REQUETE));
+        corpsProblemDetail.put("code", CodeErreur.ENCODAGE_NON_SUPPORTE.name());
+        response.setStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.getOutputStream().write(objectMapper.writeValueAsBytes(corpsProblemDetail));
     }
 
     /**
@@ -288,7 +341,7 @@ public class FiltreLimitationDebit extends OncePerRequestFilter {
         corpsProblemDetail.put("detail", MESSAGE_INDIFFERENCIE);
         corpsProblemDetail.put("instance", request.getRequestURI());
         corpsProblemDetail.put("correlationId", request.getAttribute(CorrelationIdFilter.ATTRIBUT_REQUETE));
-        corpsProblemDetail.put("code", "TROP_DE_REQUETES");
+        corpsProblemDetail.put("code", CodeErreur.TROP_DE_REQUETES.name());
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setHeader("Retry-After", String.valueOf(secondesAttente));

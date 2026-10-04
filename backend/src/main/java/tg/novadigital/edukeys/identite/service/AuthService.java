@@ -16,6 +16,7 @@ import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.IdentifiantsInvalidesException;
 import tg.novadigital.edukeys.common.exception.MotDePasseTemporaireExpireException;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
+import tg.novadigital.edukeys.common.securite.IdentifiantConnexion;
 import tg.novadigital.edukeys.common.securite.JournalSecurite;
 import tg.novadigital.edukeys.identite.domain.AffectationEtablissement;
 import tg.novadigital.edukeys.identite.domain.JetonRafraichissement;
@@ -47,7 +48,7 @@ public class AuthService {
     /**
      * Hash BCrypt d'une valeur arbitraire, jamais le mot de passe d'un compte
      * réel : sert uniquement à payer le même coût de calcul qu'une vérification
-     * réelle quand l'email est inconnu, pour qu'un attaquant ne puisse pas
+     * réelle quand l'identifiant est inconnu, pour qu'un attaquant ne puisse pas
      * distinguer un compte inexistant d'un mauvais mot de passe par la durée
      * de réponse (correction T-04, lot 2 n°6).
      */
@@ -80,22 +81,26 @@ public class AuthService {
     }
 
     @Transactional
-    public JetonsReponseDto connecter(String email, String motDePasseEnClair, String adresseIp) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmailAndActifTrue(email).orElse(null);
+    public JetonsReponseDto connecter(String identifiant, String motDePasseEnClair, String adresseIp) {
+        // Valeur normalisée partout (recherche, journal) : l'empreinte de compte_inconnu
+        // se corrèle ainsi avec celle de limitation_debit (même clé que FiltreLimitationDebit).
+        String identifiantNormalise = IdentifiantConnexion.normaliser(identifiant);
+        Utilisateur utilisateur = utilisateurRepository
+                .findByIdentifiantConnexionAndActifTrue(identifiantNormalise).orElse(null);
 
         if (utilisateur == null) {
             // Toujours payer le coût BCrypt, même sans compte à comparer : sinon
-            // l'absence de calcul distingue un email inconnu par le temps de
+            // l'absence de calcul distingue un identifiant inconnu par le temps de
             // réponse (correction T-04, lot 2 n°6).
             passwordEncoder.matches(motDePasseEnClair, HACHE_FACTICE);
-            JournalSecurite.echecAuthentificationCompteInconnu(email, adresseIp);
-            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Email ou mot de passe incorrect.");
+            JournalSecurite.echecAuthentificationCompteInconnu(identifiantNormalise, adresseIp);
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Identifiant ou mot de passe incorrect.");
         }
 
         if (!passwordEncoder.matches(motDePasseEnClair, utilisateur.getMotDePasseHache())) {
             JournalSecurite.echecAuthentificationCompteExistant(
                     utilisateur.getId(), adresseIp, "mot_de_passe_incorrect");
-            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Email ou mot de passe incorrect.");
+            throw new IdentifiantsInvalidesException(CodeErreur.IDENTIFIANTS_INVALIDES, "Identifiant ou mot de passe incorrect.");
         }
 
         // Vérifié seulement après un mot de passe reconnu correct (voir la

@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,6 +22,7 @@ import tg.novadigital.edukeys.common.exception.MotDePasseTemporaireExpireExcepti
 import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
+import tg.novadigital.edukeys.common.securite.IdentifiantConnexion;
 import tg.novadigital.edukeys.identite.domain.AffectationEtablissement;
 import tg.novadigital.edukeys.identite.domain.JetonActivationCompte;
 import tg.novadigital.edukeys.identite.domain.JetonRafraichissement;
@@ -62,6 +62,9 @@ import tg.novadigital.edukeys.identite.security.UtilisateurPrincipal;
 @Service
 public class UtilisateurService {
 
+    /** Rôles dont les comptes naissent dans leur module (US-08a), jamais via l'API de gestion du personnel. */
+    private static final Set<RoleCode> ROLES_DE_COMPTE_PORTAIL = EnumSet.of(RoleCode.ELEVE, RoleCode.PARENT);
+
     private final UtilisateurRepository utilisateurRepository;
     private final JetonRafraichissementRepository jetonRafraichissementRepository;
     private final AffectationEtablissementRepository affectationEtablissementRepository;
@@ -81,6 +84,9 @@ public class UtilisateurService {
      */
     private final Duration dureeValiditeMotDePasseTemporaire;
 
+    /** Plafond de l'expiration explicite d'un mot de passe temporaire ({@link #emettreMotDePasseTemporaireAvecExpiration}). */
+    private final Duration expirationMaxMotDePasseTemporaire;
+
     public UtilisateurService(
             UtilisateurRepository utilisateurRepository,
             JetonRafraichissementRepository jetonRafraichissementRepository,
@@ -89,7 +95,8 @@ public class UtilisateurService {
             PasswordEncoder passwordEncoder,
             JetonHacheur jetonHacheur,
             GenerateurMotDePasseTemporaire generateurMotDePasseTemporaire,
-            @Value("${edukeys.securite.mot-de-passe-temporaire.duree-validite:14d}") Duration dureeValiditeMotDePasseTemporaire) {
+            @Value("${edukeys.securite.mot-de-passe-temporaire.duree-validite:14d}") Duration dureeValiditeMotDePasseTemporaire,
+            @Value("${edukeys.securite.mot-de-passe-temporaire.expiration-max:90d}") Duration expirationMaxMotDePasseTemporaire) {
         this.utilisateurRepository = utilisateurRepository;
         this.jetonRafraichissementRepository = jetonRafraichissementRepository;
         this.affectationEtablissementRepository = affectationEtablissementRepository;
@@ -98,6 +105,7 @@ public class UtilisateurService {
         this.jetonHacheur = jetonHacheur;
         this.generateurMotDePasseTemporaire = generateurMotDePasseTemporaire;
         this.dureeValiditeMotDePasseTemporaire = dureeValiditeMotDePasseTemporaire;
+        this.expirationMaxMotDePasseTemporaire = expirationMaxMotDePasseTemporaire;
     }
 
     /**
@@ -166,9 +174,14 @@ public class UtilisateurService {
      * sur des établissements différents, donc « son » établissement n'existe
      * pas. Cet endpoint est réservé à SUPER_ADMIN (permission
      * {@code UTILISATEUR_GERER_PLATEFORME}), jamais à ADMIN.
+     *
+     * <p>Les comptes élèves/parents (US-08a) en sont exclus : ce sont des
+     * données scolaires d'un établissement (ADR-0002 : SUPER_ADMIN n'en a
+     * aucune), un matricule d'élève n'a rien à faire dans la liste de plateforme.
+     * Un enseignant qui est aussi parent reste listé.</p>
      */
     public Page<Utilisateur> listerTous(Pageable pageable) {
-        return utilisateurRepository.findAll(pageable);
+        return utilisateurRepository.findTousSaufComptesDeRoles(ROLES_DE_COMPTE_PORTAIL, pageable);
     }
 
     /**
@@ -261,12 +274,13 @@ public class UtilisateurService {
     public CompteCree creerCompteAvecRoles(String email, String nomComplet, Set<RoleCode> roles, UUID siteId) {
         validerRolesAttribuables(roles);
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
-        String emailNormalise = email.toLowerCase(Locale.ROOT);
+        String emailNormalise = IdentifiantConnexion.normaliser(email);
         validerEmailDisponible(emailNormalise);
 
         String motDePasseTemporaire = generateurMotDePasseTemporaire.generer();
         String motDePasseHache = passwordEncoder.encode(motDePasseTemporaire);
 
+        // Personnel : identifiant de connexion = email normalisé (US-08a).
         Utilisateur utilisateur = new Utilisateur(emailNormalise, motDePasseHache, nomComplet, false);
         utilisateur.exigerChangementMotDePasse();
         utilisateur = utilisateurRepository.save(utilisateur);
@@ -278,9 +292,7 @@ public class UtilisateurService {
         // BCrypt alimente Utilisateur#motDePasseHache (login), son hash
         // SHA-256 le jeton d'activation (traçabilité/consommation, voir la
         // Javadoc de JetonActivationCompte).
-        JetonActivationCompte jeton = new JetonActivationCompte(
-                utilisateur, jetonHacheur.hacher(motDePasseTemporaire), Instant.now().plus(dureeValiditeMotDePasseTemporaire));
-        jetonActivationCompteRepository.save(jeton);
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, Instant.now().plus(dureeValiditeMotDePasseTemporaire));
 
         return new CompteCree(utilisateur, affectation, motDePasseTemporaire);
     }
@@ -317,6 +329,11 @@ public class UtilisateurService {
         if (utilisateurRepository.existsByEmailAndActifTrue(emailNormalise)) {
             throw new ConflitException(CodeErreur.UTILISATEUR_EMAIL_DUPLIQUE, "Cet email est déjà utilisé sur la plateforme.");
         }
+        // L'identifiant de connexion d'un autre compte (ex. matricule) peut coïncider avec cet email sans
+        // que son email soit renseigné : code distinct, même statut 409.
+        if (utilisateurRepository.existsByIdentifiantConnexionAndActifTrue(emailNormalise)) {
+            throw new ConflitException(CodeErreur.UTILISATEUR_IDENTIFIANT_DUPLIQUE, "Cet identifiant est déjà utilisé sur la plateforme.");
+        }
     }
 
     /**
@@ -331,14 +348,38 @@ public class UtilisateurService {
         if (utilisateurId.equals(appelantId)) {
             throw new RegleMetierViolee(CodeErreur.ROLES_AUTO_MODIFICATION_REFUSEE, "Vous ne pouvez pas modifier vos propres rôles.");
         }
-        validerRolesAttribuables(nouveauxRoles);
+        if (nouveauxRoles == null || nouveauxRoles.isEmpty()) {
+            throw new RegleMetierViolee(CodeErreur.ROLE_OBLIGATOIRE, "Au moins un rôle doit être attribué.");
+        }
 
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
         AffectationEtablissement affectation = affectationEtablissementRepository
                 .findByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId)
                 .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
-        affectation.remplacerRoles(nouveauxRoles);
+        // Seuls les rôles AJOUTÉS sont validés (US-08a) : un compte qui porte déjà ELEVE/PARENT
+        // (créé par son module, ex. enseignant + parent) doit pouvoir être renvoyé tel quel.
+        Set<RoleCode> rolesActuels = affectation.getRoles();
+        Set<RoleCode> rolesAjoutes = EnumSet.noneOf(RoleCode.class);
+        rolesAjoutes.addAll(nouveauxRoles);
+        rolesAjoutes.removeAll(rolesActuels);
+        refuserSuperAdmin(rolesAjoutes);
+        if (rolesAjoutes.stream().anyMatch(ROLES_DE_COMPTE_PORTAIL::contains)) {
+            throw new RegleMetierViolee(CodeErreur.ROLE_NON_ATTRIBUABLE_MANUELLEMENT,
+                    "Les rôles ELEVE et PARENT ne s'attribuent pas ici : ces comptes sont créés par leur module.");
+        }
+        // Un compte élève n'est jamais promu au personnel depuis cette API.
+        if (rolesActuels.contains(RoleCode.ELEVE) && !rolesAjoutes.isEmpty()) {
+            throw new RegleMetierViolee(CodeErreur.ROLE_NON_ATTRIBUABLE_MANUELLEMENT,
+                    "Un compte élève ne peut pas recevoir de rôle du personnel.");
+        }
+
+        // ELEVE/PARENT déjà présents sont conservés automatiquement (union) : on ne les retire pas ici.
+        Set<RoleCode> rolesResultants = EnumSet.noneOf(RoleCode.class);
+        rolesResultants.addAll(nouveauxRoles);
+        rolesActuels.stream().filter(ROLES_DE_COMPTE_PORTAIL::contains).forEach(rolesResultants::add);
+
+        affectation.remplacerRoles(rolesResultants);
         affectationEtablissementRepository.save(affectation);
     }
 
@@ -406,9 +447,16 @@ public class UtilisateurService {
                 .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
 
         Utilisateur utilisateur = affectation.getUtilisateur();
-        if (!utilisateur.isActif() && utilisateurRepository.existsByEmailAndActifTrue(utilisateur.getEmail())) {
-            throw new ConflitException(CodeErreur.UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION,
-                    "Un autre compte actif porte désormais cet email : réactivation impossible.");
+        if (!utilisateur.isActif()) {
+            // Email d'abord (personnel : identifiant == email, le code historique est conservé).
+            if (utilisateur.getEmail() != null && utilisateurRepository.existsByEmailAndActifTrue(utilisateur.getEmail())) {
+                throw new ConflitException(CodeErreur.UTILISATEUR_EMAIL_REPRIS_DEPUIS_DESACTIVATION,
+                        "Un autre compte actif porte désormais cet email : réactivation impossible.");
+            }
+            if (utilisateurRepository.existsByIdentifiantConnexionAndActifTrue(utilisateur.getIdentifiantConnexion())) {
+                throw new ConflitException(CodeErreur.UTILISATEUR_IDENTIFIANT_DUPLIQUE,
+                        "Un autre compte actif porte désormais cet identifiant : réactivation impossible.");
+            }
         }
 
         affectation.reactiver();
@@ -464,6 +512,11 @@ public class UtilisateurService {
 
         Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
                 .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
+        // Un compte de plateforme n'est jamais réinitialisable depuis un établissement, même
+        // porteur d'une affectation locale (même message que « introuvable »).
+        if (utilisateur.isSuperAdmin() || !utilisateur.isActif()) {
+            throw new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable.");
+        }
 
         invaliderJetonsActivationActifs(utilisateurId);
 
@@ -472,9 +525,7 @@ public class UtilisateurService {
         utilisateur.exigerChangementMotDePasse();
         utilisateurRepository.save(utilisateur);
 
-        JetonActivationCompte jeton = new JetonActivationCompte(
-                utilisateur, jetonHacheur.hacher(motDePasseTemporaire), Instant.now().plus(dureeValiditeMotDePasseTemporaire));
-        jetonActivationCompteRepository.save(jeton);
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, Instant.now().plus(dureeValiditeMotDePasseTemporaire));
 
         revoquerJetonsActifs(utilisateurId);
 
@@ -520,22 +571,75 @@ public class UtilisateurService {
         revoquerJetonsActifs(utilisateurId);
     }
 
-    @Transactional
-    public void desactiverCompte(UUID utilisateurId) {
-        Utilisateur utilisateur = utilisateurRepository.findById(utilisateurId)
-                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
-
-        utilisateur.desactiver();
-        utilisateurRepository.save(utilisateur);
-
-        revoquerJetonsActifs(utilisateurId);
-    }
-
     private void revoquerJetonsActifs(UUID utilisateurId) {
         List<JetonRafraichissement> jetonsActifs =
                 jetonRafraichissementRepository.findByUtilisateurIdAndActifTrue(utilisateurId);
         jetonsActifs.forEach(JetonRafraichissement::desactiver);
         jetonsActifs.forEach(jetonRafraichissementRepository::save);
+    }
+
+    private void emettreJetonActivation(Utilisateur utilisateur, String motDePasseTemporaire, Instant dateExpiration) {
+        jetonActivationCompteRepository.save(
+                new JetonActivationCompte(utilisateur, jetonHacheur.hacher(motDePasseTemporaire), dateExpiration));
+    }
+
+    /**
+     * API interne (pas d'endpoint, exposée aux autres modules par le seul port
+     * {@code identite.EmetteurMotDePasseTemporaire}) pour les modules qui créent
+     * leurs propres comptes (US-08 : comptes élèves) : pose un mot de passe
+     * temporaire avec une date d'expiration <strong>explicite</strong> (ex.
+     * {@code max(inscription + 14 j, début d'année + 30 j)}) au lieu de la durée
+     * configurée.
+     *
+     * <p><strong>Même borne que {@link #regenererMotDePasseTemporaire}</strong>
+     * (c'est la faille corrigée trois fois en US-04 : un {@code findById} nu
+     * permettrait de réinitialiser le secret de n'importe quel compte) :
+     * établissement courant obligatoire, compte affecté ici et nulle part
+     * ailleurs, actif, non {@code superAdmin}, et dont l'affectation courante ne
+     * porte <strong>QUE</strong> les rôles {@code ELEVE} ou {@code PARENT} (jamais un
+     * compte du personnel, même cumulant PARENT).
+     * Tout refus est un « introuvable » indiscernable d'un identifiant
+     * inexistant.</p>
+     *
+     * @throws IllegalArgumentException si la date est nulle, passée ou au-delà du plafond
+     *         {@code expiration-max} : erreur de programmation de l'appelant
+     */
+    @Transactional
+    public String emettreMotDePasseTemporaireAvecExpiration(UUID utilisateurId, Instant dateExpiration) {
+        Instant maintenant = Instant.now();
+        if (dateExpiration == null || !dateExpiration.isAfter(maintenant)) {
+            throw new IllegalArgumentException("La date d'expiration du mot de passe temporaire doit être dans le futur.");
+        }
+        if (dateExpiration.isAfter(maintenant.plus(expirationMaxMotDePasseTemporaire))) {
+            throw new IllegalArgumentException("La date d'expiration du mot de passe temporaire dépasse le plafond de "
+                    + expirationMaxMotDePasseTemporaire + ".");
+        }
+
+        UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
+        AffectationEtablissement affectation = affectationEtablissementRepository
+                .findByUtilisateurIdAndEtablissementIdAndActifTrue(utilisateurId, etablissementId)
+                .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable."));
+        boolean affecteAilleursActif = affectationEtablissementRepository
+                .existsByUtilisateurIdAndActifTrueAndEtablissementIdNot(utilisateurId, etablissementId);
+        Utilisateur utilisateur = affectation.getUtilisateur();
+        // TOUS les rôles de l'affectation doivent être ELEVE/PARENT : un ADMIN (ou enseignant) qui est aussi
+        // parent n'est pas un compte de portail, sinon un agent lirait en clair son mot de passe temporaire.
+        Set<RoleCode> rolesAffectation = affectation.getRoles();
+        boolean compteDePortail = !rolesAffectation.isEmpty() && ROLES_DE_COMPTE_PORTAIL.containsAll(rolesAffectation);
+        if (affecteAilleursActif || utilisateur.isSuperAdmin() || !utilisateur.isActif() || !compteDePortail) {
+            throw new RessourceIntrouvableException(CodeErreur.UTILISATEUR_INTROUVABLE, "Utilisateur introuvable.");
+        }
+
+        invaliderJetonsActivationActifs(utilisateurId);
+
+        String motDePasseTemporaire = generateurMotDePasseTemporaire.generer();
+        utilisateur.changerMotDePasseHache(passwordEncoder.encode(motDePasseTemporaire));
+        utilisateur.exigerChangementMotDePasse();
+        utilisateurRepository.save(utilisateur);
+
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, dateExpiration);
+        revoquerJetonsActifs(utilisateurId);
+        return motDePasseTemporaire;
     }
 
     private void invaliderJetonsActivationActifs(UUID utilisateurId) {
@@ -550,12 +654,22 @@ public class UtilisateurService {
      * §5), jamais attribuable depuis un établissement — que ce soit à la
      * création d'un compte ou par {@code PUT .../roles}.
      */
+    private static void refuserSuperAdmin(Set<RoleCode> roles) {
+        if (roles.contains(RoleCode.SUPER_ADMIN)) {
+            throw new RegleMetierViolee(CodeErreur.ROLE_SUPER_ADMIN_NON_ATTRIBUABLE, "SUPER_ADMIN est un rôle de plateforme, non attribuable depuis un établissement.");
+        }
+    }
+
     private void validerRolesAttribuables(Set<RoleCode> roles) {
         if (roles == null || roles.isEmpty()) {
             throw new RegleMetierViolee(CodeErreur.ROLE_OBLIGATOIRE, "Au moins un rôle doit être attribué.");
         }
-        if (roles.contains(RoleCode.SUPER_ADMIN)) {
-            throw new RegleMetierViolee(CodeErreur.ROLE_SUPER_ADMIN_NON_ATTRIBUABLE, "SUPER_ADMIN est un rôle de plateforme, non attribuable depuis un établissement.");
+        refuserSuperAdmin(roles);
+        // US-08a : les comptes élèves et parents naissent dans leurs modules
+        // (identifiant = matricule, rattachement à un dossier), jamais ici.
+        if (roles.contains(RoleCode.ELEVE) || roles.contains(RoleCode.PARENT)) {
+            throw new RegleMetierViolee(CodeErreur.ROLE_NON_ATTRIBUABLE_MANUELLEMENT,
+                    "Les rôles ELEVE et PARENT ne s'attribuent pas ici : ces comptes sont créés par leur module.");
         }
     }
 

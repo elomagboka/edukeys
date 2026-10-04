@@ -5,7 +5,7 @@ export const fr = {
     },
     connexion: {
       titre: 'Connexion à Edukeys',
-      email: 'Adresse email',
+      identifiant: 'Email ou matricule',
       motDePasse: 'Mot de passe',
       bouton: 'Se connecter',
       enCours: 'Connexion en cours…',

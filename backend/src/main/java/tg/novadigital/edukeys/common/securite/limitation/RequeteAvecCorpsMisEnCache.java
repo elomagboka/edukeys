@@ -61,9 +61,14 @@ final class RequeteAvecCorpsMisEnCache extends HttpServletRequestWrapper {
         return tampon.size() <= tailleMaxOctets ? tampon.toByteArray() : new byte[0];
     }
 
-    /** {@code null} si le corps était absent, illisible ou trop volumineux — l'appelant se rabat alors sur le seul compteur par IP. */
-    String corpsCommeTexte() {
-        return corps.length == 0 ? null : new String(corps, StandardCharsets.UTF_8);
+    /**
+     * Octets bruts du corps, {@code null} s'il était absent, illisible ou trop volumineux — l'appelant se rabat alors
+     * sur le seul compteur par IP. Volontairement PAS décodés en texte ici : le convertisseur Spring passe les octets
+     * bruts à Jackson, qui détecte lui-même UTF-8/16/32 (BOM ou motif de zéros) ; décoder en UTF-8 d'abord laissait
+     * un corps UTF-16 échapper à la clé de compte (le contrôleur l'authentifiait, le filtre ne voyait rien).
+     */
+    byte[] corpsOctets() {
+        return corps.length == 0 ? null : corps;
     }
 
     @Override

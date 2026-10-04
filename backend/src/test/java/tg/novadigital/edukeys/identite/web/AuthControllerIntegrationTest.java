@@ -91,7 +91,7 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(EMAIL_DIRECTEUR, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -105,7 +105,7 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(EMAIL_ENSEIGNANT_PARENT, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles.length()").value(2))
@@ -117,7 +117,7 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"mauvais"}
+                                {"identifiant":"%s","motDePasse":"mauvais"}
                                 """.formatted(EMAIL_DIRECTEUR)))
                 .andExpect(status().isUnauthorized());
     }
@@ -302,7 +302,7 @@ class AuthControllerIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(EMAIL_DIRECTEUR, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -375,7 +375,7 @@ class AuthControllerIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(email, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -388,7 +388,7 @@ class AuthControllerIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(EMAIL_DIRECTEUR, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -424,7 +424,7 @@ class AuthControllerIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(EMAIL_DIRECTEUR, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -480,7 +480,7 @@ class AuthControllerIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(EMAIL_DIRECTEUR, MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -513,7 +513,7 @@ class AuthControllerIntegrationTest {
         String reponseLogin = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email":"%s","motDePasse":"%s"}
+                                {"identifiant":"%s","motDePasse":"%s"}
                                 """.formatted(compteTest.getEmail(), MOT_DE_PASSE)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -531,7 +531,18 @@ class AuthControllerIntegrationTest {
 
         String refreshTokenActif = com.jayway.jsonpath.JsonPath.read(reponseRefresh, "$.refreshToken");
 
-        utilisateurService.desactiverCompte(compteTest.getId());
+        // Désactivation par la voie réelle (affectation locale unique : le compte est désactivé et ses sessions révoquées).
+        java.util.UUID etablissementId = java.util.UUID.fromString("01977000-0000-7000-9000-000000000001");
+        java.util.UUID affectationId = java.util.UUID.randomUUID();
+        entityManager.flush();
+        jdbcTemplate.update(
+                "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
+                        + "values (?, ?, ?, true, now(), now())", affectationId, compteTest.getId(), etablissementId);
+        jdbcTemplate.update("insert into affectation_roles (affectation_id, role_code) values (?, 'ENSEIGNANT')", affectationId);
+        try (var portee = tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement.ouvrir(etablissementId)) {
+            utilisateurService.desactiverDansEtablissementCourant(compteTest.getId(), java.util.UUID.randomUUID());
+            entityManager.flush();
+        }
 
         // Le même jeton, encore valide côté expiration, est désormais rejeté :
         // la désactivation du compte révoque immédiatement ses jetons actifs.

@@ -14,6 +14,8 @@ edukeys:
   securite:
     jwt:
       secret: edukeys-secret-test-fixe-jamais-reutilise-ailleurs-32-octets-min
+    journal:
+      cle-empreinte: edukeys-cle-empreinte-test-fixe-jamais-reutilisee-ailleurs-32-octets
 
   # I4 : le plancher de temps de réponse de la soumission publique est ramené
   # à 0 pour ne pas ajouter 1,2 s à chaque test qui soumet un dossier. Le

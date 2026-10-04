@@ -1,6 +1,7 @@
 package tg.novadigital.edukeys.identite.domain;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.hibernate.envers.Audited;
@@ -11,6 +12,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import tg.novadigital.edukeys.common.domain.BaseEntity;
+import tg.novadigital.edukeys.common.securite.IdentifiantConnexion;
 
 /**
  * Compte d'accès à Edukeys. L'email est unique globalement, pas par
@@ -22,8 +24,20 @@ import tg.novadigital.edukeys.common.domain.BaseEntity;
 @Audited
 public class Utilisateur extends BaseEntity {
 
-    @Column(nullable = false, unique = false)
+    /** Nullable depuis US-08a : un compte élève se connecte par matricule, sans email. */
+    @Column
     private String email;
+
+    /**
+     * Identifiant saisi à la connexion (email du personnel, matricule d'un
+     * élève). Toujours stocké normalisé ({@link IdentifiantConnexion#normaliser}), unique
+     * parmi les comptes actifs, non modifiable après création : aucune méthode
+     * de mutation n'existe (et aucun flux ne modifie l'email non plus, à ce
+     * jour). Si un futur flux modifie l'email, il devra décider explicitement
+     * du sort de l'identifiant (le suivre tant qu'il égale l'ancien email).
+     */
+    @Column(name = "identifiant_connexion", nullable = false, updatable = false)
+    private String identifiantConnexion;
 
     @Column(name = "mot_de_passe_hache", nullable = false)
     private String motDePasseHache;
@@ -54,7 +68,20 @@ public class Utilisateur extends BaseEntity {
     }
 
     public Utilisateur(String email, String motDePasseHache, String nomComplet, boolean superAdmin) {
+        this(email, IdentifiantConnexion.normaliser(email), motDePasseHache, nomComplet, superAdmin);
+    }
+
+    /** Compte à identifiant explicite ; {@code email} peut être {@code null} (ex. élève, US-08). */
+    public Utilisateur(String email, String identifiantConnexion, String motDePasseHache, String nomComplet, boolean superAdmin) {
         this.email = email;
+        // Jamais d'identifiant absent ou blanc : un compte sans identifiant ne pourrait pas se connecter,
+        // et "" occuperait l'index d'unicité.
+        String normalise = IdentifiantConnexion.normaliser(
+                Objects.requireNonNull(identifiantConnexion, "L'identifiant de connexion est obligatoire."));
+        if (normalise.isEmpty()) {
+            throw new IllegalArgumentException("L'identifiant de connexion ne peut pas être blanc.");
+        }
+        this.identifiantConnexion = normalise;
         this.motDePasseHache = motDePasseHache;
         this.nomComplet = nomComplet;
         this.superAdmin = superAdmin;
@@ -62,6 +89,10 @@ public class Utilisateur extends BaseEntity {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getIdentifiantConnexion() {
+        return identifiantConnexion;
     }
 
     public String getMotDePasseHache() {
