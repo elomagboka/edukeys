@@ -3,6 +3,13 @@
 > Rempli automatiquement par la commande `/point` en fin de session.
 > Se lit au démarrage de la session suivante : il remplace l'historique de conversation.
 
+## 2026-10-06 — US-08 · principe de lecture des mutations (PR #112)
+
+- Décision : **un rouge n'est une détection que si on sait QUI l'a provoqué.** Dans `IsolationEtablissementTest`, ce sont les assertions **typées** qui le savent : C8 attend `EcritureInterEtablissementRefuseeException` et C10 `ContexteEtablissementAbsentException`. Une garde désarmée les fait rougir quoi que fasse la base ensuite. Elles ne doivent **jamais** être assouplies en « une exception quelconque » : C8 cesserait de distinguer la garde d'une contrainte `CHECK`.
+- Corollaire : un rouge provoqué par une contrainte en base **n'est pas** un « non détecté ». C10 sous `prepersist` rougit par une erreur Hibernate et c'est une vraie détection. Classer ces rouges en écart rendrait le script bruyant sur ses propres succès. `mutation-isolation.sh` affiche donc la cause de chaque rouge à titre **strictement informatif**, jamais comme critère de conformité.
+- Correction associée : C8 mute désormais vers une valeur **différente et valide** (valeur actuelle + 1, négation d'un booléen). Avec `Long.MAX_VALUE`, `compteurs_matricule` (`CHECK 0..99999`) refusait la ligne même garde désarmée, et l'assertion « aucune trace en base » n'était jamais exercée.
+- Piège rencontré : j'ai lu la **cause** d'un rouge (violation de `CHECK`) sans lire l'**assertion** qui l'avait produit, et j'ai conclu à tort à un faux vert du script. Avant de déclarer un défaut de détection, lire ce que le cas asserte.
+
 ## 2026-09-29 — US-07 (traitement des dossiers d'admission) · PR #101 fusionnée
 
 - Fait : **US-07 livrée et fusionnée** (issue #27 fermée, 2 commits, `mvn verify` et CI verts). `POST /api/v1/demandes-admission/{id}/decisions` (`deciderDemandeAdmission`, permission `ADMISSION_DECIDER`, **ADMIN seul**) ; journal `DecisionAdmission` en ajout seul (`V14__admission_decisions.sql`) renvoyé dans le détail du dossier ; notification au parent en `AFTER_COMMIT` (3 `TypeNotification.ADMISSION_DECISION_*`, par `codeSuivi`) ; **`OptimisticLockingFailureException` → 409 `MODIFICATION_CONCURRENTE` dans `common`** (500 latent sur tous les modules).
