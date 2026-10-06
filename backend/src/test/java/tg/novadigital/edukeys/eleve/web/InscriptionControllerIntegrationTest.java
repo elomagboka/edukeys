@@ -334,7 +334,7 @@ class InscriptionControllerIntegrationTest {
         scenario.jetonPourRole(etab.id(), "ADMIN");
         String emailAdmin = jdbcTemplate.queryForObject(
                 "select u.email from utilisateurs u join affectations_etablissement a on a.utilisateur_id = u.id "
-                        + "where a.etablissement_id = ?::uuid and u.email like 'u.us08.%' limit 1", String.class, etab.id());
+                        + "where a.etablissement_id = ?::uuid and u.email like 'u.jetable.%' limit 1", String.class, etab.id());
         jdbcTemplate.update("update utilisateurs set mot_de_passe_a_changer = true where email = ?", emailAdmin);
         String jetonTemporaire = scenario.connecter(emailAdmin);
         scenario.inscrire(jetonTemporaire, dossier.id(), classeId, dossier.version(), false)

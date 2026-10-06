@@ -6,7 +6,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.http.MediaType;
@@ -15,41 +14,38 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.jayway.jsonpath.JsonPath;
 
 import jakarta.persistence.EntityManager;
 
-import tg.novadigital.edukeys.identite.domain.Utilisateur;
 import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
+import tg.novadigital.edukeys.testsupport.EtablissementJetable;
 
 /**
  * Mise en scène partagée des tests d'intégration de l'inscription (US-08) : établissement, administrateur,
  * structure académique, dossiers acceptés. Tout passe par l'API réelle ou par des insertions JDBC, jamais par
  * un contournement des services. Utilisable dans une transaction de test (rollback) comme hors transaction
  * (vraies transactions concurrentes) ; dans ce second cas chaque scénario crée son propre établissement.
+ * Établissement jetable et comptes passent par {@link EtablissementJetable}, motif obligatoire des tests
+ * hors rollback (compteurs) : sa Javadoc fait foi.
  */
 final class ScenarioInscription {
 
-    static final String EMAIL_SUPER_ADMIN = "super.admin@edukeys.tg";
-    static final String MOT_DE_PASSE = "Password123!";
+    static final String EMAIL_SUPER_ADMIN = EtablissementJetable.EMAIL_SUPER_ADMIN;
+    static final String MOT_DE_PASSE = EtablissementJetable.MOT_DE_PASSE;
 
     private static final AtomicInteger TELEPHONE = new AtomicInteger(1000);
 
     private final MockMvc mockMvc;
     private final JdbcTemplate jdbcTemplate;
-    private final UtilisateurRepository utilisateurRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final EntityManager entityManager;
+    private final EtablissementJetable etablissements;
 
     ScenarioInscription(MockMvc mockMvc, JdbcTemplate jdbcTemplate, UtilisateurRepository utilisateurRepository,
                         PasswordEncoder passwordEncoder, EntityManager entityManager) {
-        this.entityManager = entityManager;
         this.mockMvc = mockMvc;
         this.jdbcTemplate = jdbcTemplate;
-        this.utilisateurRepository = utilisateurRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.etablissements = new EtablissementJetable(mockMvc, jdbcTemplate, utilisateurRepository, passwordEncoder, entityManager);
     }
 
     /** Établissement prêt à inscrire : admin, année active 2026-2027, cycle, niveau et admissions ouvertes. */
@@ -65,7 +61,7 @@ final class ScenarioInscription {
 
     Etablissement etablissementPret(String prefixe) throws Exception {
         String id = creerEtablissement(prefixe);
-        String code = jdbcTemplate.queryForObject("select code from etablissements where id = ?::uuid", String.class, id);
+        String code = etablissements.code(id);
         String jetonAdmin = jetonPourRole(id, "ADMIN");
         creerAnnee(jetonAdmin, "2026-09-01", "2027-07-15", true);
         String cycleId = creerCycle(jetonAdmin, "Collège", prefixe + "C", 1);
@@ -75,20 +71,7 @@ final class ScenarioInscription {
     }
 
     String creerEtablissement(String prefixeCode) throws Exception {
-        String jetonSuperAdmin = connecter(EMAIL_SUPER_ADMIN);
-        // 3 lettres + 5 chiffres au plus : reste dans [A-Z0-9]{2,10} (US-08).
-        String code = prefixeCode + Math.abs(System.nanoTime() % 100000);
-        String reponse = mockMvc.perform(post("/api/v1/etablissements")
-                        .header("Authorization", "Bearer " + jetonSuperAdmin)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"code":"%s","nom":"Établissement %s","typeEtablissement":"COLLEGE",
-                                 "ville":"Lomé","email":"contact.%s@edukeys.tg",
-                                 "emailAdministrateur":"admin.%s@edukeys.tg","nomCompletAdministrateur":"Admin Test"}
-                                """.formatted(code, code, code.toLowerCase(), code.toLowerCase())))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(reponse, "$.etablissement.id");
+        return etablissements.creerEtablissement(prefixeCode);
     }
 
     String idSitePrincipal(String etablissementId) {
@@ -180,34 +163,15 @@ final class ScenarioInscription {
     // ------------------------------------------------------------------
 
     String jetonPourRole(String etablissementId, String roleCode) throws Exception {
-        Utilisateur compte = utilisateurRepository.save(new Utilisateur(
-                "u.us08." + UUID.randomUUID() + "@edukeys.tg", passwordEncoder.encode(MOT_DE_PASSE), "Utilisateur US-08 Test", false));
-        // Dans une transaction de test, l'insertion du compte est différée : la FK de l'affectation (JDBC) l'exige écrite.
-        if (TransactionSynchronizationManager.isActualTransactionActive()) {
-            entityManager.flush();
-        }
-        UUID affectationId = UUID.randomUUID();
-        jdbcTemplate.update(
-                "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
-                        + "values (?, ?, ?::uuid, true, now(), now())",
-                affectationId, compte.getId(), etablissementId);
-        jdbcTemplate.update("insert into affectation_roles (affectation_id, role_code) values (?, ?)", affectationId, roleCode);
-        return connecter(compte.getEmail());
+        return etablissements.jetonPourRole(etablissementId, roleCode);
     }
 
     String connecter(String identifiant) throws Exception {
-        return connecter(identifiant, MOT_DE_PASSE);
+        return etablissements.connecter(identifiant);
     }
 
     String connecter(String identifiant, String motDePasse) throws Exception {
-        String reponse = mockMvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"identifiant":"%s","motDePasse":"%s"}
-                                """.formatted(identifiant, motDePasse)))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(reponse, "$.accessToken");
+        return etablissements.connecter(identifiant, motDePasse);
     }
 
     // ------------------------------------------------------------------
