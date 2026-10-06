@@ -130,6 +130,30 @@ class InscriptionTransactionsReellesIntegrationTest {
         assertThat(compter("select dernier from compteurs_matricule where etablissement_id = ?::uuid", etab.id())).isEqualTo(2L);
     }
 
+    /**
+     * Les tests ci-dessus inscrivent dans UNE classe : le verrou de classe sérialise alors tout, et masquerait
+     * l'absence du verrou du compteur (mutation constatée : retirer le verrou du compteur les laissait verts).
+     * Ici chaque inscription vise une classe différente : seul le verrou du compteur les départage.
+     */
+    @Test
+    void quatreInscriptionsParallelesDansQuatreClassesDistinctes_donnentQuatreSequencesDistinctesSansTrou() throws Exception {
+        ScenarioInscription.Etablissement etab = scenario.etablissementPret("TRI");
+        List<Callable<Reponse>> appels = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            String classeId = scenario.creerClasse(etab.jetonAdmin(), etab.niveauId(), "C" + i, null, null);
+            ScenarioInscription.Dossier dossier = scenario.dossierAccepte(etab, "Sequence" + i, "Parallele", "2015-0" + (i + 1) + "-15");
+            appels.add(inscription(etab, dossier, classeId));
+        }
+
+        List<Reponse> reponses = enParallele(appels);
+
+        assertThat(reponses).extracting(Reponse::statut).containsOnly(201);
+        List<String> matricules = reponses.stream().map(r -> (String) JsonPath.read(r.corps(), "$.matricule")).sorted().toList();
+        assertThat(matricules).containsExactly(etab.code() + "-2026-00001", etab.code() + "-2026-00002",
+                etab.code() + "-2026-00003", etab.code() + "-2026-00004");
+        assertThat(compter("select dernier from compteurs_matricule where etablissement_id = ?::uuid", etab.id())).isEqualTo(4L);
+    }
+
     @Test
     void doubleClicSurLeMemeDossier_donneUnCreated_etUnConflit_etUnSeulEleve() throws Exception {
         ScenarioInscription.Etablissement etab = scenario.etablissementPret("TRB");
