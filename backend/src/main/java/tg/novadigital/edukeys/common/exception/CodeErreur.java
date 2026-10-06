@@ -19,6 +19,8 @@ public enum CodeErreur {
     // Établissement
     ETABLISSEMENT_INTROUVABLE,
     ETABLISSEMENT_CODE_DUPLIQUE,
+    /** Code hors format {@code [A-Z0-9]{2,10}} (US-08 : il entre dans le matricule et l'identifiant de connexion des élèves). */
+    ETABLISSEMENT_CODE_INVALIDE,
     ETABLISSEMENT_EMAIL_DUPLIQUE,
     ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION,
     ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION,
@@ -160,6 +162,23 @@ public enum CodeErreur {
      * ou LISTE_ATTENTE — la contrainte de base tranche, jamais un 500.
      */
     ADMISSION_DOUBLON,
+
+    // Inscriptions et élèves (US-08)
+    INSCRIPTION_DEMANDE_NON_ACCEPTEE,
+    INSCRIPTION_DEJA_EFFECTUEE,
+    INSCRIPTION_NIVEAU_INCOHERENT,
+    INSCRIPTION_ANNEE_INCOHERENTE,
+    INSCRIPTION_ANNEE_CLOTUREE,
+    INSCRIPTION_CLASSE_INACTIVE,
+    INSCRIPTION_CLASSE_COMPLETE,
+    /** Un élève actif de même nom, prénoms et date de naissance existe : à confirmer explicitement ({@code confirmerHomonyme}). */
+    ELEVE_HOMONYME,
+    /** Plus aucun numéro de matricule disponible pour l'année (5 chiffres) : jamais de rebouclage. */
+    MATRICULE_SEQUENCE_EPUISEE,
+    /** Code d'établissement hors format au moment de générer un matricule : refusé plutôt qu'un matricule inutilisable. */
+    MATRICULE_CODE_ETABLISSEMENT_INVALIDE,
+    /** Date d'expiration d'un mot de passe temporaire au-delà du maximum configuré (inscription trop anticipée). */
+    MOT_DE_PASSE_TEMPORAIRE_EXPIRATION_HORS_BORNES,
 
     // Inter-établissement
     ECRITURE_INTER_ETABLISSEMENT_REFUSEE,

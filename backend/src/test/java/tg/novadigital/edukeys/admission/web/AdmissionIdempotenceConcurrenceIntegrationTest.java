@@ -75,7 +75,7 @@ class AdmissionIdempotenceConcurrenceIntegrationTest {
 
     @Test
     void deuxSoumissionsStrictementConcurrentes_neCreentQuUnSeulDossier_etRenvoientLeMemeAccuse() throws Exception {
-        String prefixeCode = "CONC" + (System.nanoTime() % 100000);
+        String prefixeCode = "CO";
         String etablissementId = creerEtablissement(prefixeCode);
         String code = jdbcTemplate.queryForObject("select code from etablissements where id = ?::uuid", String.class, etablissementId);
         String jetonAdmin = creerAdminEtObtenirToken(etablissementId);
@@ -132,7 +132,7 @@ class AdmissionIdempotenceConcurrenceIntegrationTest {
      */
     @Test
     void deuxPremieresSoumissionsSimultanees_sansLigneDeCompteurPreexistante_neRemontentJamaisUne500() throws Exception {
-        String prefixeCode = "CPT" + (System.nanoTime() % 100000);
+        String prefixeCode = "CP";
         String etablissementId = creerEtablissement(prefixeCode);
         String code = jdbcTemplate.queryForObject("select code from etablissements where id = ?::uuid", String.class, etablissementId);
         String jetonAdmin = creerAdminEtObtenirToken(etablissementId);

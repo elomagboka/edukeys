@@ -52,7 +52,7 @@ class GenerateurReferenceAdmissionIntegrationTest {
 
     @Test
     void genereUneReference_quandUneLigneDeCompteurExisteMaisEstDesactivee() {
-        UUID etablissementId = UUID.fromString(creerEtablissement("CPTDESACT"));
+        UUID etablissementId = UUID.fromString(creerEtablissement("CPTD"));
         int annee = java.time.Year.now().getValue();
         jdbcTemplate.update(
                 "insert into compteurs_reference_admission "

@@ -213,11 +213,11 @@ class AuthControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementA, "TST-A-" + etablissementA, "Établissement test A", "tst.a." + etablissementA + "@edukeys.tg");
+                etablissementA, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("TSTA", etablissementA), "Établissement test A", "tst.a." + etablissementA + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementB, "TST-B-" + etablissementB, "Établissement test B", "tst.b." + etablissementB + "@edukeys.tg");
+                etablissementB, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("TSTB", etablissementB), "Établissement test B", "tst.b." + etablissementB + "@edukeys.tg");
 
         Utilisateur compteEtablissementA = utilisateurRepository.save(new Utilisateur(
                 "compte.etab.a." + java.util.UUID.randomUUID() + "@edukeys.tg",
@@ -270,7 +270,7 @@ class AuthControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "TST-ADM-" + etablissementAdmin, "Établissement test admin",
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("TSTADM", etablissementAdmin), "Établissement test admin",
                 "tst.adm." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "

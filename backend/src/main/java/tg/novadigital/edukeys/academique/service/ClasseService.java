@@ -101,13 +101,20 @@ public class ClasseService {
             try {
                 Classe sauvee = classeRepository.save(classe);
                 entityManager.flush();
-                return sauvee;
+                return pretePourLaReponse(sauvee);
             } catch (DataIntegrityViolationException e) {
                 throw traduireViolation(e);
             }
         }
     }
 
+    /**
+     * <strong>Non contrôlé avant US-11 (inscriptions, US-08)</strong> : changer le site ou le niveau d'une
+     * classe qui compte déjà des inscrits, ou baisser {@code effectifMax} sous l'effectif courant, n'est pas
+     * refusé ici. Conséquences connues : {@code inscriptions.site_id} (recopié de la classe à l'inscription)
+     * peut diverger du site actuel de la classe, et une classe peut se retrouver au-dessus de son effectif
+     * maximal (le contrôle de capacité ne s'applique qu'à une NOUVELLE inscription).
+     */
     @Transactional
     public Classe modifier(UUID id, ModifierClasseRequestDto requete) {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
@@ -131,14 +138,18 @@ public class ClasseService {
             try {
                 Classe sauvee = classeRepository.save(classe);
                 entityManager.flush();
-                return sauvee;
+                return pretePourLaReponse(sauvee);
             } catch (DataIntegrityViolationException e) {
                 throw traduireViolation(e);
             }
         }
     }
 
-    /** R12/R14 : désactivation logique uniquement, refusée si l'année est clôturée. */
+    /**
+     * R12/R14 : désactivation logique uniquement, refusée si l'année est clôturée. <strong>Non contrôlé avant
+     * US-11</strong> : désactiver une classe qui compte des inscrits actifs n'est pas refusé ici ; les
+     * inscriptions restent actives sur une classe inactive (seule une NOUVELLE inscription y est refusée).
+     */
     @Transactional
     public void desactiver(UUID id) {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
@@ -149,6 +160,17 @@ public class ClasseService {
             classeRepository.save(classe);
             entityManager.flush();
         }
+    }
+
+    /**
+     * La classe sort du service sans session : le mapper lit {@code niveau.cycle} (relation LAZY chargée par
+     * {@code findById}, donc en proxy). Sans cette initialisation, la réponse de création/modification
+     * échoue en {@code LazyInitializationException} (500) dès qu'aucune transaction ne la porte au-delà du
+     * service — c'est le cas en production (open-in-view désactivé), les tests transactionnels le masquaient.
+     */
+    private static Classe pretePourLaReponse(Classe classe) {
+        org.hibernate.Hibernate.initialize(classe.getNiveau().getCycle());
+        return classe;
     }
 
     // ------------------------------------------------------------------

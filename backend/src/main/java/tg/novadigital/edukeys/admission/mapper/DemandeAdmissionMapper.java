@@ -61,6 +61,8 @@ public interface DemandeAdmissionMapper {
                 demande.getDateDecision(),
                 demande.getMotifDecision(),
                 demande.getDecidePar(),
+                demande.getEleveId(),
+                demande.getDateInscription(),
                 pieces.stream().map(pieceMapper::versDto).toList(),
                 decisionMapper == null ? List.of() : decisions.stream().map(decisionMapper::versDto).toList());
     }

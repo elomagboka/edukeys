@@ -207,7 +207,7 @@ class AnneeScolaireControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementId, "XCL-" + etablissementId, "Établissement Exclusion Test", "xcl." + etablissementId + "@edukeys.tg");
+                etablissementId, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("XCL", etablissementId), "Établissement Exclusion Test", "xcl." + etablissementId + "@edukeys.tg");
 
         jdbcTemplate.update(
                 "insert into annees_scolaires (id, etablissement_id, libelle, date_debut, date_fin, statut, actif, "

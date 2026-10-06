@@ -100,9 +100,13 @@ edukeys:
     # utilisé, sans rester valable indéfiniment.
     mot-de-passe-temporaire:
       duree-validite: 14d
-      # Plafond de l'expiration explicite (EmetteurMotDePasseTemporaire, comptes
-      # élèves, US-08) : au-delà, erreur de programmation (IllegalArgumentException).
-      expiration-max: 90d
+      # Maximum de l'expiration explicite (EmetteurMotDePasseTemporaire, comptes
+      # élèves, US-08) : au-delà, 422 métier (MOT_DE_PASSE_TEMPORAIRE_EXPIRATION_HORS_BORNES),
+      # jamais un plafonnement silencieux. 240 j = une inscription dès mi-février pour une
+      # rentrée début septembre : expiration = début d'année + 30 j (1er octobre), soit
+      # ~228 j après le 15 février ; 240 j laisse une marge d'environ 12 j. Une inscription
+      # plus précoce est refusée explicitement et doit être refaite plus près de la rentrée.
+      expiration-max: 240d
     reseau:
       # Nombre d'intermédiaires que la requête traverse chez nous (Render :
       # l'edge, donc 1). L'IP cliente retenue est le N-ième élément de

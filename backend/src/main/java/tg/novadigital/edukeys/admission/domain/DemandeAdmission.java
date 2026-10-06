@@ -1,6 +1,5 @@
 package tg.novadigital.edukeys.admission.domain;
 
-import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.EnumMap;
@@ -19,7 +18,9 @@ import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import tg.novadigital.edukeys.common.domain.EntiteEtablissement;
 import tg.novadigital.edukeys.common.exception.CodeErreur;
+import tg.novadigital.edukeys.common.exception.ConflitException;
 import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
+import tg.novadigital.edukeys.common.texte.NormalisationTexte;
 
 /**
  * Dossier de pré-inscription en ligne (US-06). {@code anneeScolaireId},
@@ -144,6 +145,16 @@ public class DemandeAdmission extends EntiteEtablissement {
     @Column(name = "ip_soumission_hash", length = 64)
     private String ipSoumissionHash;
 
+    /**
+     * Élève né de ce dossier (US-08), identifiant scalaire (jamais une relation vers
+     * {@code eleve}, CLAUDE.md règle 1). Renseigné avec {@link #dateInscription}, une seule fois.
+     */
+    @Column(name = "eleve_id")
+    private UUID eleveId;
+
+    @Column(name = "date_inscription")
+    private Instant dateInscription;
+
     @Version
     @Column(nullable = false)
     private long version;
@@ -201,17 +212,9 @@ public class DemandeAdmission extends EntiteEtablissement {
         this.statut = StatutAdmission.EN_ATTENTE;
     }
 
-    /**
-     * Normalisation Java (I5) pour la comparaison d'idempotence : sans
-     * accents (décomposition NFD, retrait des marques diacritiques) et en
-     * majuscules — jamais une fonction SQL native (CLAUDE.md, règle 2).
-     */
+    /** Délègue à {@link NormalisationTexte} (partagée avec le module {@code eleve}, US-08). */
     public static String normaliserPourComparaison(String valeur) {
-        if (valeur == null) {
-            return null;
-        }
-        String sansAccents = Normalizer.normalize(valeur, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        return sansAccents.trim().toUpperCase(java.util.Locale.ROOT);
+        return NormalisationTexte.normaliserPourComparaison(valeur);
     }
 
     public String getNomNormalise() {
@@ -236,6 +239,31 @@ public class DemandeAdmission extends EntiteEtablissement {
         this.motifDecision = motif;
         this.decidePar = decidePar;
         this.dateDecision = maintenant;
+    }
+
+    /**
+     * Garde-fou d'état (US-08) : seul un dossier ACCEPTEE peut devenir un élève, une seule fois. Le service
+     * contrôle ces règles avec des codes d'erreur précis avant l'appel ; cette méthode empêche seulement
+     * qu'un futur appelant contourne la règle.
+     */
+    public void marquerInscrite(UUID eleveId, Instant instant) {
+        if (this.statut != StatutAdmission.ACCEPTEE) {
+            throw new RegleMetierViolee(CodeErreur.INSCRIPTION_DEMANDE_NON_ACCEPTEE,
+                    "Seul un dossier accepté peut donner lieu à une inscription.");
+        }
+        if (this.eleveId != null) {
+            throw new ConflitException(CodeErreur.INSCRIPTION_DEJA_EFFECTUEE, "Ce dossier a déjà donné lieu à une inscription.");
+        }
+        this.eleveId = eleveId;
+        this.dateInscription = instant;
+    }
+
+    public UUID getEleveId() {
+        return eleveId;
+    }
+
+    public Instant getDateInscription() {
+        return dateInscription;
     }
 
     public boolean estModifiable() {

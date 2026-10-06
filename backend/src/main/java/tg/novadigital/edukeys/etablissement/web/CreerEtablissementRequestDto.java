@@ -3,11 +3,15 @@ package tg.novadigital.edukeys.etablissement.web;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import tg.novadigital.edukeys.common.securite.CodeEtablissementFormat;
 import tg.novadigital.edukeys.etablissement.domain.TypeEtablissement;
 
 public record CreerEtablissementRequestDto(
-        @NotBlank @Size(max = 50) String code,
+        /** 2 à 10 lettres ou chiffres ASCII, sans tiret ni espace ni accent (entre dans le matricule des élèves, US-08). */
+        @NotBlank @Pattern(regexp = CodeEtablissementFormat.EXPRESSION_SAISIE,
+                message = "doit contenir de 2 à 10 lettres ou chiffres ASCII, sans tiret, espace ni accent") String code,
         @NotBlank @Size(max = 255) String nom,
         @Size(max = 20) String sigle,
         @NotNull TypeEtablissement typeEtablissement,

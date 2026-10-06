@@ -74,7 +74,7 @@ class LogoControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "ADO-" + etablissementAdmin, "Établissement Admin Logo Test",
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ADO", etablissementAdmin), "Établissement Admin Logo Test",
                 "ado." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "

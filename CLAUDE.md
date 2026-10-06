@@ -56,6 +56,8 @@ Chaque module suit la même arborescence interne :
    (`actif`, `date_desactivation`) — exigence explicite du backlog (US-11). Les
    contraintes d'unicité sur ces entités sont des **index partiels** (`WHERE
    actif = true`), sinon une adresse email libérée reste bloquée à jamais.
+   **Exception** : identifiant métier pérenne à unicité **absolue** (sans `WHERE actif`) :
+   matricule, `compteurs_matricule`, lien dossier→élève (un élève radié garde son matricule).
    Les repositories métier étendent `BaseRepository<T, ID>` (`@NoRepositoryBean`,
    dérivée de `Repository`), **jamais `JpaRepository`** (expose `delete*`) **ni
    `JpaSpecificationExecutor`** (expose `delete(Specification)`, une suppression

@@ -66,7 +66,7 @@ class UtilisateurServiceTest {
         utilisateurService = new UtilisateurService(
                 utilisateurRepository, jetonRafraichissementRepository, affectationEtablissementRepository,
                 jetonActivationCompteRepository, passwordEncoder, jetonHacheur, generateurMotDePasseTemporaire,
-                java.time.Duration.ofDays(14), java.time.Duration.ofDays(90));
+                java.time.Duration.ofDays(14), java.time.Duration.ofDays(240));
     }
 
 
@@ -654,7 +654,7 @@ class UtilisateurServiceTest {
     }
 
     @Test
-    void emettreMotDePasseTemporaireAvecExpiration_leveIllegalArgument_pourDateNulleDansLePasseOuAuDelaDuPlafond() {
+    void emettreMotDePasseTemporaireAvecExpiration_leveIllegalArgument_pourDateNulleOuDansLePasse() {
         UUID etab = UUID.randomUUID();
         UUID id = UUID.randomUUID();
         eleveDansEtablissement(etab, id);
@@ -663,11 +663,26 @@ class UtilisateurServiceTest {
                     .isInstanceOf(IllegalArgumentException.class);
             assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(id, Instant.now().minusSeconds(5)))
                     .isInstanceOf(IllegalArgumentException.class);
-            assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
-                    id, Instant.now().plus(java.time.Duration.ofDays(91))))
-                    .isInstanceOf(IllegalArgumentException.class);
         }
         verify(jetonActivationCompteRepository, never()).save(any());
+    }
+
+    /** US-08, C1 : le dépassement du maximum est une règle métier (422), jamais une IllegalArgumentException (500). */
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_leveRegleMetier_auDelaDuMaximum_sansRienEcrire() {
+        UUID etab = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
+        eleveDansEtablissement(etab, id);
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            assertThatThrownBy(() -> utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
+                    id, Instant.now().plus(java.time.Duration.ofDays(241))))
+                    .isInstanceOf(tg.novadigital.edukeys.common.exception.RegleMetierViolee.class)
+                    .extracting(e -> ((tg.novadigital.edukeys.common.exception.RegleMetierViolee) e).getCode())
+                    .isEqualTo(tg.novadigital.edukeys.common.exception.CodeErreur.MOT_DE_PASSE_TEMPORAIRE_EXPIRATION_HORS_BORNES);
+            // Juste en dessous du maximum : accepté tel quel, jamais ramené en arrière.
+            assertThat(utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
+                    id, Instant.now().plus(java.time.Duration.ofDays(239)))).isNotBlank();
+        }
     }
 
     @Test
@@ -717,5 +732,46 @@ class UtilisateurServiceTest {
             }
         }
         verify(jetonActivationCompteRepository, never()).save(any());
+    }
+
+    // --- creerCompteEleve (US-08)
+
+    @Test
+    void creerCompteEleve_creeUnCompteNeuf_identifiantNormalise_roleEleveSeul_sansJeton() {
+        UUID etab = UUID.randomUUID();
+        when(generateurMotDePasseTemporaire.generer()).thenReturn("Secret-jamais-rendu");
+        when(passwordEncoder.encode("Secret-jamais-rendu")).thenReturn("hache");
+        when(utilisateurRepository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+        org.mockito.ArgumentCaptor<AffectationEtablissement> affectation = org.mockito.ArgumentCaptor.forClass(AffectationEtablissement.class);
+        org.mockito.ArgumentCaptor<Utilisateur> compte = org.mockito.ArgumentCaptor.forClass(Utilisateur.class);
+
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            utilisateurService.creerCompteEleve("CSJ-2026-00001", "KODJO Ama");
+        }
+
+        verify(utilisateurRepository).save(compte.capture());
+        assertThat(compte.getValue().getIdentifiantConnexion()).isEqualTo("csj-2026-00001");
+        assertThat(compte.getValue().getEmail()).isNull();
+        assertThat(compte.getValue().isMotDePasseAChanger()).isTrue();
+        assertThat(compte.getValue().getMotDePasseHache()).isEqualTo("hache");
+        verify(affectationEtablissementRepository).save(affectation.capture());
+        assertThat(affectation.getValue().getRoles()).containsExactly(RoleCode.ELEVE);
+        assertThat(affectation.getValue().getSiteId()).isNull();
+        assertThat(affectation.getValue().getEtablissementId()).isEqualTo(etab);
+        verify(jetonActivationCompteRepository, never()).save(any());
+    }
+
+    @Test
+    void creerCompteEleve_refuseUnIdentifiantDejaPorte_sansRienEcrire() {
+        UUID etab = UUID.randomUUID();
+        when(utilisateurRepository.existsByIdentifiantConnexionAndActifTrue("csj-2026-00001")).thenReturn(true);
+
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            assertThatThrownBy(() -> utilisateurService.creerCompteEleve("CSJ-2026-00001", "KODJO Ama"))
+                    .isInstanceOfSatisfying(ConflitException.class,
+                            e -> assertThat(e.getCode()).isEqualTo(tg.novadigital.edukeys.common.exception.CodeErreur.UTILISATEUR_IDENTIFIANT_DUPLIQUE));
+        }
+        verify(utilisateurRepository, never()).save(any());
+        verify(affectationEtablissementRepository, never()).save(any());
     }
 }

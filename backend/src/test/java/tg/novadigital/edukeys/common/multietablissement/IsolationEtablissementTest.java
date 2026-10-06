@@ -139,11 +139,11 @@ class IsolationEtablissementTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now()) on conflict (id) do nothing",
-                ETABLISSEMENT_A, "ISO-A-" + ETABLISSEMENT_A, "Établissement isolation A", "iso.a." + ETABLISSEMENT_A + "@edukeys.tg");
+                ETABLISSEMENT_A, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ISOA", ETABLISSEMENT_A), "Établissement isolation A", "iso.a." + ETABLISSEMENT_A + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now()) on conflict (id) do nothing",
-                ETABLISSEMENT_B, "ISO-B-" + ETABLISSEMENT_B, "Établissement isolation B", "iso.b." + ETABLISSEMENT_B + "@edukeys.tg");
+                ETABLISSEMENT_B, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ISOB", ETABLISSEMENT_B), "Établissement isolation B", "iso.b." + ETABLISSEMENT_B + "@edukeys.tg");
     }
 
     @AfterEach

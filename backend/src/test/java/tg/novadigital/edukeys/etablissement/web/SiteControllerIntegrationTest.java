@@ -199,7 +199,7 @@ class SiteControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "ADS-" + etablissementAdmin, "Établissement Admin Sites Test",
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ADS", etablissementAdmin), "Établissement Admin Sites Test",
                 "ads." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "

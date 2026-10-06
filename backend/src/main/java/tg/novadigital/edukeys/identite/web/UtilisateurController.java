@@ -102,6 +102,11 @@ public class UtilisateurController {
         if (criteresDeTriAutorises.isEmpty()) {
             criteresDeTriAutorises = List.of("dateCreation,asc");
         }
+        // Départage final par identifiant : des comptes créés dans la même transaction (ex. les comptes de
+        // démonstration) partagent le même dateCreation, et un tri sur une clé non unique laisse PostgreSQL
+        // ordonner les ex æquo comme il veut d'une page à l'autre (doublons, trous).
+        criteresDeTriAutorises = new java.util.ArrayList<>(criteresDeTriAutorises);
+        criteresDeTriAutorises.add("id,asc");
 
         Pageable pageable = PaginationUtils.construire(page, size, criteresDeTriAutorises);
         Page<UtilisateurResumeDto> resultat = utilisateurService.listerTous(pageable).map(UtilisateurResumeDto::depuis);

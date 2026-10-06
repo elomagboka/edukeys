@@ -136,6 +136,27 @@ class DecisionAdmissionEnversEtDoublonIntegrationTest {
         assertThat(statutPremierDossier).isEqualTo("REFUSEE"); // inchangé par la tentative refusée
     }
 
+    /**
+     * US-08, Q5 : un dossier ACCEPTEE reste « vivant » pour l'enfant (index de doublon étendu, V16) : un dossier
+     * REFUSEE repassé en ACCEPTEE alors qu'un autre dossier du même enfant est déjà ACCEPTEE entre en collision.
+     */
+    @Test
+    void doitRejeter409_quandAccepterUnDossierEntreEnCollisionAvecUnAutreDossierDejaAccepte() throws Exception {
+        Contexte ctx = preparerEtablissementEtOffre("DEC15");
+        String idPremier = creerDossierAdmin(ctx, "Accepte", "Deux", "2015-06-21", "+22890003016");
+        decider(ctx, idPremier, "REFUSEE", "Premier refus", 0).andExpect(status().isOk());
+        String idSecond = creerDossierAdmin(ctx, "Accepte", "Deux", "2015-06-21", "+22890003017");
+        decider(ctx, idSecond, "ACCEPTEE", null, 0).andExpect(status().isOk());
+
+        decider(ctx, idPremier, "ACCEPTEE", null, 1)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ADMISSION_DOUBLON"));
+
+        String statutPremier = jdbcTemplate.queryForObject(
+                "select statut from demandes_admission where id = ?::uuid", String.class, idPremier);
+        assertThat(statutPremier).isEqualTo("REFUSEE");
+    }
+
     // ------------------------------------------------------------------
     // Aides (établissement dédié par test, jamais nettoyé par suppression)
     // ------------------------------------------------------------------

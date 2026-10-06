@@ -104,8 +104,8 @@ class AdmissionAccesEtDebitIntegrationTest {
 
     @Test
     void refuse404_telechargementDunePieceDunAutreEtablissement() throws Exception {
-        Contexte ctxA = preparerEtablissementEtOffre("DLISOA");
-        Contexte ctxB = preparerEtablissementEtOffre("DLISOB");
+        Contexte ctxA = preparerEtablissementEtOffre("DLIA");
+        Contexte ctxB = preparerEtablissementEtOffre("DLIB");
 
         String reponse = soumettre(ctxA).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
@@ -159,7 +159,7 @@ class AdmissionAccesEtDebitIntegrationTest {
 
     @Test
     void refuse403_utilisateurSansAdmissionCreer_surLaCreationBackOffice() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("NOCREER");
+        Contexte ctx = preparerEtablissementEtOffre("NOCRE");
         String jetonSansRole = creerUtilisateurSansRoleEtObtenirToken(ctx.etablissementId());
 
         MockMultipartFile demandePart = construireDemandeJson(ctx);
@@ -246,7 +246,7 @@ class AdmissionAccesEtDebitIntegrationTest {
      */
     @Test
     void repond429_apresLeBudgetDeSoumissionsReussiesParIpEtParJour() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("BUDGET");
+        Contexte ctx = preparerEtablissementEtOffre("BUDG");
 
         for (int i = 0; i < BUDGET_SUCCES_TEST; i++) {
             soumettreAvecIdentite(ctx, "Budget" + i, "Succes" + i, "2015-01-0" + (i % 9 + 1))
@@ -278,7 +278,7 @@ class AdmissionAccesEtDebitIntegrationTest {
      */
     @Test
     void repondEnUnTempsEgal_queLeDossierSoitNouveauOuDejaExistant() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("TIMING");
+        Contexte ctx = preparerEtablissementEtOffre("TIMI");
 
         long dureeCreation = chronometrerSoumission(ctx, "Kodjo", "Ama", "2015-05-12");
         long dureeDoublon = chronometrerSoumission(ctx, "Kodjo", "Ama", "2015-05-12");

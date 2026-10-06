@@ -207,7 +207,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
 
     @Test
     void refuse422_memeFichierJointDeuxFoisDansLaMemeSoumission() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("DUPPIECE");
+        Contexte ctx = preparerEtablissementEtOffre("DUPP");
         MockMultipartFile demandePart = construireDemandeJson(ctx);
         MockMultipartFile acte = new MockMultipartFile("pieces", "acte.pdf", "application/pdf", pdfMinimal());
         // Même contenu (donc même empreinte SHA-256), nom différent : geste banal sur mobile.
@@ -229,7 +229,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
 
     @Test
     void refuse422_absenceDeLActeDeNaissance() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("SANSACTE");
+        Contexte ctx = preparerEtablissementEtOffre("SANS");
         MockMultipartFile demandePart = construireDemandeJson(ctx);
         MockMultipartFile piece = new MockMultipartFile("pieces", "photo.jpg", "image/jpeg", jpegMinimal());
 
@@ -281,7 +281,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
 
     @Test
     void refuse422_niveauDesactive() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("NVINACT");
+        Contexte ctx = preparerEtablissementEtOffre("NVIN");
         mockMvc.perform(post("/api/v1/niveaux/" + ctx.niveauId() + "/desactivation")
                         .header("Authorization", "Bearer " + ctx.jetonAdmin()))
                 .andExpect(status().isNoContent());
@@ -294,7 +294,7 @@ class AdmissionValidationEtLimitesIntegrationTest {
 
     @Test
     void refuse422_classeDesactivee() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("CLINACT");
+        Contexte ctx = preparerEtablissementEtOffre("CLIN");
         String classeId = creerClasse(ctx.jetonAdmin(), ctx.niveauId());
         mockMvc.perform(post("/api/v1/classes/" + classeId + "/desactivation")
                         .header("Authorization", "Bearer " + ctx.jetonAdmin()))

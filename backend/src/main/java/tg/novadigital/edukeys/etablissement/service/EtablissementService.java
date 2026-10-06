@@ -12,12 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.ConflitException;
+import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.initialisation.ChargeurReferentielType;
 import tg.novadigital.edukeys.common.initialisation.InitialisateurReferentiel;
 import tg.novadigital.edukeys.common.initialisation.ReferentielType;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 import tg.novadigital.edukeys.common.multietablissement.PorteeEtablissement;
+import tg.novadigital.edukeys.common.securite.CodeEtablissementFormat;
 import tg.novadigital.edukeys.etablissement.domain.Etablissement;
 import tg.novadigital.edukeys.etablissement.domain.Site;
 import tg.novadigital.edukeys.etablissement.domain.LogoEtablissement;
@@ -96,6 +98,12 @@ public class EtablissementService {
     @Transactional
     public EtablissementCree creer(CreerEtablissementRequestDto requete) {
         String code = normaliserCode(requete.code());
+        // Défense en profondeur (le DTO refuse déjà ce format en 400) : le code entre dans le
+        // matricule des élèves, définitif, et dans leur identifiant de connexion (US-08).
+        if (!CodeEtablissementFormat.estValide(code)) {
+            throw new RegleMetierViolee(CodeErreur.ETABLISSEMENT_CODE_INVALIDE,
+                    "Le code d'un établissement comporte de 2 à 10 lettres ou chiffres ASCII, sans tiret, espace ni accent.");
+        }
         String email = requete.email().toLowerCase(Locale.ROOT);
 
         if (etablissementRepository.existsByCodeIgnoreCaseAndActifTrue(code)) {
