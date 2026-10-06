@@ -32,8 +32,8 @@ import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
  * Tests d'intégration US-08 : {@code POST /api/v1/inscriptions} (endpoint principal), règles d'affectation,
  * homonymes, permissions. Hors transaction de test : {@code InscriptionService.inscrire} refuse d'être appelé depuis une
  * transaction (ligne du compteur créée à part), donc le rollback transactionnel de test est inapplicable ici ;
- * chaque scénario crée son propre établissement (code unique) et rien n'est supprimé. Les écritures d'un échec restent
- * visibles dans la transaction du test — le rollback complet, la concurrence et l'historisation Envers
+ * chaque scénario crée son propre établissement (code unique) et rien n'est supprimé. Le rollback complet,
+ * la concurrence et l'historisation Envers
  * (écrite au commit) sont couverts dans {@link InscriptionTransactionsReellesIntegrationTest}.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -60,9 +60,7 @@ class InscriptionControllerIntegrationTest {
     }
 
     private ScenarioInscription.Etablissement etablissement(String prefixe) throws Exception {
-        ScenarioInscription.Etablissement etab = scenario.etablissementPret(prefixe);
-        entityManager.clear();
-        return etab;
+        return scenario.etablissementPret(prefixe);
     }
 
     // ------------------------------------------------------------------
@@ -190,7 +188,6 @@ class InscriptionControllerIntegrationTest {
                 .andExpect(jsonPath("$.code").value("ADMISSION_MODIFICATION_CONCURRENTE"));
 
         scenario.inscrire(etab.jetonAdmin(), dossier.id(), classeId, dossier.version(), false).andExpect(status().isCreated());
-        entityManager.clear();
         ScenarioInscription.Dossier relu = scenario.relire(etab.jetonAdmin(), dossier.id());
         scenario.inscrire(etab.jetonAdmin(), dossier.id(), classeId, relu.version(), false)
                 .andExpect(status().isConflict())
@@ -228,7 +225,6 @@ class InscriptionControllerIntegrationTest {
         String classeId = scenario.creerClasse(etab.jetonAdmin(), etab.niveauId(), "A", null, null);
         ScenarioInscription.Dossier dossier = scenario.dossierAccepte(etab, "Adzo", "Mensah", "2015-07-07");
         jdbcTemplate.update("update classes set actif = false where id = ?::uuid", classeId);
-        entityManager.clear();
 
         scenario.inscrire(etab.jetonAdmin(), dossier.id(), classeId, dossier.version(), false)
                 .andExpect(status().isUnprocessableEntity())
@@ -253,7 +249,6 @@ class InscriptionControllerIntegrationTest {
         ScenarioInscription.Dossier dossier = scenario.dossierAccepte(etab, "Mawuena", "Kossi", "2015-09-09");
         // Activer l'année suivante clôture l'année 2026-2027 de la classe et du dossier.
         scenario.creerAnnee(etab.jetonAdmin(), "2027-09-01", "2028-07-15", true);
-        entityManager.clear();
 
         scenario.inscrire(etab.jetonAdmin(), dossier.id(), classeId, dossier.version(), false)
                 .andExpect(status().isUnprocessableEntity())
@@ -291,7 +286,6 @@ class InscriptionControllerIntegrationTest {
         // Non (Q5 : l'enfant ACCEPTEE reste « vivant ») — l'homonyme est donc un dossier sur une AUTRE année ou un autre
         // établissement de dossier ; on l'obtient ici en désactivant logiquement le premier dossier.
         jdbcTemplate.update("update demandes_admission set actif = false where id = ?::uuid", premier.id());
-        entityManager.clear();
         ScenarioInscription.Dossier homonyme = scenario.dossierAccepte(etab, "AGBÉKO", "selom", "2015-05-05");
 
         scenario.inscrire(etab.jetonAdmin(), homonyme.id(), classeId, homonyme.version(), false)
@@ -342,7 +336,6 @@ class InscriptionControllerIntegrationTest {
                 "select u.email from utilisateurs u join affectations_etablissement a on a.utilisateur_id = u.id "
                         + "where a.etablissement_id = ?::uuid and u.email like 'u.us08.%' limit 1", String.class, etab.id());
         jdbcTemplate.update("update utilisateurs set mot_de_passe_a_changer = true where email = ?", emailAdmin);
-        entityManager.clear();
         String jetonTemporaire = scenario.connecter(emailAdmin);
         scenario.inscrire(jetonTemporaire, dossier.id(), classeId, dossier.version(), false)
                 .andExpect(status().isForbidden())

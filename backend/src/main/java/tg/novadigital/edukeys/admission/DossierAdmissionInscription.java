@@ -29,6 +29,8 @@ public interface DossierAdmissionInscription {
 
     /**
      * Rattache l'élève au dossier ({@code eleveId} et {@code dateInscription}, une seule fois).
+     * À appeler après {@link #verrouillerPourInscription} dans la même transaction : sans ce
+     * verrou, un marquage concurrent n'échoue qu'au commit, en verrouillage optimiste (409).
      *
      * @throws tg.novadigital.edukeys.common.exception.RegleMetierViolee si le dossier n'est pas ACCEPTEE
      * @throws tg.novadigital.edukeys.common.exception.ConflitException si le dossier est déjà inscrit
