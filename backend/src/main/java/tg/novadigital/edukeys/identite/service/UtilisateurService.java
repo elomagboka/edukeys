@@ -1,5 +1,6 @@
 package tg.novadigital.edukeys.identite.service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -87,6 +88,8 @@ public class UtilisateurService {
     /** Plafond de l'expiration explicite d'un mot de passe temporaire ({@link #emettreMotDePasseTemporaireAvecExpiration}). */
     private final Duration expirationMaxMotDePasseTemporaire;
 
+    private final Clock clock;
+
     public UtilisateurService(
             UtilisateurRepository utilisateurRepository,
             JetonRafraichissementRepository jetonRafraichissementRepository,
@@ -96,7 +99,9 @@ public class UtilisateurService {
             JetonHacheur jetonHacheur,
             GenerateurMotDePasseTemporaire generateurMotDePasseTemporaire,
             @Value("${edukeys.securite.mot-de-passe-temporaire.duree-validite:14d}") Duration dureeValiditeMotDePasseTemporaire,
-            @Value("${edukeys.securite.mot-de-passe-temporaire.expiration-max:240d}") Duration expirationMaxMotDePasseTemporaire) {
+            @Value("${edukeys.securite.mot-de-passe-temporaire.expiration-max:240d}") Duration expirationMaxMotDePasseTemporaire,
+            Clock clock) {
+        this.clock = clock;
         this.utilisateurRepository = utilisateurRepository;
         this.jetonRafraichissementRepository = jetonRafraichissementRepository;
         this.affectationEtablissementRepository = affectationEtablissementRepository;
@@ -292,7 +297,7 @@ public class UtilisateurService {
         // BCrypt alimente Utilisateur#motDePasseHache (login), son hash
         // SHA-256 le jeton d'activation (traçabilité/consommation, voir la
         // Javadoc de JetonActivationCompte).
-        emettreJetonActivation(utilisateur, motDePasseTemporaire, Instant.now().plus(dureeValiditeMotDePasseTemporaire));
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, clock.instant().plus(dureeValiditeMotDePasseTemporaire));
 
         return new CompteCree(utilisateur, affectation, motDePasseTemporaire);
     }
@@ -558,7 +563,7 @@ public class UtilisateurService {
         utilisateur.exigerChangementMotDePasse();
         utilisateurRepository.save(utilisateur);
 
-        emettreJetonActivation(utilisateur, motDePasseTemporaire, Instant.now().plus(dureeValiditeMotDePasseTemporaire));
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, clock.instant().plus(dureeValiditeMotDePasseTemporaire));
 
         revoquerJetonsActifs(utilisateurId);
 
@@ -587,7 +592,7 @@ public class UtilisateurService {
         // expiré. Sans objet pour un compte normal (motDePasseAChanger = false).
         if (utilisateur.isMotDePasseAChanger()
                 && jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(
-                        utilisateurId, Instant.now())) {
+                        utilisateurId, clock.instant())) {
             throw new MotDePasseTemporaireExpireException("Le mot de passe temporaire a expiré : demandez-en un nouveau.");
         }
 
@@ -640,7 +645,7 @@ public class UtilisateurService {
      */
     @Transactional
     public String emettreMotDePasseTemporaireAvecExpiration(UUID utilisateurId, Instant dateExpiration) {
-        Instant maintenant = Instant.now();
+        Instant maintenant = clock.instant();
         if (dateExpiration == null || !dateExpiration.isAfter(maintenant)) {
             throw new IllegalArgumentException("La date d'expiration du mot de passe temporaire doit être dans le futur.");
         }

@@ -21,6 +21,8 @@ public enum CodeErreur {
     ETABLISSEMENT_CODE_DUPLIQUE,
     /** Code hors format {@code [A-Z0-9]{2,10}} (US-08 : il entre dans le matricule et l'identifiant de connexion des élèves). */
     ETABLISSEMENT_CODE_INVALIDE,
+    /** Fuseau horaire qui n'est pas un identifiant {@code ZoneId} valide (ex. Africa/Lome). */
+    ETABLISSEMENT_FUSEAU_HORAIRE_INVALIDE,
     ETABLISSEMENT_EMAIL_DUPLIQUE,
     ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION,
     ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION,

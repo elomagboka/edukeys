@@ -150,6 +150,30 @@ final class ScenarioInscription {
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.read(reponse, "$.id");
     }
+    String creerFiliere(String jeton, String libelle, String code) throws Exception {
+        String reponse = mockMvc.perform(post("/api/v1/filieres")
+                        .header("Authorization", "Bearer " + jeton)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"libelle":"%s","code":"%s"}
+                                """.formatted(libelle, code)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(reponse, "$.id");
+    }
+
+    String creerClasseAvecFiliere(String jeton, String niveauId, String suffixe, String filiereId) throws Exception {
+        String reponse = mockMvc.perform(post("/api/v1/classes")
+                        .header("Authorization", "Bearer " + jeton)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"suffixe":"%s","niveauId":"%s","filiereId":"%s"}
+                                """.formatted(suffixe, niveauId, filiereId)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(reponse, "$.id");
+    }
+
 
     // ------------------------------------------------------------------
     // Comptes

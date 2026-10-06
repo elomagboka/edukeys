@@ -168,6 +168,28 @@ class InscriptionTransactionsReellesIntegrationTest {
         assertThat(compter("select dernier from compteurs_matricule where etablissement_id = ?::uuid", etab.id())).isEqualTo(1L);
     }
 
+    /**
+     * Le MÊME dossier inscrit en parallèle dans deux classes DIFFÉRENTES : aucun verrou de classe ne les
+     * sérialise, seul le verrou du dossier les départage. Mutation constatée : sans lui, les deux atteignent
+     * l'insertion et la seconde échoue sur une contrainte d'unicité au flush (ou en 500).
+     */
+    @Test
+    void memeDossierDansDeuxClassesDifferentes_donneUnCreated_unConflitDejaEffectue_unSeulEleve_uneSeuleSequence() throws Exception {
+        ScenarioInscription.Etablissement etab = scenario.etablissementPret("TRJ");
+        String classeA = scenario.creerClasse(etab.jetonAdmin(), etab.niveauId(), "A", null, null);
+        String classeB = scenario.creerClasse(etab.jetonAdmin(), etab.niveauId(), "B", null, null);
+        ScenarioInscription.Dossier dossier = scenario.dossierAccepte(etab, "Meme", "Dossier", "2015-07-07");
+
+        List<Reponse> reponses = enParallele(List.of(inscription(etab, dossier, classeA), inscription(etab, dossier, classeB)));
+
+        assertThat(reponses).extracting(Reponse::statut).containsExactlyInAnyOrder(201, 409);
+        Reponse refus = reponses.stream().filter(r -> r.statut() == 409).findFirst().orElseThrow();
+        assertThat((String) JsonPath.read(refus.corps(), "$.code")).isEqualTo("INSCRIPTION_DEJA_EFFECTUEE");
+        assertThat(compter("select count(*) from eleves where etablissement_id = ?::uuid", etab.id())).isEqualTo(1L);
+        assertThat(compter("select count(*) from inscriptions where etablissement_id = ?::uuid", etab.id())).isEqualTo(1L);
+        assertThat(compter("select dernier from compteurs_matricule where etablissement_id = ?::uuid", etab.id())).isEqualTo(1L);
+    }
+
     @Test
     void derniereplaceDisputee_donneUnCreated_etUn422() throws Exception {
         ScenarioInscription.Etablissement etab = scenario.etablissementPret("TRC");

@@ -66,7 +66,7 @@ class UtilisateurServiceTest {
         utilisateurService = new UtilisateurService(
                 utilisateurRepository, jetonRafraichissementRepository, affectationEtablissementRepository,
                 jetonActivationCompteRepository, passwordEncoder, jetonHacheur, generateurMotDePasseTemporaire,
-                java.time.Duration.ofDays(14), java.time.Duration.ofDays(240));
+                java.time.Duration.ofDays(14), java.time.Duration.ofDays(240), java.time.Clock.systemUTC());
     }
 
 
@@ -682,6 +682,26 @@ class UtilisateurServiceTest {
             // Juste en dessous du maximum : accepté tel quel, jamais ramené en arrière.
             assertThat(utilisateurService.emettreMotDePasseTemporaireAvecExpiration(
                     id, Instant.now().plus(java.time.Duration.ofDays(239)))).isNotBlank();
+        }
+    }
+
+    /** L'émetteur compare l'expiration à l'horloge injectée, pas à l'heure système. */
+    @Test
+    void emettreMotDePasseTemporaireAvecExpiration_utiliseLHorlogeInjectee() {
+        java.time.Clock fixe = java.time.Clock.fixed(Instant.parse("2020-01-01T00:00:00Z"), java.time.ZoneOffset.UTC);
+        UtilisateurService service = new UtilisateurService(
+                utilisateurRepository, jetonRafraichissementRepository, affectationEtablissementRepository,
+                jetonActivationCompteRepository, passwordEncoder, jetonHacheur, generateurMotDePasseTemporaire,
+                java.time.Duration.ofDays(14), java.time.Duration.ofDays(240), fixe);
+        UUID etab = UUID.randomUUID();
+        UUID id = UUID.randomUUID();
+        eleveDansEtablissement(etab, id);
+        try (var portee = ContexteEtablissement.ouvrir(etab)) {
+            // Passé pour l'heure système, futur pour l'horloge injectée : accepté.
+            assertThat(service.emettreMotDePasseTemporaireAvecExpiration(id, Instant.parse("2020-01-10T00:00:00Z"))).isNotBlank();
+            // Futur proche pour l'heure système mais > 240 j après l'horloge injectée : refusé.
+            assertThatThrownBy(() -> service.emettreMotDePasseTemporaireAvecExpiration(id, Instant.parse("2020-12-01T00:00:00Z")))
+                    .isInstanceOf(tg.novadigital.edukeys.common.exception.RegleMetierViolee.class);
         }
     }
 

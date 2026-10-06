@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import tg.novadigital.edukeys.academique.ClasseInscriptionQuery;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
@@ -38,7 +39,22 @@ public class InscriptionService {
         this.inscriptionTransactionnelle = inscriptionTransactionnelle;
     }
 
+    /**
+     * <strong>Ne doit pas être appelée depuis une transaction existante.</strong> La ligne du compteur de
+     * matricule est créée dans une transaction à part, committée avant la transaction principale : appelée
+     * depuis la transaction d'un appelant, cette création se rattacherait à elle, et une course sur la
+     * première inscription de l'année (violation d'unicité tolérée ici) marquerait la transaction de
+     * l'appelant « rollback-only » — ou serait invisible des autres threads jusqu'à son commit. D'où le refus.
+     * Un futur appelant (import en masse, US-11) doit sortir de sa transaction avant d'appeler.
+     *
+     * @throws IllegalStateException si une transaction est active à l'entrée (erreur de programmation)
+     */
     public ResultatInscription inscrire(CommandeInscription commande) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException(
+                    "InscriptionService.inscrire ne doit pas être appelée depuis une transaction : la ligne du compteur de "
+                            + "matricule doit être créée hors de la transaction de l'appelant.");
+        }
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
 
         // Classe inconnue : on ne fait rien ici, la transaction principale répond 404 dans l'ordre des règles.

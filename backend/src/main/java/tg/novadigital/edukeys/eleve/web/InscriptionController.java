@@ -43,7 +43,7 @@ public class InscriptionController {
                     @ApiResponse(responseCode = "401", description = "Non authentifié"),
                     @ApiResponse(responseCode = "403", description = "Accès refusé"),
                     @ApiResponse(responseCode = "404", description = "Dossier ou classe introuvable"),
-                    @ApiResponse(responseCode = "409", description = "Dossier déjà inscrit, version périmée, homonyme à confirmer ou identifiant déjà pris"),
+                    @ApiResponse(responseCode = "409", description = "Dossier déjà inscrit, version périmée, homonyme à confirmer, identifiant déjà pris ou ligne du compteur de matricule absente (MODIFICATION_CONCURRENTE, à réessayer)"),
                     @ApiResponse(responseCode = "422", description = "Dossier non accepté, classe inactive ou complète, année ou niveau incohérents, année clôturée, matricule épuisé, expiration hors bornes")
             })
     @PostMapping

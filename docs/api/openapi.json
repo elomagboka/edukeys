@@ -2104,6 +2104,7 @@
               "ETABLISSEMENT_INTROUVABLE",
               "ETABLISSEMENT_CODE_DUPLIQUE",
               "ETABLISSEMENT_CODE_INVALIDE",
+              "ETABLISSEMENT_FUSEAU_HORAIRE_INVALIDE",
               "ETABLISSEMENT_EMAIL_DUPLIQUE",
               "ETABLISSEMENT_CODE_REPRIS_DEPUIS_DESACTIVATION",
               "ETABLISSEMENT_EMAIL_REPRIS_DEPUIS_DESACTIVATION",
@@ -5169,7 +5170,7 @@
                 }
               }
             },
-            "description" : "Dossier déjà inscrit, version périmée, homonyme à confirmer ou identifiant déjà pris"
+            "description" : "Dossier déjà inscrit, version périmée, homonyme à confirmer, identifiant déjà pris ou ligne du compteur de matricule absente (MODIFICATION_CONCURRENTE, à réessayer)"
           },
           "422" : {
             "content" : {

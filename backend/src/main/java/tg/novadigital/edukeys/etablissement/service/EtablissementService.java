@@ -1,5 +1,7 @@
 package tg.novadigital.edukeys.etablissement.service;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -203,6 +205,7 @@ public class EtablissementService {
     public Etablissement modifier(UUID id, ModifierEtablissementRequestDto requete) {
         Etablissement etablissement = obtenir(id);
         String email = requete.email().toLowerCase(Locale.ROOT);
+        verifierFuseauHoraire(requete.fuseauHoraire());
 
         if (!email.equalsIgnoreCase(etablissement.getEmail())
                 && etablissementRepository.existsByEmailIgnoreCaseAndActifTrueAndIdNot(email, id)) {
@@ -216,6 +219,20 @@ public class EtablissementService {
                 requete.fuseauHoraire(), requete.deviseCode(), requete.langueDefaut());
 
         return etablissementRepository.save(etablissement);
+    }
+
+    /**
+     * Le fuseau sert à calculer des dates d'expiration (US-08, {@code ZoneId.of}) : une valeur invalide
+     * (« Lomé » au lieu de « Africa/Lome ») ferait échouer chaque inscription en 500. À la création, le fuseau
+     * n'est pas saisi (valeur par défaut valide de l'entité) : seule la modification est concernée.
+     */
+    private static void verifierFuseauHoraire(String fuseauHoraire) {
+        try {
+            ZoneId.of(fuseauHoraire);
+        } catch (DateTimeException e) {
+            throw new RegleMetierViolee(CodeErreur.ETABLISSEMENT_FUSEAU_HORAIRE_INVALIDE,
+                    "Fuseau horaire inconnu : " + fuseauHoraire + ". Utiliser un identifiant IANA, par exemple Africa/Lome.");
+        }
     }
 
     /** R9 : cascade logique, jamais un DELETE SQL — sites et logo de l'établissement sont désactivés avec lui. */

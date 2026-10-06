@@ -21,7 +21,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.jayway.jsonpath.JsonPath;
 
@@ -31,14 +30,15 @@ import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
 
 /**
  * Tests d'intégration US-08 : {@code POST /api/v1/inscriptions} (endpoint principal), règles d'affectation,
- * homonymes, permissions. Rollback transactionnel (CLAUDE.md, règle 4) : les écritures d'un échec restent
+ * homonymes, permissions. Hors transaction de test : {@code InscriptionService.inscrire} refuse d'être appelé depuis une
+ * transaction (ligne du compteur créée à part), donc le rollback transactionnel de test est inapplicable ici ;
+ * chaque scénario crée son propre établissement (code unique) et rien n'est supprimé. Les écritures d'un échec restent
  * visibles dans la transaction du test — le rollback complet, la concurrence et l'historisation Envers
  * (écrite au commit) sont couverts dans {@link InscriptionTransactionsReellesIntegrationTest}.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
 class InscriptionControllerIntegrationTest {
 
     @Autowired
@@ -61,7 +61,6 @@ class InscriptionControllerIntegrationTest {
 
     private ScenarioInscription.Etablissement etablissement(String prefixe) throws Exception {
         ScenarioInscription.Etablissement etab = scenario.etablissementPret(prefixe);
-        entityManager.flush();
         entityManager.clear();
         return etab;
     }
@@ -130,6 +129,19 @@ class InscriptionControllerIntegrationTest {
         Long dernier = jdbcTemplate.queryForObject(
                 "select dernier from compteurs_matricule where etablissement_id = ?::uuid and annee = 2026", Long.class, etab.id());
         assertThat(dernier).isEqualTo(1L);
+    }
+
+    @Test
+    void doitRenvoyerLaFiliere_quandLaClasseEnPorteUne() throws Exception {
+        ScenarioInscription.Etablissement etab = etablissement("INP");
+        String filiereId = scenario.creerFiliere(etab.jetonAdmin(), "Série scientifique", "SCI");
+        String classeId = scenario.creerClasseAvecFiliere(etab.jetonAdmin(), etab.niveauId(), "S", filiereId);
+        ScenarioInscription.Dossier dossier = scenario.dossierAccepte(etab, "Avec", "Filiere", "2015-08-08");
+
+        scenario.inscrire(etab.jetonAdmin(), dossier.id(), classeId, dossier.version(), false)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.filiere.id").value(filiereId))
+                .andExpect(jsonPath("$.filiere.libelle").value("Série scientifique"));
     }
 
     @Test
@@ -326,7 +338,6 @@ class InscriptionControllerIntegrationTest {
 
         // Un ADMIN dont le mot de passe est encore temporaire est bloqué par la garde centrale.
         scenario.jetonPourRole(etab.id(), "ADMIN");
-        entityManager.flush();
         String emailAdmin = jdbcTemplate.queryForObject(
                 "select u.email from utilisateurs u join affectations_etablissement a on a.utilisateur_id = u.id "
                         + "where a.etablissement_id = ?::uuid and u.email like 'u.us08.%' limit 1", String.class, etab.id());

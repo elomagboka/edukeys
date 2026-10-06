@@ -206,6 +206,15 @@ class InscriptionTransactionnelleTest {
     }
 
     @Test
+    void dossierDejaInscrit_avecVersionPerimee_409DejaEffectue_pasModificationConcurrente() {
+        // Perdante d'une course sur le même dossier : le gagnant a incrémenté la version en marquant le dossier.
+        when(dossierPort.verrouillerPourInscription(DEMANDE)).thenReturn(dossier(4, true, UUID.randomUUID()));
+
+        assertRefus(ConflitException.class, CodeErreur.INSCRIPTION_DEJA_EFFECTUEE);
+        aucuneEcriture();
+    }
+
+    @Test
     void dossierDejaInscrit_409() {
         when(dossierPort.verrouillerPourInscription(DEMANDE)).thenReturn(dossier(3, true, UUID.randomUUID()));
 
@@ -249,7 +258,7 @@ class InscriptionTransactionnelleTest {
     @Test
     void homonymeNonConfirme_409AvecLesDetails_puisConfirmeEstAccepte() {
         when(eleveRepository.rechercherHomonymes(ETABLISSEMENT, "KODJO", "AMA", LocalDate.of(2015, 5, 12)))
-                .thenReturn(List.of(new EleveRepository.Homonyme("CSJ-2025-00007", CLASSE)));
+                .thenReturn(List.of(new EleveRepository.Homonyme("CSJ-2025-00007", CLASSE, null)));
         when(libellesPort.libelles(anySet())).thenReturn(Map.of(CLASSE, "6ème A"));
 
         assertThatThrownBy(() -> inscrire(false))
@@ -261,6 +270,27 @@ class InscriptionTransactionnelleTest {
         aucuneEcriture();
 
         assertThat(inscrire(true).matricule()).isEqualTo("CSJ-2026-00001");
+    }
+
+    @Test
+    void homonymeInscritSurDeuxAnnees_apparaitUneSeuleFois_avecSonInscriptionLaPlusRecente() {
+        UUID classeAncienne = UUID.randomUUID();
+        // La requête trie par matricule puis inscription la plus récente d'abord.
+        when(eleveRepository.rechercherHomonymes(ETABLISSEMENT, "KODJO", "AMA", LocalDate.of(2015, 5, 12)))
+                .thenReturn(List.of(
+                        new EleveRepository.Homonyme("CSJ-2025-00007", CLASSE, java.time.Instant.parse("2025-09-01T08:00:00Z")),
+                        new EleveRepository.Homonyme("CSJ-2025-00007", classeAncienne, java.time.Instant.parse("2024-09-01T08:00:00Z")),
+                        new EleveRepository.Homonyme("CSJ-2025-00009", null, null)));
+        when(libellesPort.libelles(anySet())).thenReturn(Map.of(CLASSE, "6ème A", classeAncienne, "CM2 B"));
+
+        assertThatThrownBy(() -> inscrire(false))
+                .isInstanceOfSatisfying(ConflitException.class, e -> {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> details = (List<Map<String, Object>>) e.getDetails().get("homonymes");
+                    assertThat(details).hasSize(2);
+                    assertThat(details.get(0)).containsEntry("matricule", "CSJ-2025-00007").containsEntry("classe", "6ème A");
+                    assertThat(details.get(1)).containsEntry("matricule", "CSJ-2025-00009").containsEntry("classe", null);
+                });
     }
 
     @Test

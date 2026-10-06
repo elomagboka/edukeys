@@ -166,7 +166,8 @@ public class ClasseService {
      * La classe sort du service sans session : le mapper lit {@code niveau.cycle} (relation LAZY chargée par
      * {@code findById}, donc en proxy). Sans cette initialisation, la réponse de création/modification
      * échoue en {@code LazyInitializationException} (500) dès qu'aucune transaction ne la porte au-delà du
-     * service — c'est le cas en production (open-in-view désactivé), les tests transactionnels le masquaient.
+     * service — c'est le cas hors open-in-view (profils local et test, et tout appel hors requête HTTP) ;
+     * les tests transactionnels le masquaient. NB : open-in-view reste actif par défaut (application.yml).
      */
     private static Classe pretePourLaReponse(Classe classe) {
         org.hibernate.Hibernate.initialize(classe.getNiveau().getCycle());

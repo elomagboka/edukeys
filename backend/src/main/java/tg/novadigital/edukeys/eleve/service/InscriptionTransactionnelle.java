@@ -100,8 +100,8 @@ public class InscriptionTransactionnelle {
      * Règles, dans l'ordre :
      * <ol>
      *   <li>verrou du dossier (404 s'il est absent, inactif ou d'un autre établissement) ;</li>
-     *   <li>version périmée : 409 {@code ADMISSION_MODIFICATION_CONCURRENTE} ;</li>
-     *   <li>dossier non accepté : 422 ; déjà inscrit : 409 ;</li>
+     *   <li>déjà inscrit : 409 ; version périmée : 409 {@code ADMISSION_MODIFICATION_CONCURRENTE} ;</li>
+     *   <li>dossier non accepté : 422 ;</li>
      *   <li>verrou de la classe (404) ; inactive : 422 ;</li>
      *   <li>année de la classe différente de celle du dossier : 422 ; année clôturée : 422 ;</li>
      *   <li>niveau de la classe différent de celui du dossier : 422 ;</li>
@@ -115,6 +115,11 @@ public class InscriptionTransactionnelle {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
 
         DossierPourInscription dossier = dossierAdmissionInscription.verrouillerPourInscription(commande.demandeAdmissionId());
+        // « Déjà inscrit » AVANT la version : inscrire le dossier incrémente sa version, donc la perdante d'une
+        // course (même dossier, deux classes) arrive avec une version périmée ; la réponse exacte est « déjà inscrit ».
+        if (dossier.eleveId() != null) {
+            throw new ConflitException(CodeErreur.INSCRIPTION_DEJA_EFFECTUEE, "Ce dossier a déjà donné lieu à une inscription.");
+        }
         if (commande.versionDemande() != dossier.version()) {
             throw new ConflitException(CodeErreur.ADMISSION_MODIFICATION_CONCURRENTE,
                     "Le dossier a été modifié entre-temps, veuillez le recharger.");
@@ -122,9 +127,6 @@ public class InscriptionTransactionnelle {
         if (!dossier.acceptee()) {
             throw new RegleMetierViolee(CodeErreur.INSCRIPTION_DEMANDE_NON_ACCEPTEE,
                     "Seul un dossier accepté peut donner lieu à une inscription (statut actuel : %s).".formatted(dossier.statut()));
-        }
-        if (dossier.eleveId() != null) {
-            throw new ConflitException(CodeErreur.INSCRIPTION_DEJA_EFFECTUEE, "Ce dossier a déjà donné lieu à une inscription.");
         }
 
         ClassePourInscription classe = classeInscriptionQuery.verrouillerPourInscription(commande.classeId());
@@ -185,8 +187,13 @@ public class InscriptionTransactionnelle {
     }
 
     private void verifierAbsenceHomonyme(UUID etablissementId, String nomNormalise, String prenomsNormalises, DossierPourInscription dossier) {
-        List<EleveRepository.Homonyme> homonymes =
+        List<EleveRepository.Homonyme> lignes =
                 eleveRepository.rechercherHomonymes(etablissementId, nomNormalise, prenomsNormalises, dossier.dateNaissance());
+        // Une entrée par élève : la requête renvoie une ligne par inscription active (homonyme inscrit sur deux
+        // années), triées de la plus récente à la plus ancienne pour un même matricule.
+        Map<String, EleveRepository.Homonyme> parEleve = new LinkedHashMap<>();
+        lignes.forEach(h -> parEleve.putIfAbsent(h.matricule(), h));
+        List<EleveRepository.Homonyme> homonymes = List.copyOf(parEleve.values());
         if (homonymes.isEmpty()) {
             return;
         }

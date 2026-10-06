@@ -157,6 +157,23 @@ class EtablissementServiceTest {
     }
 
     @Test
+    void modifierRefuseUnFuseauHoraireInvalide() {
+        service = nouveauService(List.of());
+        UUID id = UUID.randomUUID();
+        Etablissement etablissement = new Etablissement("CSJ", "Complexe", TypeEtablissement.COMPLEXE, "Lomé", "ancien@csj.tg");
+        when(etablissementRepository.findById(id)).thenReturn(Optional.of(etablissement));
+
+        ModifierEtablissementRequestDto requete = new ModifierEtablissementRequestDto(
+                "Complexe", "CSJ", TypeEtablissement.COMPLEXE, "Lomé", null, null, null,
+                "ancien@csj.tg", null, null, "Lomé", "XOF", "fr");
+
+        assertThatThrownBy(() -> service.modifier(id, requete))
+                .isInstanceOfSatisfying(tg.novadigital.edukeys.common.exception.RegleMetierViolee.class,
+                        e -> assertThat(e.getCode()).isEqualTo(tg.novadigital.edukeys.common.exception.CodeErreur.ETABLISSEMENT_FUSEAU_HORAIRE_INVALIDE));
+        verify(etablissementRepository, never()).save(any(Etablissement.class));
+    }
+
+    @Test
     void desactiverEstCascadeLogique_surLesSitesEtLeLogo() {
         service = nouveauService(List.of());
         UUID id = UUID.randomUUID();

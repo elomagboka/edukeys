@@ -14,11 +14,13 @@ public interface EleveRepository extends BaseRepository<Eleve> {
 
     /**
      * Homonymes actifs (US-08, Q4) : même nom, mêmes prénoms (normalisés) et même date de naissance, avec
-     * la classe de leur inscription active la plus récente s'il y en a une. UNE requête (index
+     * la classe de leur inscription active la plus récente s'il y en a une.
+     * La requête renvoie une ligne par inscription active : le service dédoublonne par élève (matricule) en
+     * gardant la première, donc la plus récente grâce au tri. UNE requête (index
      * {@code idx_eleves_homonymie}), jamais une requête par homonyme (CLAUDE.md, règle 10).
      */
     @Query("""
-            select new tg.novadigital.edukeys.eleve.repository.EleveRepository$Homonyme(e.matricule, i.classeId)
+            select new tg.novadigital.edukeys.eleve.repository.EleveRepository$Homonyme(e.matricule, i.classeId, i.dateInscription)
             from Eleve e
             left join Inscription i on i.eleve = e and i.actif = true
             where e.etablissementId = :etablissementId
@@ -26,7 +28,7 @@ public interface EleveRepository extends BaseRepository<Eleve> {
               and e.nomNormalise = :nomNormalise
               and e.prenomsNormalises = :prenomsNormalises
               and e.dateNaissance = :dateNaissance
-            order by e.matricule
+            order by e.matricule, i.dateInscription desc
             """)
     List<Homonyme> rechercherHomonymes(
             @Param("etablissementId") UUID etablissementId,
@@ -35,6 +37,6 @@ public interface EleveRepository extends BaseRepository<Eleve> {
             @Param("dateNaissance") LocalDate dateNaissance);
 
     /** @param classeId {@code null} si l'élève n'a aucune inscription active */
-    record Homonyme(String matricule, UUID classeId) {
+    record Homonyme(String matricule, UUID classeId, java.time.Instant dateInscription) {
     }
 }

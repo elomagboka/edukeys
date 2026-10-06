@@ -32,7 +32,7 @@ import tg.novadigital.edukeys.common.domain.BaseEntity;
 public class Etablissement extends BaseEntity {
 
     /** Immuable après création (R2) : jamais de setter, aucune méthode métier ne le modifie. */
-    @Column(nullable = false, unique = false)
+    @Column(nullable = false, unique = false, updatable = false)
     private String code;
 
     @Column(nullable = false)

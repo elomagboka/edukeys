@@ -42,8 +42,11 @@ public class DossierAdmissionInscriptionService implements DossierAdmissionInscr
     @Transactional(propagation = Propagation.MANDATORY)
     public void marquerInscrite(UUID demandeId, UUID eleveId, Instant dateInscription) {
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
-        // Déjà verrouillé par verrouillerPourInscription dans la même transaction : relecture sans attente.
-        DemandeAdmission d = demandeAdmissionRepository.trouverPourVerrouiller(demandeId, etablissementId)
+        // Dossier déjà verrouillé et chargé par verrouillerPourInscription dans la même transaction : findById
+        // (em.find) le sert depuis la session, sans SELECT ... FOR UPDATE supplémentaire. Le contrôle
+        // d'établissement est refait ici : em.find ne passe pas par le prédicat de la requête de verrouillage.
+        DemandeAdmission d = demandeAdmissionRepository.findById(demandeId)
+                .filter(demande -> demande.isActif() && etablissementId.equals(demande.getEtablissementId()))
                 .orElseThrow(() -> new RessourceIntrouvableException(CodeErreur.ADMISSION_INTROUVABLE, "Demande d'admission introuvable."));
         d.marquerInscrite(eleveId, dateInscription);
         demandeAdmissionRepository.save(d);
