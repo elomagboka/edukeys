@@ -318,6 +318,36 @@ class InscriptionControllerIntegrationTest {
     }
 
     @Test
+    void doitRefuser403_unAdminDontLeMotDePasseDoitEtreChange_etUnCompteEleve() throws Exception {
+        ScenarioInscription.Etablissement etab = etablissement("INO");
+        String classeId = scenario.creerClasse(etab.jetonAdmin(), etab.niveauId(), "A", null, null);
+        ScenarioInscription.Dossier dossier = scenario.dossierAccepte(etab, "Garde", "Mdp", "2015-11-11");
+        ScenarioInscription.Dossier autre = scenario.dossierAccepte(etab, "Garde", "Eleve", "2015-12-12");
+
+        // Un ADMIN dont le mot de passe est encore temporaire est bloqué par la garde centrale.
+        scenario.jetonPourRole(etab.id(), "ADMIN");
+        entityManager.flush();
+        String emailAdmin = jdbcTemplate.queryForObject(
+                "select u.email from utilisateurs u join affectations_etablissement a on a.utilisateur_id = u.id "
+                        + "where a.etablissement_id = ?::uuid and u.email like 'u.us08.%' limit 1", String.class, etab.id());
+        jdbcTemplate.update("update utilisateurs set mot_de_passe_a_changer = true where email = ?", emailAdmin);
+        entityManager.clear();
+        String jetonTemporaire = scenario.connecter(emailAdmin);
+        scenario.inscrire(jetonTemporaire, dossier.id(), classeId, dossier.version(), false)
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("MOT_DE_PASSE_A_CHANGER"));
+
+        // Un élève fraîchement inscrit (rôle ELEVE seul, mot de passe à changer) ne peut pas inscrire à son tour.
+        String reponse = scenario.inscrire(etab.jetonAdmin(), autre.id(), classeId, autre.version(), false)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String jetonEleve = scenario.connecter(JsonPath.read(reponse, "$.compte.identifiantConnexion"),
+                JsonPath.read(reponse, "$.compte.motDePasseTemporaire"));
+        scenario.inscrire(jetonEleve, dossier.id(), classeId, dossier.version(), false).andExpect(status().isForbidden());
+        assertThat(jdbcTemplate.queryForObject("select count(*) from eleves where etablissement_id = ?::uuid", Long.class, etab.id()))
+                .isEqualTo(1L);
+    }
+
+    @Test
     void doitRejeter400_quandLaRequeteEstIncomplete() throws Exception {
         ScenarioInscription.Etablissement etab = etablissement("INN");
 
