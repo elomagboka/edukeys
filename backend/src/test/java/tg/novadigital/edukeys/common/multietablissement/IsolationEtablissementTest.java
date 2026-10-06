@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -544,6 +545,7 @@ class IsolationEtablissementTest {
             String tableName = nomTable(fabrique.typeEntite());
             ChampMutable champMutable = premierChampMutableDeclare(fabrique.typeEntite());
             String colonneMutee = nomColonne(champMutable.champ());
+            Object valeurMutee;
 
             try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
                 // Chargement direct par identifiant (angle mort A1, cf. C3) : seul
@@ -556,7 +558,8 @@ class IsolationEtablissementTest {
                 entityManager.detach(copie);
 
                 champMutable.champ().setAccessible(true);
-                champMutable.champ().set(copie, champMutable.valeurMutee());
+                valeurMutee = champMutable.muter(champMutable.champ().get(copie));
+                champMutable.champ().set(copie, valeurMutee);
 
                 BaseRepository<Object> repository = castGeneriqueObjet(repositoryPour(fabrique.typeEntite()));
                 // save() sur une entité déjà identifiée route vers merge(), qui ne
@@ -569,13 +572,17 @@ class IsolationEtablissementTest {
                 assertThatThrownBy(() -> {
                     repository.save(copie);
                     entityManager.flush();
+                    // Assertion TYPÉE, à ne jamais assouplir en « une exception
+                    // quelconque » : c'est elle qui dit QUI a refusé. Une contrainte
+                    // de base (CHECK, unicité) qui refuserait la ligne à la place de
+                    // la garde ferait alors passer C8 avec la garde désarmée.
                 }).isInstanceOf(EcritureInterEtablissementRefuseeException.class);
             }
 
             entityManager.clear();
             Integer nombreDeLignesMutees = jdbcTemplate.queryForObject(
                     "select count(*) from " + tableName + " where id = ? and " + colonneMutee + " = ?",
-                    Integer.class, id, champMutable.valeurMutee());
+                    Integer.class, id, valeurMutee);
             assertThat(nombreDeLignesMutees)
                     .withFailMessage("La modification tentee depuis le contexte A ne doit laisser aucune trace "
                             + "en base sur la ligne de B (R4.4).")
@@ -684,7 +691,18 @@ class IsolationEtablissementTest {
         return champ.getName();
     }
 
-    private record ChampMutable(Field champ, Object valeurMutee) {
+    /**
+     * Champ à muter pour C8 et fonction qui calcule, depuis la valeur lue sur
+     * la ligne de B, une valeur DIFFÉRENTE et VALIDE. Une valeur hors bornes
+     * (ex. {@code Long.MAX_VALUE} sur {@code compteurs_matricule.dernier},
+     * {@code CHECK 0..99999}) ferait refuser la ligne par la base même garde
+     * désarmée : l'assertion « aucune trace en base » ne serait jamais exercée,
+     * et le rouge de mutation se lirait comme une violation de contrainte.
+     */
+    private record ChampMutable(Field champ, UnaryOperator<Object> mutation) {
+        Object muter(Object valeurActuelle) {
+            return mutation.apply(valeurActuelle);
+        }
     }
 
     /**
@@ -698,24 +716,27 @@ class IsolationEtablissementTest {
     private static ChampMutable premierChampMutableDeclare(Class<?> typeEntite) {
         for (Field champ : typeEntite.getDeclaredFields()) {
             if (champ.getType().equals(String.class) && estModifiable(champ)) {
-                return new ChampMutable(champ, "MUTEE-DEPUIS-CONTEXTE-A");
+                return new ChampMutable(champ, actuelle -> "MUTEE-DEPUIS-CONTEXTE-A");
             }
         }
         for (Field champ : typeEntite.getDeclaredFields()) {
             if ((champ.getType().equals(Boolean.class) || champ.getType().equals(boolean.class)) && estModifiable(champ)) {
-                return new ChampMutable(champ, Boolean.TRUE);
+                return new ChampMutable(champ, actuelle -> !Boolean.TRUE.equals(actuelle));
             }
         }
         // Repli numérique (US-06) : CompteurReferenceAdmission n'a par conception
         // aucun champ texte ni booléen, seulement des compteurs entiers/longs.
+        // Valeur actuelle + 1 : différente, et dans les bornes d'un compteur neuf.
+        // long avant int : sur les compteurs, le long est la séquence (sans
+        // contrainte d'unicité), l'int est l'année (unique par établissement).
         for (Field champ : typeEntite.getDeclaredFields()) {
-            if ((champ.getType().equals(Integer.class) || champ.getType().equals(int.class)) && estModifiable(champ)) {
-                return new ChampMutable(champ, Integer.MAX_VALUE);
+            if ((champ.getType().equals(Long.class) || champ.getType().equals(long.class)) && estModifiable(champ)) {
+                return new ChampMutable(champ, actuelle -> ((Long) actuelle) + 1);
             }
         }
         for (Field champ : typeEntite.getDeclaredFields()) {
-            if ((champ.getType().equals(Long.class) || champ.getType().equals(long.class)) && estModifiable(champ)) {
-                return new ChampMutable(champ, Long.MAX_VALUE);
+            if ((champ.getType().equals(Integer.class) || champ.getType().equals(int.class)) && estModifiable(champ)) {
+                return new ChampMutable(champ, actuelle -> ((Integer) actuelle) + 1);
             }
         }
         // Repli journal immuable (US-07) : DecisionAdmission n'a que des colonnes
@@ -725,7 +746,7 @@ class IsolationEtablissementTest {
         for (Class<?> type = typeEntite.getSuperclass(); type != null; type = type.getSuperclass()) {
             for (Field champ : type.getDeclaredFields()) {
                 if (champ.getName().equals("actif") && estModifiable(champ)) {
-                    return new ChampMutable(champ, Boolean.FALSE);
+                    return new ChampMutable(champ, actuelle -> Boolean.FALSE);
                 }
             }
         }

@@ -90,7 +90,30 @@ etat() { # etat <cas> -> R | . | ?
     if [ -z "$bloc" ]; then echo "?"; elif grep -q '<failure\|<error' <<<"$bloc"; then echo "R"; else echo "."; fi
 }
 
+# Cause d'un rouge — STRICTEMENT INFORMATIF : n'entre jamais dans la
+# conformité ni dans les écarts. Un rouge n'est une détection que si l'on sait
+# QUI l'a provoqué ; la colonne le montre au lecteur, mais ce sont les
+# assertions TYPÉES des cas (ex. C8 attend EcritureInterEtablissementRefuseeException)
+# qui le garantissent. Classer « non détecté » un rouge de contrainte serait
+# faux : C10 sous « prepersist » rougit par une erreur Hibernate parce qu'il
+# attend ContexteEtablissementAbsentException — c'est une vraie détection.
+cause() { # cause <cas> -> courte description de l'échec, ou rien
+    local bloc msg contrainte
+    bloc=$(awk -v c="$1" '/<testcase /{p=0} $0 ~ "<testcase name=\""c"_"{p=1} p' "$RAPPORT" 2>/dev/null || true)
+    grep -q '<failure\|<error' <<<"$bloc" || return 0
+    msg=$(grep -m1 -o 'message="[^"]*"' <<<"$bloc" | sed 's/&#10;/ /g; s/&quot;/"/g; s/&apos;/'"'"'/g' || true)
+    contrainte=$(grep -o -m1 -E 'violates [a-z-]+ constraint( "[^"]*")?' <<<"$msg" \
+        | sed -E 's/violates ([a-z-]+) constraint( "([^"]*)")?/base:\1 \3/; s/ $//' || true)
+    if grep -q "pas arme" <<<"$msg"; then echo "C0 (filtre non arme)"
+    elif grep -q "Expecting code to raise a throwable" <<<"$msg"; then echo "aucune exception levee"
+    elif grep -q "to be an instance of" <<<"$msg"; then echo "type d'exception inattendu${contrainte:+ <- $contrainte}"
+    elif [ -n "$contrainte" ]; then echo "$contrainte"
+    else msg=${msg#message=\"}; echo "assertion :$(cut -c1-70 <<<"${msg%\"}")"
+    fi
+}
+
 ECARTS=0
+CAUSES=""
 AVERTISSEMENTS=0
 MATRICE=$(printf "%-14s" "mutation"; for c in "${CAS[@]}"; do printf "%-5s" "${c^^}"; done)
 
@@ -117,6 +140,8 @@ for ligne in "${LIGNES[@]}"; do
             marque="R?"; AVERTISSEMENTS=$((AVERTISSEMENTS + 1))
         fi
         MATRICE+=$(printf "%-5s" "$marque")
+        [ "$e" = "R" ] && CAUSES+=$'
+'$(printf "%-14s%-5s%s" "$nom" "${c^^}" "$(cause "$c")")
     done
 done
 
@@ -126,6 +151,10 @@ trap - EXIT INT TERM
 echo
 echo "Matrice de mutation — ${ENTITE}   (R rouge, . vert ; .! non detecte, R? rouge inattendu, ?! cas absent)"
 echo "$MATRICE"
+echo
+echo "Cause de chaque rouge (informatif : n'entre pas dans la conformite) :"
+echo "${CAUSES#$'
+'}"
 echo
 echo "Journaux et rapports : $JOURNAUX"
 if [ "$ECARTS" -gt 0 ]; then

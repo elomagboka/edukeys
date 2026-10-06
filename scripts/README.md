@@ -92,6 +92,29 @@ métier, sur un endpoint de `DemoEntite`, indépendamment des fabriques.
 C9 rougit par la contrainte `NOT NULL` d'`etablissement_id`, pas par sa propre
 assertion : la base détecte le défaut avant le test.
 
+### Cause de chaque rouge (informatif)
+
+Sous la matrice, le script liste la cause de chaque `R` : `C0 (filtre non
+arme)`, `aucune exception levee`, `type d'exception inattendu <- base:check …`,
+`base:not-null`, ou le début du message d'assertion. **Cette liste n'entre
+jamais dans la conformité** et ne produit aucun écart : elle aide à lire, elle
+ne juge pas.
+
+Un rouge n'est une détection que si l'on sait **qui** l'a provoqué. Ce sont les
+assertions **typées** des cas qui le garantissent : C8 attend
+`EcritureInterEtablissementRefuseeException`, C10
+`ContexteEtablissementAbsentException`. Une garde désarmée les fait rougir
+quoi que fasse la base ensuite. C'est pourquoi un rouge de contrainte n'est pas
+un « non détecté » (C10 sous `prepersist` rougit par une erreur Hibernate, et
+c'est une vraie détection), et pourquoi ces assertions ne doivent **jamais**
+être assouplies en « une exception quelconque » : C8 cesserait alors de
+distinguer la garde d'une contrainte `CHECK`.
+
+C8 mute un champ vers une valeur **différente et valide** (valeur actuelle + 1
+pour un nombre, négation pour un booléen) : une valeur hors bornes ferait
+refuser la ligne par la base, et l'assertion « aucune trace en base » ne serait
+jamais exercée (US-08, `compteurs_matricule.dernier`).
+
 ### Si un motif est introuvable
 
 Le script échoue (code 3) plutôt que de produire une ligne verte trompeuse. Le
