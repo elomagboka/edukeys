@@ -6,6 +6,13 @@
 #     bash scripts/mutation-isolation.sh DecisionAdmission
 #
 # Voir scripts/README.md : quand le lancer, comment lire la matrice.
+#
+# Le script travaille dans un worktree git TEMPORAIRE, sur HEAD, jamais dans
+# l'arbre de travail : un IDE (extension Java de VS Code, compilateur Eclipse)
+# recompile à la volée les fichiers mutés dans target/ et y dépose des classes
+# aux types non résolus que Maven croit à jour (US-08 : passe témoin en
+# NoClassDefFoundError). Un arrêt brutal ne laisse ainsi aucune mutation dans
+# l'arbre de travail.
 set -euo pipefail
 
 ENTITE=${1:?"Usage : bash scripts/mutation-isolation.sh <NomEntite>  (ex. DecisionAdmission)"}
@@ -28,6 +35,12 @@ CAS=(c1 c2 c3 c4 c5 c6 c7 c8 c9 c10)
 cd "$BACKEND"
 
 # --- Préconditions ----------------------------------------------------------
+if ! git diff --quiet HEAD -- "$BACKEND"; then
+    echo "Modifications non commitées sous backend/ : le script teste HEAD, dans un worktree temporaire." >&2
+    echo "Commite-les (ou mets-les de côté) pour qu'elles soient vérifiées." >&2
+    git status --short -- "$BACKEND" >&2
+    exit 2
+fi
 if ! grep -q "new ${FABRIQUE}()" "$REGISTRE"; then
     echo "Aucune ${FABRIQUE} enregistrée dans FabriquesEntitesTest : enregistre-la d'abord (le test D2 l'exige)." >&2
     exit 2
@@ -42,9 +55,18 @@ if ! docker info >/dev/null 2>&1; then
     exit 2
 fi
 
-restaurer() { git checkout -q -- "${FICHIERS[@]}"; }
-trap restaurer EXIT INT TERM
 mkdir -p "$JOURNAUX"
+
+# --- Worktree temporaire ----------------------------------------------------
+git -C "$RACINE" worktree prune
+CHANTIER="$(mktemp -d)/edukeys-mutation"
+git -C "$RACINE" worktree add -q --detach "$CHANTIER" HEAD
+nettoyer() { git -C "$RACINE" worktree remove --force "$CHANTIER" 2>/dev/null || true; }
+trap nettoyer EXIT INT TERM
+cd "$CHANTIER/backend"
+echo "Worktree temporaire : $CHANTIER (HEAD $(git rev-parse --short HEAD))"
+
+restaurer() { git checkout -q -- "${FICHIERS[@]}"; }
 
 # --- Mutations --------------------------------------------------------------
 # Chaque mutation est repérée par un motif, jamais par un numéro de ligne, et
@@ -145,7 +167,7 @@ for ligne in "${LIGNES[@]}"; do
     done
 done
 
-restaurer
+nettoyer
 trap - EXIT INT TERM
 
 echo

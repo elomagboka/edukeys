@@ -49,9 +49,23 @@ couvrir.
 bash scripts/mutation-isolation.sh DecisionAdmission    # nom simple de l'entité
 ```
 
-Prérequis : Docker démarré, aucune modification locale dans les fichiers mutés.
+Prérequis : Docker démarré, aucune modification non commitée sous `backend/`.
 Durée : ~12 min (7 exécutions du test). Journaux Maven et rapports Surefire de
 chaque ligne : `backend/target/mutation-isolation/<Entite>/`.
+
+Le script travaille dans un **worktree git temporaire sur HEAD**, supprimé à la
+fin, jamais dans l'arbre de travail. Deux raisons, vécues en US-08 :
+
+- un IDE ouvert sur le dépôt (extension Java de VS Code, y compris quand Claude
+  Code tourne dans son terminal) recompile à la volée les fichiers mutés dans
+  `target/` avec le compilateur Eclipse. Il y dépose des classes aux types non
+  résolus que Maven croit à jour, et la passe témoin tombe en
+  `NoClassDefFoundError: BaseRepository` ;
+- un arrêt brutal (manque de mémoire, `kill -9`) laissait des lignes `//MUT`
+  dans l'arbre de travail.
+
+Si le script a été tué, `git worktree prune` (fait au lancement suivant)
+nettoie le worktree orphelin.
 
 ### Lire la matrice
 
