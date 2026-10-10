@@ -49,9 +49,23 @@ couvrir.
 bash scripts/mutation-isolation.sh DecisionAdmission    # nom simple de l'entité
 ```
 
-Prérequis : Docker démarré, aucune modification locale dans les fichiers mutés.
+Prérequis : Docker démarré, aucune modification non commitée sous `backend/`.
 Durée : ~12 min (7 exécutions du test). Journaux Maven et rapports Surefire de
 chaque ligne : `backend/target/mutation-isolation/<Entite>/`.
+
+Le script travaille dans un **worktree git temporaire sur HEAD**, supprimé à la
+fin, jamais dans l'arbre de travail. Deux raisons, vécues en US-08 :
+
+- un IDE ouvert sur le dépôt (extension Java de VS Code, y compris quand Claude
+  Code tourne dans son terminal) recompile à la volée les fichiers mutés dans
+  `target/` avec le compilateur Eclipse. Il y dépose des classes aux types non
+  résolus que Maven croit à jour, et la passe témoin tombe en
+  `NoClassDefFoundError: BaseRepository` ;
+- un arrêt brutal (manque de mémoire, `kill -9`) laissait des lignes `//MUT`
+  dans l'arbre de travail.
+
+Si le script a été tué, `git worktree prune` (fait au lancement suivant)
+nettoie le worktree orphelin.
 
 ### Lire la matrice
 
@@ -91,6 +105,29 @@ métier, sur un endpoint de `DemoEntite`, indépendamment des fabriques.
 
 C9 rougit par la contrainte `NOT NULL` d'`etablissement_id`, pas par sa propre
 assertion : la base détecte le défaut avant le test.
+
+### Cause de chaque rouge (informatif)
+
+Sous la matrice, le script liste la cause de chaque `R` : `C0 (filtre non
+arme)`, `aucune exception levee`, `type d'exception inattendu <- base:check …`,
+`base:not-null`, ou le début du message d'assertion. **Cette liste n'entre
+jamais dans la conformité** et ne produit aucun écart : elle aide à lire, elle
+ne juge pas.
+
+Un rouge n'est une détection que si l'on sait **qui** l'a provoqué. Ce sont les
+assertions **typées** des cas qui le garantissent : C8 attend
+`EcritureInterEtablissementRefuseeException`, C10
+`ContexteEtablissementAbsentException`. Une garde désarmée les fait rougir
+quoi que fasse la base ensuite. C'est pourquoi un rouge de contrainte n'est pas
+un « non détecté » (C10 sous `prepersist` rougit par une erreur Hibernate, et
+c'est une vraie détection), et pourquoi ces assertions ne doivent **jamais**
+être assouplies en « une exception quelconque » : C8 cesserait alors de
+distinguer la garde d'une contrainte `CHECK`.
+
+C8 mute un champ vers une valeur **différente et valide** (valeur actuelle + 1
+pour un nombre, négation pour un booléen) : une valeur hors bornes ferait
+refuser la ligne par la base, et l'assertion « aucune trace en base » ne serait
+jamais exercée (US-08, `compteurs_matricule.dernier`).
 
 ### Si un motif est introuvable
 

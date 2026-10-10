@@ -1,5 +1,7 @@
 package tg.novadigital.edukeys.etablissement.service;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -12,12 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.common.exception.CodeErreur;
 import tg.novadigital.edukeys.common.exception.ConflitException;
+import tg.novadigital.edukeys.common.exception.RegleMetierViolee;
 import tg.novadigital.edukeys.common.exception.RessourceIntrouvableException;
 import tg.novadigital.edukeys.common.initialisation.ChargeurReferentielType;
 import tg.novadigital.edukeys.common.initialisation.InitialisateurReferentiel;
 import tg.novadigital.edukeys.common.initialisation.ReferentielType;
 import tg.novadigital.edukeys.common.multietablissement.ContexteEtablissement;
 import tg.novadigital.edukeys.common.multietablissement.PorteeEtablissement;
+import tg.novadigital.edukeys.common.securite.CodeEtablissementFormat;
 import tg.novadigital.edukeys.etablissement.domain.Etablissement;
 import tg.novadigital.edukeys.etablissement.domain.Site;
 import tg.novadigital.edukeys.etablissement.domain.LogoEtablissement;
@@ -96,6 +100,12 @@ public class EtablissementService {
     @Transactional
     public EtablissementCree creer(CreerEtablissementRequestDto requete) {
         String code = normaliserCode(requete.code());
+        // Défense en profondeur (le DTO refuse déjà ce format en 400) : le code entre dans le
+        // matricule des élèves, définitif, et dans leur identifiant de connexion (US-08).
+        if (!CodeEtablissementFormat.estValide(code)) {
+            throw new RegleMetierViolee(CodeErreur.ETABLISSEMENT_CODE_INVALIDE,
+                    "Le code d'un établissement comporte de 2 à 10 lettres ou chiffres ASCII, sans tiret, espace ni accent.");
+        }
         String email = requete.email().toLowerCase(Locale.ROOT);
 
         if (etablissementRepository.existsByCodeIgnoreCaseAndActifTrue(code)) {
@@ -195,6 +205,7 @@ public class EtablissementService {
     public Etablissement modifier(UUID id, ModifierEtablissementRequestDto requete) {
         Etablissement etablissement = obtenir(id);
         String email = requete.email().toLowerCase(Locale.ROOT);
+        verifierFuseauHoraire(requete.fuseauHoraire());
 
         if (!email.equalsIgnoreCase(etablissement.getEmail())
                 && etablissementRepository.existsByEmailIgnoreCaseAndActifTrueAndIdNot(email, id)) {
@@ -208,6 +219,20 @@ public class EtablissementService {
                 requete.fuseauHoraire(), requete.deviseCode(), requete.langueDefaut());
 
         return etablissementRepository.save(etablissement);
+    }
+
+    /**
+     * Le fuseau sert à calculer des dates d'expiration (US-08, {@code ZoneId.of}) : une valeur invalide
+     * (« Lomé » au lieu de « Africa/Lome ») ferait échouer chaque inscription en 500. À la création, le fuseau
+     * n'est pas saisi (valeur par défaut valide de l'entité) : seule la modification est concernée.
+     */
+    private static void verifierFuseauHoraire(String fuseauHoraire) {
+        try {
+            ZoneId.of(fuseauHoraire);
+        } catch (DateTimeException e) {
+            throw new RegleMetierViolee(CodeErreur.ETABLISSEMENT_FUSEAU_HORAIRE_INVALIDE,
+                    "Fuseau horaire inconnu : " + fuseauHoraire + ". Utiliser un identifiant IANA, par exemple Africa/Lome.");
+        }
     }
 
     /** R9 : cascade logique, jamais un DELETE SQL — sites et logo de l'établissement sont désactivés avec lui. */

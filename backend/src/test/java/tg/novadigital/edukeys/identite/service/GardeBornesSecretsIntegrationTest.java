@@ -139,6 +139,13 @@ class GardeBornesSecretsIntegrationTest {
                     "Port de création de compte NEUF (délègue à creerCompteAdministrateurInitial) : prouvé par lesMethodesDeCreationNeVisentJamaisUnCompteExistant."),
             Map.entry("CreateurCompteAdministrateurImpl.creerAdministrateur",
                     "Crée un compte NEUF (délègue à creerCompteAdministrateurInitial) : prouvé par lesMethodesDeCreationNeVisentJamaisUnCompteExistant."),
+            Map.entry("UtilisateurService.creerCompteEleve",
+                    "Crée un compte NEUF (identifiant = matricule) : refuse (409) tout identifiant déjà porté par un compte actif, ne peut jamais "
+                            + "viser un compte existant (prouvé par lesMethodesDeCreationNeVisentJamaisUnCompteExistant)."),
+            Map.entry("CreateurCompteEleve.creerCompteEleve",
+                    "Port de création de compte NEUF (délègue à UtilisateurService.creerCompteEleve) : prouvé par lesMethodesDeCreationNeVisentJamaisUnCompteExistant."),
+            Map.entry("CreateurCompteEleveImpl.creerCompteEleve",
+                    "Crée un compte NEUF (délègue à UtilisateurService.creerCompteEleve) : prouvé par lesMethodesDeCreationNeVisentJamaisUnCompteExistant."),
             Map.entry("AuthService.connecter",
                     "Borné par la possession du mot de passe (BCrypt) du compte visé ; aucun UUID fourni, les jetons sont émis pour le compte authentifié lui-même."),
             Map.entry("AuthService.rafraichir",
@@ -406,6 +413,8 @@ class GardeBornesSecretsIntegrationTest {
 
     @Autowired
     private CreateurCompteAdministrateur createurCompteAdministrateur;
+    @Autowired
+    private tg.novadigital.edukeys.identite.CreateurCompteEleve createurCompteEleve;
 
     @Test
     void lesMethodesDeCreationNeVisentJamaisUnCompteExistant() {
@@ -429,6 +438,9 @@ class GardeBornesSecretsIntegrationTest {
                 creations.put("creerCompteAdministrateurInitial", id -> utilisateurService.creerCompteAdministrateurInitial(variante, "Intrus"));
                 creations.put("CreateurCompteAdministrateur.creerAdministrateur",
                         id -> createurCompteAdministrateur.creerAdministrateur(ETABLISSEMENT_A, variante, "Intrus"));
+                // US-08 : le port de création de compte élève (identifiant = matricule) non plus ne vise jamais un compte existant.
+                creations.put("creerCompteEleve", id -> utilisateurService.creerCompteEleve(variante, "Intrus"));
+                creations.put("CreateurCompteEleve.creerCompteEleve", id -> createurCompteEleve.creerCompteEleve(variante, "Intrus"));
                 creations.forEach((nom, invocation) -> {
                     try (var portee = ContexteEtablissement.ouvrir(ETABLISSEMENT_A)) {
                         assertThatThrownBy(() -> invocation.appeler(cibleId))

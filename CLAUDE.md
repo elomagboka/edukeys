@@ -6,12 +6,12 @@ apparaître tel quel dans l'interface, la documentation d'API et les emails.
 Ne jamais le remplacer par une description générique du type « gestion
 scolaire » dans du texte visible par l'utilisateur.
 
-> Ce fichier est lu à CHAQUE session Claude Code. Il doit rester court (< 150 lignes).
+> Ce fichier est lu à CHAQUE session Claude Code. Il doit rester court (< 160 lignes).
 > Tout ce qui est long va dans `docs/` et n'est lu que sur demande explicite.
 
 ## Stack
 
-- **Backend** : Java 21 + Spring Boot 3.5.x, Maven, Spring Data JPA, Spring Security (JWT), MapStruct, SpringDoc OpenAPI. Java 21. Ne pas modifier sans décision explicite — le passage non tracé à Java 25 a rendu ArchUnit silencieusement inopérant.
+- **Backend** : Java 21 + Spring Boot 3.5.x, Maven, Spring Data JPA, Spring Security (JWT), MapStruct, SpringDoc OpenAPI. Ne pas modifier sans décision explicite — le passage non tracé à Java 25 a rendu ArchUnit silencieusement inopérant.
 - **BDD** : PostgreSQL 18 — Docker en local, PostgreSQL managé Render en recette et production. Migrations Flyway.
 - **Hébergement** : Render, région Frankfurt. Voir `docs/adr/0007-hebergement-render.md`.
 - **Frontend** : React 19 + **TypeScript strict**, Vite, TanStack Query, Ant Design — voir `frontend/CLAUDE.md` et `docs/adr/0001-stack-frontend.md`
@@ -56,6 +56,8 @@ Chaque module suit la même arborescence interne :
    (`actif`, `date_desactivation`) — exigence explicite du backlog (US-11). Les
    contraintes d'unicité sur ces entités sont des **index partiels** (`WHERE
    actif = true`), sinon une adresse email libérée reste bloquée à jamais.
+   **Exception** : identifiant métier pérenne à unicité **absolue** (sans `WHERE actif`) :
+   matricule, `compteurs_matricule`, lien dossier→élève (un élève radié garde son matricule).
    Les repositories métier étendent `BaseRepository<T, ID>` (`@NoRepositoryBean`,
    dérivée de `Repository`), **jamais `JpaRepository`** (expose `delete*`) **ni
    `JpaSpecificationExecutor`** (expose `delete(Specification)`, une suppression
@@ -87,7 +89,7 @@ Chaque module suit la même arborescence interne :
    ADR-0005). Une permission élargit son périmètre à chaque contrôleur où elle est
    posée sans revalider sa portée : `ETABLISSEMENT_GERER` posée sur
    `SiteController`/`LogoController` en plus d'`EtablissementController` a ainsi
-   laissé `SUPER_ADMIN` gérer les sites et le logo de n'importe quel établissemen t
+   laissé `SUPER_ADMIN` gérer les sites et le logo de n'importe quel établissement
    client, avant correction.
 12. **Tout service qui ouvre une PorteeEtablissement doit forcer le flush avant de la fermer**,
    sinon l'écriture différée par Hibernate se produira hors contexte et échouera.
@@ -125,12 +127,7 @@ la casse des noms de fichiers : ignorée par Windows, significative sous Linux. 
 
 ## Commandes
 
-```bash
-mvn -q test                    # tests unitaires
-mvn -q verify                  # + tests d'intégration
-mvn spring-boot:run            # démarrage local
-mvn flyway:migrate             # migrations
-```
+`mvn -q test` (unitaires) · `mvn -q verify` (+ intégration) · `mvn spring-boot:run` · `mvn flyway:migrate`
 
 ## Notifications
 

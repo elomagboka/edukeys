@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import tg.novadigital.edukeys.academique.OffreAdmissionQuery;
 import tg.novadigital.edukeys.admission.domain.CanalAdmission;
 import tg.novadigital.edukeys.admission.domain.DemandeAdmission;
+import tg.novadigital.edukeys.admission.domain.StatutAdmission;
 import tg.novadigital.edukeys.admission.repository.DemandeAdmissionRepository;
 import tg.novadigital.edukeys.admission.service.DemandeAdmissionService.PiecePreparee;
 import tg.novadigital.edukeys.common.exception.CodeErreur;
@@ -204,6 +205,12 @@ public class InsertionDemandeAdmissionTransactionnelle {
 
     /** I4 : accusé envoyé au dossier existant (jamais aux coordonnées resaisies), soumis au plafond I2 côté {@code Notificateur}. */
     private void publierAccuse(DemandeAdmission existante) {
+        // US-08, Q-D : un dossier ACCEPTEE (éventuellement déjà inscrit) ne reçoit plus d'accusé de
+        // réception — il serait trompeur de réannoncer « bien enregistrée » à un parent dont l'enfant est
+        // accepté. La réponse publique, elle, reste strictement identique (aucune fuite du statut).
+        if (existante.getStatut() == StatutAdmission.ACCEPTEE) {
+            return;
+        }
         eventPublisher.publishEvent(new DemandeAdmissionSoumiseEvent(
                 existante.getId(), existante.getReference(), existante.getResponsableTelephone(), existante.getResponsableEmail()));
     }

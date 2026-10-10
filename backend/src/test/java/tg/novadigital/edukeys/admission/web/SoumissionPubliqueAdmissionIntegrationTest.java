@@ -53,6 +53,7 @@ import tg.novadigital.edukeys.identite.repository.UtilisateurRepository;
 @ActiveProfiles("test")
 @Import(ConfigurationTurnstileDoubleTest.class)
 @Transactional
+@org.springframework.test.context.event.RecordApplicationEvents
 class SoumissionPubliqueAdmissionIntegrationTest {
 
     private static final String EMAIL_SUPER_ADMIN = "super.admin@edukeys.tg";
@@ -76,6 +77,9 @@ class SoumissionPubliqueAdmissionIntegrationTest {
     @Autowired
     private EntityManagerFactory entityManagerFactory;
 
+    @Autowired
+    private org.springframework.test.context.event.ApplicationEvents evenements;
+
     @BeforeEach
     void reinitialiserLeDouble() {
         VerificationTurnstileServiceDouble.reinitialiser();
@@ -92,7 +96,7 @@ class SoumissionPubliqueAdmissionIntegrationTest {
 
     @Test
     void laReponsePublique_neContientJamaisLaReferenceSequentielle_etLeCodeSuiviEstIdempotent() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("OPAQUE");
+        Contexte ctx = preparerEtablissementEtOffre("OPAQ");
 
         String reponse1 = soumettre(ctx, "Ama", "Kodjo", "2015-04-04", "jeton-valide", null)
                 .andExpect(status().isCreated())
@@ -121,6 +125,35 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         String referenceInterne = jdbcTemplate.queryForObject(
                 "select reference from demandes_admission where code_suivi = ?", String.class, codeSuivi1);
         assertThat(referenceInterne).startsWith("PRE-");
+    }
+
+    /**
+     * US-08, Q5 + Q-D : l'enfant d'un dossier ACCEPTEE reste « vivant » — une re-soumission publique renvoie la même
+     * réponse (code de suivi identique), ne crée aucun nouveau dossier et n'émet AUCUN accusé de réception.
+     */
+    @Test
+    void laResoumissionDUnEnfantAccepte_renvoieLaMemeReponse_sansNouveauDossier_niAccuse() throws Exception {
+        Contexte ctx = preparerEtablissementEtOffre("ACC");
+        String reponse1 = soumettre(ctx, "Accepte", "Enfant", "2015-09-19", "jeton-valide", null)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String codeSuivi = JsonPath.read(reponse1, "$.codeSuivi");
+        String idDossier = jdbcTemplate.queryForObject("select id::text from demandes_admission where code_suivi = ?", String.class, codeSuivi);
+        mockMvc.perform(post("/api/v1/demandes-admission/" + idDossier + "/decisions")
+                        .header("Authorization", "Bearer " + ctx.jetonAdmin())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"statut\":\"ACCEPTEE\",\"observation\":null,\"version\":0}"))
+                .andExpect(status().isOk());
+        evenements.clear();
+
+        String reponse2 = soumettre(ctx, "Accepte", "Enfant", "2015-09-19", "jeton-valide", null)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+        assertThat((String) JsonPath.read(reponse2, "$.codeSuivi")).isEqualTo(codeSuivi);
+        Long dossiers = jdbcTemplate.queryForObject(
+                "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, ctx.etablissementId());
+        assertThat(dossiers).isEqualTo(1L);
+        assertThat(evenements.stream(tg.novadigital.edukeys.admission.service.DemandeAdmissionSoumiseEvent.class).count())
+                .as("aucun accusé de réception pour un dossier accepté").isZero();
     }
 
     // ------------------------------------------------------------------
@@ -214,8 +247,9 @@ class SoumissionPubliqueAdmissionIntegrationTest {
         assertThat(nombreDeDossiers).isEqualTo(2L);
     }
 
+    /** US-08, Q5 (inversion décidée par le PO) : un dossier ACCEPTEE reste « vivant », il BLOQUE désormais un doublon. */
     @Test
-    void neBloquePasUneNouvelleDemande_quandLeDossierExistantEstAccepte() throws Exception {
+    void neCreePasUnNouveauDossier_quandLeDossierExistantEstAccepte() throws Exception {
         Contexte ctx = preparerEtablissementEtOffre("ACCOK");
 
         String reponse1 = soumettre(ctx, "Essi", "Bena", "2015-11-02", "jeton-valide", null)
@@ -228,9 +262,10 @@ class SoumissionPubliqueAdmissionIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
+        assertThat((String) JsonPath.read(reponse2, "$.codeSuivi")).isEqualTo(reference1);
         Long nombreDeDossiers = jdbcTemplate.queryForObject(
                 "select count(*) from demandes_admission where etablissement_id = ?::uuid", Long.class, ctx.etablissementId);
-        assertThat(nombreDeDossiers).isEqualTo(2L);
+        assertThat(nombreDeDossiers).isEqualTo(1L);
     }
 
     // ------------------------------------------------------------------
@@ -379,7 +414,7 @@ class SoumissionPubliqueAdmissionIntegrationTest {
 
     @Test
     void hacheLipEnSoixanteQuatreHexadecimaux_sansStockerLipEnClair() throws Exception {
-        Contexte ctx = preparerEtablissementEtOffre("IPHASH");
+        Contexte ctx = preparerEtablissementEtOffre("IPHA");
         String reponse = soumettre(ctx, "Ip", "Test", "2015-01-01", "jeton-valide", null)
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();

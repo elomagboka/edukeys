@@ -1,5 +1,6 @@
 package tg.novadigital.edukeys.identite.service;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -87,6 +88,8 @@ public class UtilisateurService {
     /** Plafond de l'expiration explicite d'un mot de passe temporaire ({@link #emettreMotDePasseTemporaireAvecExpiration}). */
     private final Duration expirationMaxMotDePasseTemporaire;
 
+    private final Clock clock;
+
     public UtilisateurService(
             UtilisateurRepository utilisateurRepository,
             JetonRafraichissementRepository jetonRafraichissementRepository,
@@ -96,7 +99,9 @@ public class UtilisateurService {
             JetonHacheur jetonHacheur,
             GenerateurMotDePasseTemporaire generateurMotDePasseTemporaire,
             @Value("${edukeys.securite.mot-de-passe-temporaire.duree-validite:14d}") Duration dureeValiditeMotDePasseTemporaire,
-            @Value("${edukeys.securite.mot-de-passe-temporaire.expiration-max:90d}") Duration expirationMaxMotDePasseTemporaire) {
+            @Value("${edukeys.securite.mot-de-passe-temporaire.expiration-max:240d}") Duration expirationMaxMotDePasseTemporaire,
+            Clock clock) {
+        this.clock = clock;
         this.utilisateurRepository = utilisateurRepository;
         this.jetonRafraichissementRepository = jetonRafraichissementRepository;
         this.affectationEtablissementRepository = affectationEtablissementRepository;
@@ -292,7 +297,7 @@ public class UtilisateurService {
         // BCrypt alimente Utilisateur#motDePasseHache (login), son hash
         // SHA-256 le jeton d'activation (traçabilité/consommation, voir la
         // Javadoc de JetonActivationCompte).
-        emettreJetonActivation(utilisateur, motDePasseTemporaire, Instant.now().plus(dureeValiditeMotDePasseTemporaire));
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, clock.instant().plus(dureeValiditeMotDePasseTemporaire));
 
         return new CompteCree(utilisateur, affectation, motDePasseTemporaire);
     }
@@ -308,6 +313,39 @@ public class UtilisateurService {
     @Transactional
     public CompteCree creerCompteAdministrateurInitial(String email, String nomComplet) {
         return creerCompteAvecRoles(email, nomComplet, EnumSet.of(RoleCode.ADMIN), null);
+    }
+
+    /**
+     * Compte d'un élève fraîchement inscrit (US-08, via le port {@code CreateurCompteEleve}) : crée un compte
+     * NEUF, jamais un rattachement. Identifiant de connexion = matricule normalisé, sans email, rôle
+     * {@code ELEVE} seul, sans site (l'élève appartient à l'établissement, pas à un site, ADR-0005).
+     * Le mot de passe stocké est le hash d'un secret aléatoire que personne ne connaît ni ne reçoit, et
+     * aucun jeton d'activation n'est émis : le compte est inutilisable jusqu'à ce que l'appelant émette un
+     * mot de passe temporaire par {@code EmetteurMotDePasseTemporaire.emettreAvecExpiration}.
+     *
+     * <p>Contourne volontairement {@link #validerRolesAttribuables} (qui refuse ELEVE/PARENT à l'API de
+     * gestion du personnel) : ce chemin n'est joignable que par le port, jamais par un endpoint.</p>
+     *
+     * @return l'identifiant du compte créé
+     * @throws ConflitException {@code UTILISATEUR_IDENTIFIANT_DUPLIQUE} si l'identifiant est déjà porté par un compte actif
+     */
+    @Transactional
+    public UUID creerCompteEleve(String matricule, String nomComplet) {
+        UUID etablissementId = ContexteEtablissement.exigerEtablissementId();
+        String identifiant = IdentifiantConnexion.normaliser(matricule);
+        if (utilisateurRepository.existsByIdentifiantConnexionAndActifTrue(identifiant)
+                || utilisateurRepository.existsByEmailAndActifTrue(identifiant)) {
+            throw new ConflitException(CodeErreur.UTILISATEUR_IDENTIFIANT_DUPLIQUE, "Cet identifiant est déjà utilisé sur la plateforme.");
+        }
+
+        String secretJamaisRendu = generateurMotDePasseTemporaire.generer();
+        Utilisateur utilisateur = new Utilisateur(null, identifiant, passwordEncoder.encode(secretJamaisRendu), nomComplet, false);
+        utilisateur.exigerChangementMotDePasse();
+        utilisateur = utilisateurRepository.save(utilisateur);
+
+        affectationEtablissementRepository.save(
+                new AffectationEtablissement(utilisateur, etablissementId, EnumSet.of(RoleCode.ELEVE), null));
+        return utilisateur.getId();
     }
 
     /**
@@ -525,7 +563,7 @@ public class UtilisateurService {
         utilisateur.exigerChangementMotDePasse();
         utilisateurRepository.save(utilisateur);
 
-        emettreJetonActivation(utilisateur, motDePasseTemporaire, Instant.now().plus(dureeValiditeMotDePasseTemporaire));
+        emettreJetonActivation(utilisateur, motDePasseTemporaire, clock.instant().plus(dureeValiditeMotDePasseTemporaire));
 
         revoquerJetonsActifs(utilisateurId);
 
@@ -554,7 +592,7 @@ public class UtilisateurService {
         // expiré. Sans objet pour un compte normal (motDePasseAChanger = false).
         if (utilisateur.isMotDePasseAChanger()
                 && jetonActivationCompteRepository.existsByUtilisateurIdAndActifTrueAndDateExpirationBefore(
-                        utilisateurId, Instant.now())) {
+                        utilisateurId, clock.instant())) {
             throw new MotDePasseTemporaireExpireException("Le mot de passe temporaire a expiré : demandez-en un nouveau.");
         }
 
@@ -601,18 +639,23 @@ public class UtilisateurService {
      * Tout refus est un « introuvable » indiscernable d'un identifiant
      * inexistant.</p>
      *
-     * @throws IllegalArgumentException si la date est nulle, passée ou au-delà du plafond
-     *         {@code expiration-max} : erreur de programmation de l'appelant
+     * @throws IllegalArgumentException si la date est nulle ou passée (erreur de programmation de l'appelant)
+     * @throws RegleMetierViolee {@code MOT_DE_PASSE_TEMPORAIRE_EXPIRATION_HORS_BORNES} (422) si la date dépasse
+     *         {@code expiration-max}
      */
     @Transactional
     public String emettreMotDePasseTemporaireAvecExpiration(UUID utilisateurId, Instant dateExpiration) {
-        Instant maintenant = Instant.now();
+        Instant maintenant = clock.instant();
         if (dateExpiration == null || !dateExpiration.isAfter(maintenant)) {
             throw new IllegalArgumentException("La date d'expiration du mot de passe temporaire doit être dans le futur.");
         }
+        // Dépassement du maximum = règle métier (inscription trop anticipée par rapport à la rentrée), pas une
+        // erreur de programmation : 422 explicite, jamais un 500. Aucun plafonnement silencieux (il ramenait
+        // l'expiration AVANT la rentrée).
         if (dateExpiration.isAfter(maintenant.plus(expirationMaxMotDePasseTemporaire))) {
-            throw new IllegalArgumentException("La date d'expiration du mot de passe temporaire dépasse le plafond de "
-                    + expirationMaxMotDePasseTemporaire + ".");
+            throw new RegleMetierViolee(CodeErreur.MOT_DE_PASSE_TEMPORAIRE_EXPIRATION_HORS_BORNES,
+                    "L'expiration du mot de passe temporaire dépasse le maximum autorisé de "
+                            + expirationMaxMotDePasseTemporaire.toDays() + " jours : l'inscription est trop anticipée par rapport à la rentrée.");
         }
 
         UUID etablissementId = ContexteEtablissement.exigerEtablissementId();

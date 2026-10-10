@@ -52,7 +52,7 @@ public class GestionnaireExceptionsGlobal {
 
     @ExceptionHandler(RegleMetierViolee.class)
     public ProblemDetail gererRegleMetierViolee(RegleMetierViolee ex, HttpServletRequest request) {
-        return construire(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage(), request);
+        return construire(HttpStatus.UNPROCESSABLE_ENTITY, ex.getCode(), ex.getMessage(), ex.getDetails(), request);
     }
 
     @ExceptionHandler(FormatFichierNonSupporteException.class)
@@ -67,7 +67,7 @@ public class GestionnaireExceptionsGlobal {
 
     @ExceptionHandler(ConflitException.class)
     public ProblemDetail gererConflit(ConflitException ex, HttpServletRequest request) {
-        return construire(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request);
+        return construire(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), ex.getDetails(), request);
     }
 
     /**
@@ -188,10 +188,18 @@ public class GestionnaireExceptionsGlobal {
     }
 
     private ProblemDetail construire(HttpStatus statut, CodeErreur code, String message, HttpServletRequest request) {
+        return construire(statut, code, message, java.util.Map.of(), request);
+    }
+
+    private ProblemDetail construire(HttpStatus statut, CodeErreur code, String message, java.util.Map<String, Object> details,
+            HttpServletRequest request) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(statut, message);
         Object correlationId = request.getAttribute(CorrelationIdFilter.ATTRIBUT_REQUETE);
         problemDetail.setProperty("correlationId", correlationId);
         problemDetail.setProperty("code", code.name());
+        if (!details.isEmpty()) {
+            problemDetail.setProperty("details", details);
+        }
         return problemDetail;
     }
 }

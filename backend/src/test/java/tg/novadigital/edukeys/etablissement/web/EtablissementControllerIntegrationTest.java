@@ -149,7 +149,7 @@ class EtablissementControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "ADM-" + etablissementAdmin, "Établissement Admin Test", "adm." + etablissementAdmin + "@edukeys.tg");
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ADM", etablissementAdmin), "Établissement Admin Test", "adm." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, true, now(), now())",
@@ -187,7 +187,7 @@ class EtablissementControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "ADH-" + etablissementAdmin, "Établissement Admin Historique Test",
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ADH", etablissementAdmin), "Établissement Admin Historique Test",
                 "adh." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
@@ -247,7 +247,7 @@ class EtablissementControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "ADL-" + etablissementAdmin, "Établissement Admin Liste Test",
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ADL", etablissementAdmin), "Établissement Admin Liste Test",
                 "adl." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "
@@ -279,7 +279,7 @@ class EtablissementControllerIntegrationTest {
         jdbcTemplate.update(
                 "insert into etablissements (id, code, nom, type_etablissement, ville, email, actif, date_creation, date_modification) "
                         + "values (?, ?, ?, 'COLLEGE', 'Lomé', ?, true, now(), now())",
-                etablissementAdmin, "ADC-" + etablissementAdmin, "Établissement Admin Courant Test",
+                etablissementAdmin, tg.novadigital.edukeys.testsupport.CodesEtablissementTest.code("ADC", etablissementAdmin), "Établissement Admin Courant Test",
                 "adc." + etablissementAdmin + "@edukeys.tg");
         jdbcTemplate.update(
                 "insert into affectations_etablissement (id, utilisateur_id, etablissement_id, actif, date_creation, date_modification) "

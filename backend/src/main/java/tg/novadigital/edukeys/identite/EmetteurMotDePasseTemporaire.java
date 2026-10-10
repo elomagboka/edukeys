@@ -27,9 +27,10 @@ public interface EmetteurMotDePasseTemporaire {
      * précédents et révoque les sessions du compte.
      *
      * @return le mot de passe en clair, à remettre une seule fois
-     * @throws IllegalArgumentException si la date est nulle, passée, ou au-delà
-     *         du plafond {@code edukeys.securite.mot-de-passe-temporaire.expiration-max}
-     *         (erreur de programmation de l'appelant, pas une règle métier)
+     * @throws IllegalArgumentException si la date est nulle ou passée (erreur de programmation de l'appelant)
+     * @throws tg.novadigital.edukeys.common.exception.RegleMetierViolee {@code MOT_DE_PASSE_TEMPORAIRE_EXPIRATION_HORS_BORNES}
+     *         (422) si la date dépasse {@code edukeys.securite.mot-de-passe-temporaire.expiration-max} : règle métier
+     *         (inscription trop anticipée), jamais plafonnée en silence
      * @throws tg.novadigital.edukeys.common.exception.RessourceIntrouvableException
      *         si le compte n'est pas dans le périmètre décrit ci-dessus
      */

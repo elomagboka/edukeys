@@ -46,6 +46,9 @@ public final class FabriquesEntitesTest {
         FABRIQUES.add(new FabriquePieceJointeAdmission());
         FABRIQUES.add(new FabriqueContenuPieceJointeAdmission());
         FABRIQUES.add(new FabriqueDecisionAdmission());
+        FABRIQUES.add(new FabriqueEleve());
+        FABRIQUES.add(new FabriqueInscription());
+        FABRIQUES.add(new FabriqueCompteurMatricule());
     }
 
     private FabriquesEntitesTest() {

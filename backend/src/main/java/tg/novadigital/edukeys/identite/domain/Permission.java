@@ -95,6 +95,12 @@ public enum Permission {
      * silencieusement une permission existante).
      */
     ADMISSION_DECIDER("Décider d'un dossier d'admission (accepter, refuser, liste d'attente)"),
+    /**
+     * Inscription d'un élève accepté (US-08) : crée l'élève, son matricule, son compte et son
+     * inscription en classe. Réservée à ADMIN seul — ni GESTIONNAIRE ni DIRECTION ni SUPER_ADMIN
+     * (CLAUDE.md, règle 11 : ne pas élargir silencieusement une permission existante).
+     */
+    INSCRIPTION_CREER("Inscrire un élève accepté (matricule, compte, classe)"),
     NOTE_SAISIR("Saisir des notes"),
     DEVOIR_CREER("Créer un devoir"),
     ENFANT_CONSULTER("Consulter le dossier enfant"),

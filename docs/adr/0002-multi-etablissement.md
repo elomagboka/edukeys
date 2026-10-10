@@ -98,13 +98,23 @@ métier.
 
 ## 6. Unicité du matricule (US-08)
 
-Unique **par établissement et par année scolaire**, avec un préfixe
-d'établissement le rendant unique globalement de fait.
+Unique **par établissement** : contrainte `(etablissement_id, matricule)`, **absolue**
+(sans `WHERE actif`) — un élève radié garde son matricule, qui n'est jamais
+réattribué (exception assumée à la règle 4 de CLAUDE.md).
 
 Format : `<CODE_ETAB>-<ANNEE>-<SEQUENCE>`, par exemple `CSJ-2026-00147`.
-La séquence est gérée en base (pas en mémoire applicative) pour résister à la
-concurrence — deux inscriptions simultanées ne doivent pas produire le même
-matricule.
+
+- `ANNEE` est l'année de **début** de l'année scolaire de la classe (2026 pour
+  2026-2027) ; la séquence est propre à `(établissement, année)`.
+- La séquence compte **5 chiffres** ; passé 99 999, l'inscription est refusée
+  (`MATRICULE_SEQUENCE_EPUISEE`, 422), jamais de rebouclage.
+- Le code d'établissement est restreint à l'ASCII `[A-Z0-9]{2,10}` (sans tiret,
+  séparateur du matricule) : validé à la création et par contrainte de base.
+- La séquence est portée par `compteurs_matricule` (ligne jamais désactivée),
+  incrémentée sous verrou pessimiste **dans la transaction de l'inscription** :
+  un échec ultérieur annule le numéro, aucun trou. La ligne à zéro est créée
+  hors de cette transaction (motif de `compteurs_reference_admission`, US-06).
+- Ordre des verrous : dossier, puis classe, puis compteur.
 
 ---
 

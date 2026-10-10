@@ -34,6 +34,9 @@ public record DemandeAdmissionDto(
         @Schema(description = "Note interne, non transmise au parent.")
         String observationDecision,
         UUID decideParId,
+        @Schema(description = "Élève né de ce dossier (US-08), null tant que le dossier n'est pas inscrit.")
+        UUID eleveId,
+        Instant dateInscription,
         List<PieceJointeAdmissionDto> pieces,
         List<DecisionAdmissionDto> decisions) {
 }
